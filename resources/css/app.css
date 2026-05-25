@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+@import './theme-generated.css';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+@source '../**/*.vue';
+
+@theme {
+    --font-sans: var(--font-sans);
+    --font-display: var(--font-display);
+}
+
+@layer base {
+    details > summary {
+        outline: none;
+    }
+
+    details[open] > summary {
+        color: var(--color-text-muted);
+    }
+}

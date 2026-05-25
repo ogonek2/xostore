@@ -1,0 +1,162 @@
+@php
+    $listingLabels = [
+        'filters' => __('shop.listing.filters'),
+        'sort' => __('shop.listing.sort'),
+        'sort_newest' => __('shop.listing.sort_newest'),
+        'sort_featured' => __('shop.listing.sort_featured'),
+        'sort_price_asc' => __('shop.listing.sort_price_asc'),
+        'sort_price_desc' => __('shop.listing.sort_price_desc'),
+        'brand' => __('shop.listing.brand'),
+        'color' => __('shop.listing.color'),
+        'price' => __('shop.listing.price'),
+        'from' => __('shop.listing.from'),
+        'to' => __('shop.listing.to'),
+        'apply_price' => __('shop.listing.apply_price'),
+        'clear_filters' => __('shop.listing.clear_filters'),
+        'only_new' => __('shop.listing.only_new'),
+        'only_sale' => __('shop.listing.only_sale'),
+        'search' => __('shop.search'),
+        'search_placeholder' => __('shop.listing.search_placeholder'),
+        'empty' => __('shop.listing.empty'),
+        'loading' => __('shop.listing.loading'),
+        'cart' => __('shop.cart'),
+        'colors' => __('shop.product.colors'),
+        'new_badge' => __('shop.new_arrivals.badge'),
+    ];
+@endphp
+
+@extends('layouts.shop')
+
+@section('title', $pageTitle.' — '.config('shop.name'))
+
+@section('content')
+    <x-shop.header
+        :menu-roots="$menuRoots"
+        :languages="$languages"
+        :cart-count="$cartCount"
+    />
+
+    <main class="flex-1">
+        <div class="mx-auto max-w-[90rem] px-5 py-8 lg:px-8 lg:py-10">
+            <x-shop.breadcrumbs :items="$breadcrumbs" />
+
+            <div class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <h1 class="text-2xl font-semibold tracking-tight text-primary-DEFAULT lg:text-3xl">
+                        {{ $pageTitle }}
+                    </h1>
+                    <p id="listing-products-count" class="mt-2 text-sm text-text-muted">
+                        {{ trans_choice('shop.listing.products_count', $total, ['count' => $total]) }}
+                    </p>
+                </div>
+
+                <form
+                    id="listing-search-form"
+                    class="flex w-full max-w-md gap-2 lg:w-auto"
+                    data-listing-search
+                >
+                    <label class="sr-only" for="catalog-search">{{ __('shop.search') }}</label>
+                    <input
+                        id="catalog-search"
+                        type="search"
+                        name="q"
+                        value="{{ request('q') }}"
+                        placeholder="{{ __('shop.listing.search_placeholder') }}"
+                        class="min-h-[2.75rem] flex-1 border border-border-DEFAULT px-4 text-sm outline-none focus:border-primary-DEFAULT"
+                    >
+                    <button type="submit" class="shrink-0 bg-primary-DEFAULT px-5 text-sm font-medium text-text-inverse hover:bg-primary-hover">
+                        {{ __('shop.search') }}
+                    </button>
+                </form>
+            </div>
+
+            @if ($subcategories->isNotEmpty())
+                <div class="mt-8 flex flex-wrap gap-2">
+                    @foreach ($subcategories as $sub)
+                        <a
+                            href="{{ $sub['url'] }}"
+                            class="border border-border-DEFAULT px-4 py-2 text-sm transition-colors hover:border-primary-DEFAULT hover:bg-surface-muted"
+                        >
+                            {{ $sub['label'] }}
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+
+            <div
+                class="mt-10"
+                data-vue="catalog-page"
+                data-endpoint="{{ $apiEndpoint }}"
+                data-base-query="{{ json_encode($apiQuery) }}"
+                data-initial-filters="{{ json_encode($filters) }}"
+                data-initial-items="{{ json_encode($products->values()) }}"
+                data-initial-total="{{ $total }}"
+                data-facets="{{ json_encode($facets) }}"
+                data-labels="{{ json_encode($listingLabels) }}"
+                data-locale="{{ app()->getLocale() }}"
+                data-per-page="{{ config('shop.listing.per_page', 24) }}"
+            >
+                <noscript>
+                    <div class="grid gap-10 lg:grid-cols-[240px_minmax(0,1fr)]">
+                        <aside>
+                            <x-shop.catalog-filters
+                                :facets="$facets"
+                                :filters="$filters"
+                                :form-action="url()->current()"
+                            />
+                        </aside>
+                        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                            @foreach ($products as $product)
+                                <x-shop.product-card
+                                    :url="$product['url']"
+                                    :name="$product['name']"
+                                    :category="$product['category']"
+                                    :price-formatted="$product['price_formatted']"
+                                    :image="$product['image']"
+                                    :colors="$product['colors']"
+                                    :show-new-badge="$product['is_new'] ?? false"
+                                />
+                            @endforeach
+                        </div>
+                    </div>
+                </noscript>
+            </div>
+        </div>
+    </main>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const mount = document.querySelector('[data-vue="catalog-page"]');
+                const countEl = document.getElementById('listing-products-count');
+                const searchForm = document.getElementById('listing-search-form');
+                const searchInput = document.getElementById('catalog-search');
+
+                if (!mount || !searchForm) return;
+
+                const syncCount = (text) => {
+                    if (countEl) countEl.textContent = text;
+                };
+
+                mount.addEventListener('catalog:count', (e) => syncCount(e.detail));
+
+                searchForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    mount.dispatchEvent(new CustomEvent('catalog:search', {
+                        detail: { q: searchInput?.value ?? '' },
+                    }));
+                });
+
+                let searchDebounce;
+                searchInput?.addEventListener('input', () => {
+                    clearTimeout(searchDebounce);
+                    searchDebounce = setTimeout(() => {
+                        mount.dispatchEvent(new CustomEvent('catalog:search', {
+                            detail: { q: searchInput.value },
+                        }));
+                    }, 400);
+                });
+            });
+        </script>
+    @endpush
+@endsection

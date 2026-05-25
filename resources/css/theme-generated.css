@@ -1,0 +1,52 @@
+/* Auto-generated from config/theme — do not edit manually */
+/* Run: php artisan theme:publish */
+
+@theme {
+    --color-primary-DEFAULT: #1a1a1a;
+    --color-primary-foreground: #ffffff;
+    --color-primary-muted: #2d2d2d;
+    --color-primary-hover: #333333;
+    --color-secondary-DEFAULT: #c9a962;
+    --color-secondary-foreground: #1a1a1a;
+    --color-secondary-muted: #e8dcc0;
+    --color-accent-DEFAULT: #8b7355;
+    --color-accent-foreground: #ffffff;
+    --color-surface-DEFAULT: #ffffff;
+    --color-surface-muted: #f7f5f2;
+    --color-surface-elevated: #ffffff;
+    --color-surface-inverse: #1a1a1a;
+    --color-border-DEFAULT: #e5e2dd;
+    --color-border-strong: #c4bfb6;
+    --color-text-DEFAULT: #1a1a1a;
+    --color-text-muted: #6b6560;
+    --color-text-inverse: #ffffff;
+    --color-text-link: #8b7355;
+    --color-text-link-hover: #6d5a44;
+    --color-status-success: #2d6a4f;
+    --color-status-warning: #b08900;
+    --color-status-error: #9b2226;
+    --color-status-info: #457b9d;
+    --color-sale-DEFAULT: #9b2226;
+    --color-sale-badge: #fef2f2;
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-mono: 'ui-monospace', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: 1rem;
+    --text-sm: 0.875rem;
+    --text-sm--line-height: 1.25rem;
+    --text-base: 1rem;
+    --text-base--line-height: 1.5rem;
+    --text-lg: 1.125rem;
+    --text-lg--line-height: 1.75rem;
+    --text-xl: 1.25rem;
+    --text-xl--line-height: 1.75rem;
+    --text-2xl: 1.5rem;
+    --text-2xl--line-height: 2rem;
+    --text-3xl: 1.875rem;
+    --text-3xl--line-height: 2.25rem;
+    --text-4xl: 2.25rem;
+    --text-4xl--line-height: 2.5rem;
+    --text-5xl: 3rem;
+    --text-5xl--line-height: 1.1;
+}
