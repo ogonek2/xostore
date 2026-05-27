@@ -12,11 +12,12 @@
         </h2>
 
         @if ($products->isNotEmpty())
-            <div class="trending-swiper swiper !overflow-visible">
+            <div class="trending-swiper swiper overflow-hidden">
                 <div class="swiper-wrapper">
                     @foreach ($products as $product)
-                        <div class="swiper-slide !w-[min(72vw,220px)] sm:!w-[240px] lg:!w-[260px]">
+                        <div class="swiper-slide !h-auto !w-[min(72vw,220px)] shrink-0 sm:!w-[240px] lg:!w-[260px]">
                             <x-shop.product-card
+                                :product-id="$product['product_id']"
                                 :url="$product['url']"
                                 :name="$product['name']"
                                 :category="$product['category']"

@@ -3,9 +3,7 @@
 namespace App\Filament\Resources\Promotions\Tables;
 
 use App\Enums\PromotionLayout;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
+use App\Filament\Support\AdminTableColumns;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -19,50 +17,38 @@ class PromotionsTable
         return $table
             ->columns([
                 TextColumn::make('code')
-                    ->label('Kod')
+                    ->label('Код')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('display_title')
-                    ->label('Tytuł (PL)')
-                    ->getStateUsing(fn ($record) => $record->translate('title', 'pl')),
+                AdminTableColumns::plTitle(),
                 TextColumn::make('layout')
-                    ->label('Układ')
-                    ->badge()
+                    ->label('Макет')
                     ->formatStateUsing(fn ($state) => $state instanceof PromotionLayout ? $state->label() : $state),
                 TextColumn::make('discount_percent')
-                    ->label('Rabat')
-                    ->suffix('%')
-                    ->sortable(),
+                    ->label('Скидка')
+                    ->suffix('%'),
                 TextColumn::make('expires_at')
-                    ->label('Koniec')
+                    ->label('Окончание')
                     ->dateTime('d.m.Y H:i')
                     ->sortable(),
                 TextColumn::make('sort_order')
-                    ->label('Kolejność')
+                    ->label('Порядок')
                     ->sortable(),
                 IconColumn::make('is_active')
-                    ->label('Aktywna')
+                    ->label('Активна')
                     ->boolean(),
                 IconColumn::make('show_on_homepage')
-                    ->label('Home')
+                    ->label('На главной')
                     ->boolean(),
             ])
             ->defaultSort('sort_order')
             ->filters([
-                TernaryFilter::make('is_active')->label('Aktywna'),
+                TernaryFilter::make('is_active')->label('Активна'),
                 SelectFilter::make('layout')
-                    ->label('Układ')
+                    ->label('Макет')
                     ->options(collect(PromotionLayout::cases())->mapWithKeys(
                         fn (PromotionLayout $layout) => [$layout->value => $layout->label()]
                     )),
-            ])
-            ->recordActions([
-                EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

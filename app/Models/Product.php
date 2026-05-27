@@ -17,7 +17,12 @@ class Product extends Model
     protected $fillable = [
         'brand_id',
         'primary_category_id',
+        'size_grid_id',
         'sku',
+        'model_slug',
+        'color_label',
+        'color_slug',
+        'color_hex',
         'status',
         'type',
         'base_price',
@@ -25,7 +30,10 @@ class Product extends Model
         'weight_grams',
         'is_featured',
         'is_new',
+        'sort_order',
         'track_inventory',
+        'is_ready_to_ship',
+        'custom_tailoring_enabled',
         'published_at',
     ];
 
@@ -36,7 +44,9 @@ class Product extends Model
             'compare_at_price' => 'decimal:2',
             'is_featured' => 'boolean',
             'is_new' => 'boolean',
+            'custom_tailoring_enabled' => 'boolean',
             'track_inventory' => 'boolean',
+            'is_ready_to_ship' => 'boolean',
             'published_at' => 'datetime',
         ];
     }
@@ -49,6 +59,23 @@ class Product extends Model
     public function primaryCategory(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'primary_category_id');
+    }
+
+    public function sizeGrid(): BelongsTo
+    {
+        return $this->belongsTo(SizeGrid::class);
+    }
+
+    public function productRelations(): HasMany
+    {
+        return $this->hasMany(ProductRelation::class)->orderBy('sort_order');
+    }
+
+    public function relatedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_relations', 'product_id', 'related_product_id')
+            ->withPivot(['type', 'sort_order'])
+            ->orderByPivot('sort_order');
     }
 
     public function categories(): BelongsToMany
@@ -78,6 +105,16 @@ class Product extends Model
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
     }
 
+    public function detailItems(): HasMany
+    {
+        return $this->hasMany(ProductDetailItem::class)->orderBy('sort_order');
+    }
+
+    public function sizeChartRows(): HasMany
+    {
+        return $this->hasMany(ProductSizeChartRow::class)->orderBy('sort_order');
+    }
+
     public function scopePublished($query)
     {
         return $query
@@ -86,5 +123,10 @@ class Product extends Model
                 $q->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
             });
+    }
+
+    public function scopeReadyToShip($query)
+    {
+        return $query->where('is_ready_to_ship', true);
     }
 }

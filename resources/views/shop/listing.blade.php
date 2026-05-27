@@ -19,7 +19,9 @@
         'search_placeholder' => __('shop.listing.search_placeholder'),
         'empty' => __('shop.listing.empty'),
         'loading' => __('shop.listing.loading'),
-        'cart' => __('shop.cart'),
+        'cart' => __('shop.cart.label'),
+        'in_cart' => __('shop.cart.in_cart'),
+        'in_cart_label' => __('shop.cart.in_cart_label', ['name' => ':name']),
         'colors' => __('shop.product.colors'),
         'new_badge' => __('shop.new_arrivals.badge'),
     ];
@@ -108,6 +110,7 @@
                         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
                             @foreach ($products as $product)
                                 <x-shop.product-card
+                                    :product-id="$product['product_id']"
                                     :url="$product['url']"
                                     :name="$product['name']"
                                     :category="$product['category']"

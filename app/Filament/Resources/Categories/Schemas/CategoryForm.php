@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Categories\Schemas;
 use App\Enums\CategoryType;
 use App\Filament\Forms\TranslationTabs;
 use App\Models\Category;
+use App\Models\SizeGrid;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -19,16 +20,16 @@ class CategoryForm
         return $schema
             ->columns(2)
             ->components([
-                Section::make('Podstawowe')
+                Section::make('Основное')
                     ->schema([
                         TextInput::make('code')
-                            ->label('Kod')
+                            ->label('Код')
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->maxLength(64)
                             ->alphaDash(),
                         Select::make('parent_id')
-                            ->label('Kategoria nadrzędna')
+                            ->label('Родительская категория')
                             ->relationship('parent', 'code')
                             ->getOptionLabelFromRecordUsing(
                                 fn (Category $record) => $record->translate('name', 'pl') ?? $record->code
@@ -37,27 +38,37 @@ class CategoryForm
                             ->preload()
                             ->nullable(),
                         Select::make('type')
-                            ->label('Typ')
+                            ->label('Тип')
                             ->options(collect(CategoryType::cases())->mapWithKeys(
-                                fn (CategoryType $type) => [$type->value => config("shop.category.types.{$type->value}", $type->value)]
+                                fn (CategoryType $type) => [$type->value => $type->label()]
                             ))
                             ->required()
                             ->native(false),
                         TextInput::make('sort_order')
-                            ->label('Kolejność')
+                            ->label('Порядок')
                             ->numeric()
                             ->default(0)
                             ->minValue(0),
                         Toggle::make('is_active')
-                            ->label('Aktywna')
+                            ->label('Активна')
                             ->default(true),
                         Toggle::make('show_in_menu')
-                            ->label('W menu')
+                            ->label('В меню')
                             ->default(true),
                         FileUpload::make('image_path')
-                            ->label('Zdjęcie')
+                            ->label('Изображение')
                             ->image()
                             ->directory('categories')
+                            ->columnSpanFull(),
+                        Select::make('sizeGrids')
+                            ->label('Размерные сетки')
+                            ->relationship('sizeGrids', 'code')
+                            ->getOptionLabelFromRecordUsing(
+                                fn (SizeGrid $record) => $record->translate('name', 'pl') ?? $record->code
+                            )
+                            ->multiple()
+                            ->preload()
+                            ->searchable()
                             ->columnSpanFull(),
                     ])
                     ->columns(2)

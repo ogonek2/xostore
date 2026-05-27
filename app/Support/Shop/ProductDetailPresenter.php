@@ -2,12 +2,14 @@
 
 namespace App\Support\Shop;
 
+use App\Enums\ProductRelationType;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Illuminate\Support\Collection;
 
 class ProductDetailPresenter
 {
-    public static function fromProduct(Product $product, string $locale): array
+    public static function fromProduct(Product $product, string $locale, ?string $colorCode = null): array
     {
         $product->loadMissing([
             'brand.translates',
@@ -17,6 +19,9 @@ class ProductDetailPresenter
             'variants.attributeValues.attribute',
             'variants.sizeGridValue',
             'translates',
+            'productRelations.relatedProduct.images',
+            'productRelations.relatedProduct.translates',
+            'productRelations.relatedProduct.brand.translates',
         ]);
 
         $name = $product->translate('name', $locale) ?? $product->sku;
@@ -25,32 +30,23 @@ class ProductDetailPresenter
 
         $variants = $product->variants
             ->where('is_active', true)
-            ->values()
-            ->map(fn (ProductVariant $variant) => [
-                'id' => $variant->id,
-                'sku' => $variant->sku,
-                'price' => (float) $variant->price,
-                'price_formatted' => ProductCardPresenter::formatPrice($variant->price),
-                'compare_at_price' => $variant->compare_at_price ? (float) $variant->compare_at_price : null,
-                'compare_at_formatted' => $variant->compare_at_price
-                    ? ProductCardPresenter::formatPrice($variant->compare_at_price)
-                    : null,
-                'stock_qty' => $variant->stock_qty,
-                'size' => $variant->sizeGridValue?->display_value ?? $variant->sizeGridValue?->value,
-                'colors' => $variant->attributeValues
-                    ->filter(fn ($v) => $v->color_hex)
-                    ->map(fn ($v) => [
-                        'id' => $v->id,
-                        'hex' => $v->color_hex,
-                        'label' => $v->translate('label', $locale) ?? $v->code,
-                    ])
-                    ->values()
-                    ->all(),
-                'is_default' => $variant->is_default,
-            ])
-            ->all();
+            ->values();
 
-        $defaultVariant = collect($variants)->firstWhere('is_default', true) ?? ($variants[0] ?? null);
+        $variantRows = $variants->map(
+            fn (ProductVariant $variant) => static::mapVariant($variant, $locale),
+        );
+
+        $colorOptions = static::buildColorOptions($variants, $locale);
+        $selectedColor = $colorCode
+            ? $colorOptions->first(fn (array $c) => $c['code'] === $colorCode)
+            : null;
+        $selectedColor ??= $colorOptions->first();
+
+        $sizesForColor = static::sizesForColor($variantRows, $selectedColor['id'] ?? null);
+
+        $defaultVariant = $variantRows->firstWhere('is_default', true)
+            ?? $variantRows->firstWhere('color_id', $selectedColor['id'] ?? null)
+            ?? $variantRows->first();
 
         return [
             'id' => $product->id,
@@ -63,7 +59,10 @@ class ProductDetailPresenter
                 : $name,
             'short_description' => $product->translate('short_description', $locale),
             'description' => $product->translate('description', $locale),
+            'fit_description' => $product->translate('fit_description', $locale),
+            'fabric_description' => $product->translate('fabric_description', $locale),
             'is_new' => (bool) $product->is_new,
+            'is_ready_to_ship' => (bool) $product->is_ready_to_ship,
             'category' => $product->primaryCategory?->translate('name', $locale),
             'category_slug' => $product->primaryCategory?->translate('slug', $locale),
             'images' => $product->images->isNotEmpty()
@@ -72,10 +71,99 @@ class ProductDetailPresenter
                     'alt' => $img->alt ?: $name,
                 ])->all()
                 : [['url' => asset('images/products/placeholder.jpg'), 'alt' => $name]],
-            'variants' => $variants,
-            'default_variant' => $defaultVariant,
+            'colors' => $colorOptions->values()->all(),
+            'sizes' => $sizesForColor,
+            'variants' => $variantRows->values()->all(),
+            'selected_color_id' => $selectedColor['id'] ?? null,
+            'default_variant_id' => $defaultVariant['id'] ?? null,
             'url' => route('product.show', ['locale' => $locale, 'product' => $slug]),
+            'consultation_url' => route('consultation.show', [
+                'locale' => $locale,
+                'product' => $slug,
+            ]),
+            'related' => static::buildRelatedGroups($product, $locale),
         ];
+    }
+
+    protected static function buildRelatedGroups(Product $product, string $locale): array
+    {
+        $groups = [
+            'color_variants' => [],
+            'alternatives' => [],
+            'similar' => [],
+        ];
+
+        foreach ($product->productRelations as $relation) {
+            $related = $relation->relatedProduct;
+
+            if (! $related || $related->status !== 'published') {
+                continue;
+            }
+
+            $key = match ($relation->type) {
+                ProductRelationType::ColorVariant => 'color_variants',
+                ProductRelationType::Alternative => 'alternatives',
+                ProductRelationType::Similar => 'similar',
+            };
+
+            $groups[$key][] = ProductCardPresenter::fromProduct($related, $locale);
+        }
+
+        return $groups;
+    }
+
+    protected static function mapVariant(ProductVariant $variant, string $locale): array
+    {
+        $color = $variant->attributeValues->first(fn ($v) => $v->color_hex);
+
+        return [
+            'id' => $variant->id,
+            'sku' => $variant->sku,
+            'price' => (float) $variant->price,
+            'price_formatted' => ProductCardPresenter::formatPrice($variant->price),
+            'compare_at_price' => $variant->compare_at_price ? (float) $variant->compare_at_price : null,
+            'compare_at_formatted' => $variant->compare_at_price
+                ? ProductCardPresenter::formatPrice($variant->compare_at_price)
+                : null,
+            'size' => $variant->sizeGridValue?->display_value ?? $variant->sizeGridValue?->value,
+            'size_value' => $variant->sizeGridValue?->value,
+            'color_id' => $color?->id,
+            'color_code' => $color?->code,
+            'color_label' => $color?->translate('label', $locale) ?? $color?->code,
+            'color_hex' => $color?->color_hex,
+            'is_default' => $variant->is_default,
+        ];
+    }
+
+    protected static function buildColorOptions(Collection $variants, string $locale): Collection
+    {
+        return $variants
+            ->flatMap(fn (ProductVariant $variant) => $variant->attributeValues->filter(fn ($v) => $v->color_hex))
+            ->unique('id')
+            ->map(fn ($value) => [
+                'id' => $value->id,
+                'code' => $value->code,
+                'label' => $value->translate('label', $locale) ?? $value->code,
+                'hex' => $value->color_hex,
+            ])
+            ->values();
+    }
+
+    protected static function sizesForColor(Collection $variantRows, ?int $colorId): array
+    {
+        $filtered = $colorId
+            ? $variantRows->where('color_id', $colorId)
+            : $variantRows;
+
+        return $filtered
+            ->map(fn (array $variant) => [
+                'variant_id' => $variant['id'],
+                'label' => $variant['size'] ?? $variant['sku'],
+                'value' => $variant['size_value'] ?? $variant['sku'],
+            ])
+            ->unique('variant_id')
+            ->values()
+            ->all();
     }
 
     protected static function imageUrl(string $path, string $disk = 'public'): string

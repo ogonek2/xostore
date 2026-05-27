@@ -22,7 +22,16 @@ class SlugResolver
 
     public static function product(string $slug, string $locale): ?Product
     {
-        return static::resolveBySlug(Product::class, $slug, $locale);
+        $product = static::resolveBySlug(Product::class, $slug, $locale);
+
+        if ($product) {
+            return $product;
+        }
+
+        return Product::query()
+            ->where('sku', $slug)
+            ->published()
+            ->first();
     }
 
     protected static function resolveBySlug(

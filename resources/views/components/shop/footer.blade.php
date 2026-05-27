@@ -172,13 +172,18 @@
                             {{ __('shop.footer.columns.help') }}
                         </p>
                         <ul class="mt-5 space-y-3">
-                            @foreach (['shipping', 'faq', 'contact', 'authenticity'] as $link)
+                            @foreach (['shipping', 'faq', 'authenticity'] as $link)
                                 <li>
                                     <a href="#" class="text-sm text-text-inverse/75 transition-colors hover:text-text-inverse">
                                         {{ __('shop.footer.links.'.$link) }}
                                     </a>
                                 </li>
                             @endforeach
+                            <li>
+                                <a href="{{ route('consultation.show', ['locale' => $locale]) }}" class="text-sm text-text-inverse/75 transition-colors hover:text-text-inverse">
+                                    {{ __('shop.footer.links.contact') }}
+                                </a>
+                            </li>
                         </ul>
                     </div>
 

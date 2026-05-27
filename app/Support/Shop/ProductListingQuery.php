@@ -128,6 +128,12 @@ class ProductListingQuery
 
     protected function applyCatalogScope(Builder $query, Catalog $catalog): void
     {
+        if ($catalog->code === 'ready_to_ship') {
+            $query->where('is_ready_to_ship', true);
+
+            return;
+        }
+
         $catalog->loadMissing('categories', 'products');
 
         $manualIds = $catalog->products->pluck('id');

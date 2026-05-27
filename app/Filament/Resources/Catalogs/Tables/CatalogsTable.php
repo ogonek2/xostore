@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Catalogs\Tables;
 
 use App\Enums\CatalogType;
+use App\Filament\Support\AdminTableColumns;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -19,37 +20,35 @@ class CatalogsTable
         return $table
             ->columns([
                 TextColumn::make('code')
-                    ->label('Kod')
+                    ->label('Код')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('display_name')
-                    ->label('Nazwa (PL)')
-                    ->getStateUsing(fn ($record) => $record->translate('name', 'pl')),
+                AdminTableColumns::plTranslation(),
                 TextColumn::make('type')
-                    ->label('Typ')
+                    ->label('Тип')
                     ->badge()
                     ->formatStateUsing(fn ($state) => $state instanceof CatalogType ? $state->label() : $state),
                 TextColumn::make('categories_count')
-                    ->label('Kategorie')
+                    ->label('Категории')
                     ->counts('categories'),
                 TextColumn::make('products_count')
-                    ->label('Produkty')
+                    ->label('Товары')
                     ->counts('products'),
                 TextColumn::make('sort_order')
-                    ->label('Kolejność')
+                    ->label('Порядок')
                     ->sortable(),
                 IconColumn::make('is_active')
-                    ->label('Aktywny')
+                    ->label('Активен')
                     ->boolean(),
                 IconColumn::make('show_on_homepage')
-                    ->label('Home')
+                    ->label('На главной')
                     ->boolean(),
             ])
             ->defaultSort('sort_order')
             ->filters([
-                TernaryFilter::make('is_active')->label('Aktywny'),
+                TernaryFilter::make('is_active')->label('Активен'),
                 SelectFilter::make('type')
-                    ->label('Typ')
+                    ->label('Тип')
                     ->options(collect(CatalogType::cases())->mapWithKeys(
                         fn (CatalogType $type) => [$type->value => $type->label()]
                     )),

@@ -1,20 +1,45 @@
 <script setup>
+import { ref } from 'vue';
 import { Swiper, SwiperSlide } from 'swiper/vue';
-import { Navigation, FreeMode, Mousewheel } from 'swiper/modules';
+import { FreeMode, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
-import 'swiper/css/free-mode';
 
-const props = defineProps({
+defineProps({
     cards: { type: Array, required: true },
     title: { type: String, required: true },
     viewAll: { type: String, required: true },
 });
 
-const modules = [Navigation, FreeMode, Mousewheel];
+const modules = [FreeMode, Mousewheel];
+
+const swiperInstance = ref(null);
+const atStart = ref(true);
+const atEnd = ref(false);
+
+function syncEdges(swiper) {
+    const instance = swiper ?? swiperInstance.value;
+    if (!instance) return;
+
+    atStart.value = instance.isBeginning;
+    atEnd.value = instance.isEnd;
+}
+
+function onSwiper(swiper) {
+    swiperInstance.value = swiper;
+    syncEdges(swiper);
+}
+
+function goPrev() {
+    swiperInstance.value?.slidePrev();
+}
+
+function goNext() {
+    swiperInstance.value?.slideNext();
+}
 </script>
 
 <template>
-    <section class="bg-primary-DEFAULT text-text-inverse">
+    <section class="overflow-x-clip bg-primary-DEFAULT text-text-inverse">
         <div class="mx-auto max-w-[90rem] px-5 lg:px-8">
             <div class="flex flex-col gap-6 border-b border-white/10 py-12 lg:flex-row lg:items-end lg:justify-between lg:py-16">
                 <div>
@@ -37,8 +62,10 @@ const modules = [Navigation, FreeMode, Mousewheel];
                     <div class="flex items-center gap-2">
                         <button
                             type="button"
-                            class="cat-swiper-prev flex size-10 items-center justify-center border border-white/20 text-white/70 transition-colors hover:border-white/50 hover:text-white disabled:pointer-events-none disabled:opacity-25"
+                            class="flex size-10 items-center justify-center border border-white/20 text-white/70 transition-colors hover:border-white/50 hover:text-white disabled:pointer-events-none disabled:opacity-25"
+                            :disabled="atStart"
                             aria-label="Previous"
+                            @click="goPrev"
                         >
                             <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
                                 <path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round" />
@@ -46,8 +73,10 @@ const modules = [Navigation, FreeMode, Mousewheel];
                         </button>
                         <button
                             type="button"
-                            class="cat-swiper-next flex size-10 items-center justify-center border border-white/20 text-white/70 transition-colors hover:border-white/50 hover:text-white disabled:pointer-events-none disabled:opacity-25"
+                            class="flex size-10 items-center justify-center border border-white/20 text-white/70 transition-colors hover:border-white/50 hover:text-white disabled:pointer-events-none disabled:opacity-25"
+                            :disabled="atEnd"
                             aria-label="Next"
+                            @click="goNext"
                         >
                             <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
                                 <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
@@ -64,22 +93,26 @@ const modules = [Navigation, FreeMode, Mousewheel];
                     :space-between="20"
                     :free-mode="{ enabled: true, momentum: true, momentumRatio: 0.4 }"
                     :mousewheel="{ forceToAxis: true }"
-                    :navigation="{
-                        prevEl: '.cat-swiper-prev',
-                        nextEl: '.cat-swiper-next',
-                    }"
+                    :observer="true"
+                    :observe-parents="true"
                     :breakpoints="{
                         640: { spaceBetween: 24 },
                         1024: { spaceBetween: 32 },
                     }"
-                    class="categories-swiper !overflow-visible"
+                    class="categories-swiper overflow-hidden"
+                    @swiper="onSwiper"
+                    @slide-change="syncEdges"
+                    @reach-beginning="syncEdges"
+                    @reach-end="syncEdges"
+                    @from-edge="syncEdges"
+                    @resize="syncEdges"
                 >
                     <SwiperSlide
                         v-for="(card, index) in cards"
                         :key="index"
-                        class="!w-[min(68vw,240px)] sm:!w-[260px] lg:!w-[300px]"
+                        class="!h-auto !w-[min(68vw,240px)] shrink-0 sm:!w-[260px] lg:!w-[300px]"
                     >
-                        <a :href="card.url" class="group block">
+                        <a :href="card.url" class="group block min-w-0">
                             <div class="relative aspect-[4/5] overflow-hidden bg-white/[0.04]">
                                 <img
                                     :src="card.image"

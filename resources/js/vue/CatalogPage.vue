@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { refreshCartProductBadges } from '../shop/cart-badges';
 
 const props = defineProps({
     endpoint: { type: String, required: true },
@@ -26,6 +27,14 @@ const filters = reactive({
 
 const items = ref([...props.initialItems]);
 const total = ref(props.initialTotal);
+
+watch(items, () => {
+    nextTick(() => refreshCartProductBadges());
+});
+
+function inCartLabel(name) {
+    return (props.labels.in_cart_label || '').replace(':name', name);
+}
 const page = ref(props.initialItems.length > 0 ? 2 : 1);
 const loadingMore = ref(false);
 const filtering = ref(false);
@@ -236,6 +245,8 @@ onMounted(() => {
     watch(total, emitCount);
 
     window.addEventListener('scroll', onScroll, { passive: true });
+
+    nextTick(() => refreshCartProductBadges());
 });
 
 onUnmounted(() => {
@@ -401,25 +412,36 @@ onUnmounted(() => {
                 <article
                     v-for="(product, index) in items"
                     :key="`${product.url}-${index}`"
-                    class="group flex w-full flex-col"
+                    :data-product-id="product.product_id"
+                    data-product-card
+                    :data-in-cart-label="inCartLabel(product.name)"
+                    class="group/product-card flex w-full flex-col"
                 >
                     <a :href="product.url" class="flex flex-col">
-                        <div class="relative aspect-[4/5] overflow-hidden rounded-t-2xl bg-[#eceae6]">
+                        <div class="relative aspect-[4/5] overflow-hidden rounded-t-2xl bg-[#eceae6] ring-inset ring-1 ring-transparent group-[.is-in-cart]/product-card:ring-primary-DEFAULT">
                             <img
                                 :src="product.image"
                                 :alt="product.alt || product.name"
-                                class="size-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                                class="size-full object-cover object-center transition-transform duration-700 ease-out group-hover/product-card:scale-[1.02]"
                                 loading="lazy"
                             >
                             <span
                                 v-if="product.is_new"
-                                class="absolute left-3 top-3 bg-surface-DEFAULT px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-DEFAULT"
+                                class="absolute left-3 top-3 z-[1] bg-surface-DEFAULT px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-DEFAULT"
                             >
                                 {{ labels.new_badge }}
                             </span>
+                            <span
+                                class="pointer-events-none absolute bottom-3 left-3 right-3 z-[2] hidden items-center justify-center gap-1.5 bg-primary-DEFAULT px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-inverse group-[.is-in-cart]/product-card:flex"
+                            >
+                                <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                    <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                {{ labels.in_cart }}
+                            </span>
                             <button
                                 type="button"
-                                class="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105"
+                                class="absolute right-3 top-3 z-[2] flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105 group-[.is-in-cart]/product-card:hidden"
                                 :aria-label="labels.cart"
                                 @click.prevent.stop="window.dispatchEvent(new Event('cart:open'))"
                             >
@@ -430,6 +452,14 @@ onUnmounted(() => {
                                     <circle cx="18" cy="20" r="1" fill="currentColor" stroke="none" />
                                 </svg>
                             </button>
+                            <span
+                                class="absolute right-3 top-3 z-[2] hidden size-9 items-center justify-center rounded-full bg-primary-DEFAULT text-text-inverse group-[.is-in-cart]/product-card:flex"
+                                aria-hidden="true"
+                            >
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </span>
                         </div>
                         <div class="pt-4">
                             <h3 class="text-[0.95rem] font-semibold leading-snug tracking-tight text-primary-DEFAULT">

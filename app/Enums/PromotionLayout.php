@@ -10,8 +10,8 @@ enum PromotionLayout: string
     public function label(): string
     {
         return match ($this) {
-            self::Featured => 'Wyróżniona (duża)',
-            self::Compact => 'Kompaktowa',
+            self::Featured => 'Крупная карточка',
+            self::Compact => 'Компактная',
         };
     }
 }

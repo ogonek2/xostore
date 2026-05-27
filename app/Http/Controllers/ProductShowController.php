@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ShopEventType;
+use App\Services\Analytics\ShopAnalyticsService;
+use App\Services\Cart\CartService;
 use App\Support\Shop\ProductDetailPresenter;
 use App\Support\Shop\ShopLayoutData;
 use App\Support\Shop\SlugResolver;
@@ -17,7 +20,16 @@ class ProductShowController extends Controller
             abort(404);
         }
 
-        $presented = ProductDetailPresenter::fromProduct($record, $locale);
+        $presented = ProductDetailPresenter::fromProduct(
+            $record,
+            $locale,
+            request('color')
+        );
+
+        app(ShopAnalyticsService::class)->track(
+            ShopEventType::ProductView,
+            $record->id,
+        );
 
         $breadcrumbs = [
             ['label' => __('shop.nav.shop'), 'url' => route('products.index', ['locale' => $locale])],
@@ -34,7 +46,7 @@ class ProductShowController extends Controller
 
         return view('shop.product', [
             ...ShopLayoutData::shared(),
-            'cartCount' => 0,
+            'cartCount' => app(CartService::class)->count(),
             'product' => $presented,
             'breadcrumbs' => $breadcrumbs,
         ]);

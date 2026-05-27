@@ -11,9 +11,9 @@ enum CatalogType: string
     public function label(): string
     {
         return match ($this) {
-            self::Manual => 'Ręczny wybór produktów',
-            self::Categories => 'Z kategorii',
-            self::Mixed => 'Kategorie + produkty',
+            self::Manual => 'Ручной выбор товаров',
+            self::Categories => 'Из категорий',
+            self::Mixed => 'Категории + товары',
         };
     }
 }

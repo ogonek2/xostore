@@ -1,0 +1,13 @@
+---
+description: Админ-панель Filament — только русский язык
+globs: app/Filament/**/*,app/Http/Middleware/SetAdminLocale.php,lang/ru/admin.php
+alwaysApply: false
+---
+
+# Админ-панель XOStore — русский язык
+
+- Все подписи, навигация, секции форм, таблицы и enum-метки в `app/Filament` — **на русском**.
+- Витрина (`lang/pl`, `lang/en`, `shop.php`) не менять без отдельного запроса.
+- Панель: `locale('ru')`, middleware `SetAdminLocale`.
+- Переводы контента товаров/категорий — вкладки по языкам PL/EN; подписи полей вкладок — из `__('admin.fields.*')` или `lang/ru/admin.php`.
+- Новые ресурсы Filament создавать с русскими `$navigationLabel`, `$navigationGroup`, `->label()`.

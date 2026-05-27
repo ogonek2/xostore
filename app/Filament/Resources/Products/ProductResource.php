@@ -2,31 +2,38 @@
 
 namespace App\Filament\Resources\Products;
 
+use App\Filament\Resources\Products\Concerns\ManagesProductRecord;
 use App\Filament\Resources\Products\Pages\CreateProduct;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\Pages\ListProducts;
+use App\Filament\Resources\Products\RelationManagers\ImagesRelationManager;
+use App\Filament\Resources\Products\RelationManagers\ProductDetailsRelationManager;
+use App\Filament\Resources\Products\RelationManagers\ProductRelationsRelationManager;
+use App\Filament\Resources\Products\RelationManagers\SizeChartRowsRelationManager;
+use App\Filament\Resources\Products\RelationManagers\VariantsRelationManager;
 use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Models\Product;
 use BackedEnum;
 use Filament\Resources\Resource;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProductResource extends Resource
 {
+    use ManagesProductRecord;
+
     protected static ?string $model = Product::class;
 
-    protected static ?string $navigationLabel = 'Produkty';
+    protected static ?string $navigationLabel = 'Товары';
 
-    protected static ?string $modelLabel = 'produkt';
+    protected static ?string $modelLabel = 'товар';
 
-    protected static ?string $pluralModelLabel = 'Produkty';
+    protected static ?string $pluralModelLabel = 'Товары';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Katalog';
+    protected static string|\UnitEnum|null $navigationGroup = 'Каталог';
 
     protected static ?int $navigationSort = 3;
 
@@ -42,9 +49,20 @@ class ProductResource extends Resource
         return ProductsTable::configure($table);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['translates', 'brand', 'primaryCategory']);
+    }
+
     public static function getRelations(): array
     {
-        return [];
+        return [
+            ImagesRelationManager::class,
+            VariantsRelationManager::class,
+            ProductDetailsRelationManager::class,
+            SizeChartRowsRelationManager::class,
+            ProductRelationsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
@@ -54,13 +72,5 @@ class ProductResource extends Resource
             'create' => CreateProduct::route('/create'),
             'edit' => EditProduct::route('/{record}/edit'),
         ];
-    }
-
-    public static function getRecordRouteBindingEloquentQuery(): Builder
-    {
-        return parent::getRecordRouteBindingEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
     }
 }

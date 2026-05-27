@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Promotions\Pages;
 
 use App\Filament\Concerns\HandlesTranslations;
 use App\Filament\Resources\Promotions\PromotionResource;
+use App\Services\Promotion\PromotionDiscountService;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -23,5 +24,11 @@ class EditPromotion extends EditRecord
         return [
             DeleteAction::make(),
         ];
+    }
+
+    protected function afterSave(): void
+    {
+        parent::afterSave();
+        PromotionDiscountService::clearCache();
     }
 }

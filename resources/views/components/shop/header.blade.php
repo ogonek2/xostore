@@ -30,6 +30,9 @@
             <a href="{{ route('catalog.show', ['locale' => $locale, 'catalog' => $locale === 'en' ? 'trends' : 'trendy']) }}" class="text-sm font-medium text-text-DEFAULT transition-colors hover:text-text-muted">
                 {{ __('shop.nav.trends') }}
             </a>
+            <a href="{{ route('catalog.show', ['locale' => $locale, 'catalog' => $locale === 'en' ? 'in-stock' : 'w-magazynie']) }}" class="text-sm font-medium text-text-DEFAULT transition-colors hover:text-text-muted">
+                {{ __('shop.nav.in_stock') }}
+            </a>
 
             @if ($women)
                 <x-shop.nav-dropdown
@@ -58,7 +61,7 @@
                 <a href="#" class="text-sm font-medium text-text-DEFAULT">{{ __('shop.nav.accessories') }}</a>
             @endif
 
-            <a href="#" class="text-sm font-medium text-text-DEFAULT transition-colors hover:text-text-muted">
+            <a href="{{ route('consultation.show', ['locale' => $locale]) }}" class="text-sm font-medium text-text-DEFAULT transition-colors hover:text-text-muted">
                 {{ __('shop.nav.contact') }}
             </a>
         </nav>
@@ -78,7 +81,7 @@
             <button
                 type="button"
                 class="relative flex size-10 items-center justify-center text-text-DEFAULT transition-colors hover:text-text-muted"
-                aria-label="{{ __('shop.cart') }}"
+                aria-label="{{ __('shop.cart.label') }}"
                 onclick="window.dispatchEvent(new Event('cart:open'))"
             >
                 <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
@@ -87,15 +90,13 @@
                     <circle cx="9" cy="20" r="1" fill="currentColor" stroke="none" />
                     <circle cx="18" cy="20" r="1" fill="currentColor" stroke="none" />
                 </svg>
-                @if ($cartCount > 0)
-                    <span class="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-primary-DEFAULT text-[10px] font-semibold text-text-inverse">
-                        {{ $cartCount }}
-                    </span>
-                @else
-                    <span class="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-primary-muted text-[10px] font-medium text-text-inverse">
-                        0
-                    </span>
-                @endif
+                <span
+                    data-cart-count
+                    @class([
+                        'absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-primary-DEFAULT text-[10px] font-semibold text-text-inverse',
+                        'hidden' => $cartCount < 1,
+                    ])
+                >{{ $cartCount }}</span>
             </button>
 
             <x-shop.language-switcher :languages="$languages" />

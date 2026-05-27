@@ -14,6 +14,7 @@ class Language extends Model
         'flag',
         'is_default',
         'is_active',
+        'auto_translate_on_create',
         'sort_order',
     ];
 
@@ -22,6 +23,7 @@ class Language extends Model
         return [
             'is_default' => 'boolean',
             'is_active' => 'boolean',
+            'auto_translate_on_create' => 'boolean',
         ];
     }
 

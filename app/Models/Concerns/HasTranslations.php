@@ -52,7 +52,7 @@ trait HasTranslations
         return $fallback;
     }
 
-    public function setTranslation(string $field, string $value, Language|int|string $language): void
+    public function setTranslation(string $field, string $value, Language|int|string $language, bool $machineTranslated = false): void
     {
         $languageId = $language instanceof Language
             ? $language->id
@@ -65,8 +65,13 @@ trait HasTranslations
                 'language_id' => $languageId,
                 'field' => $field,
             ],
-            ['value' => $value]
+            [
+                'value' => $value,
+                'is_machine_translated' => $machineTranslated,
+            ]
         );
+
+        $this->unsetRelation('translates');
     }
 
     protected function resolveLanguage(?string $languageCode): Language

@@ -17,7 +17,7 @@ class HomeController extends Controller
 
         return view('home', [
             ...ShopLayoutData::shared(),
-            'cartCount' => 0,
+            'cartCount' => app(\App\Services\Cart\CartService::class)->count(),
             'categoryCards' => HomepageCategoryShowcase::cards($locale),
             'trendingProducts' => TrendingProducts::forHomepage($locale),
             'promotions' => HomepagePromotions::forHomepage($locale),

@@ -23,14 +23,34 @@ return [
         'infinite_scroll' => true,
     ],
 
+    'checkout' => [
+        'shipping_cost' => (float) env('SHOP_SHIPPING_COST', 15),
+        'free_shipping_from' => (float) env('SHOP_FREE_SHIPPING_FROM', 500),
+    ],
+
+    'auto_translate' => [
+        'verify_ssl' => env('SHOP_AUTO_TRANSLATE_VERIFY_SSL'),
+    ],
+
     'product' => [
         'translatable_fields' => [
             'name',
             'slug',
+            'subtitle',
             'short_description',
             'description',
+            'fit_description',
+            'fabric_description',
+            'tailoring_description',
             'meta_title',
             'meta_description',
+        ],
+    ],
+
+    'product_detail_item' => [
+        'translatable_fields' => [
+            'label',
+            'description',
         ],
     ],
 

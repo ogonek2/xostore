@@ -53,7 +53,7 @@ trait RendersProductListing
 
         return view('shop.listing', [
             ...ShopLayoutData::shared(),
-            'cartCount' => 0,
+            'cartCount' => app(\App\Services\Cart\CartService::class)->count(),
             'pageTitle' => $pageTitle,
             'metaDescription' => $metaDescription,
             'breadcrumbs' => $breadcrumbs,

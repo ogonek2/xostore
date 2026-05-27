@@ -9,7 +9,7 @@
         :cart-count="$cartCount"
     />
 
-    <main class="flex-1">
+    <main class="flex-1 overflow-x-clip">
         <x-shop.hero />
         <x-shop.categories-showcase :cards="$categoryCards" />
         <div id="trending">

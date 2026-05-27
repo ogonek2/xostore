@@ -17,6 +17,7 @@ class LanguageSeeder extends Seeder
                 'flag' => 'pl',
                 'is_default' => true,
                 'is_active' => true,
+                'auto_translate_on_create' => false,
                 'sort_order' => 1,
             ],
             [
@@ -26,6 +27,7 @@ class LanguageSeeder extends Seeder
                 'flag' => 'gb',
                 'is_default' => false,
                 'is_active' => true,
+                'auto_translate_on_create' => true,
                 'sort_order' => 2,
             ],
         ];

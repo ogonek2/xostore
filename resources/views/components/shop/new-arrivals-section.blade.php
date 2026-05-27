@@ -5,7 +5,7 @@
     'viewAllLabel' => null,
 ])
 
-<section class="bg-surface-DEFAULT py-14 lg:py-20">
+<section class="overflow-x-clip bg-surface-DEFAULT py-14 lg:py-20">
     <div class="mx-auto max-w-[90rem] px-5 lg:px-8">
         <div class="mb-10 flex flex-wrap items-end justify-between gap-4 lg:mb-12">
             <h2 class="text-2xl font-semibold tracking-tight text-primary-DEFAULT lg:text-[1.75rem]">
@@ -21,12 +21,13 @@
         </div>
 
         @if ($products->isNotEmpty())
-            <div class="new-arrivals-swiper swiper !overflow-visible">
+            <div class="new-arrivals-swiper swiper overflow-hidden">
                 <div class="swiper-wrapper">
                     @foreach ($products as $product)
-                        <div class="swiper-slide !w-[min(68vw,200px)] sm:!w-[220px] lg:!w-[240px]">
+                        <div class="swiper-slide !h-auto !w-[min(68vw,200px)] shrink-0 sm:!w-[220px] lg:!w-[240px]">
                             <x-shop.product-card
                                 variant="minimal"
+                                :product-id="$product['product_id']"
                                 :show-new-badge="$product['is_new'] ?? true"
                                 :url="$product['url']"
                                 :name="$product['name']"

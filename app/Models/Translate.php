@@ -14,7 +14,15 @@ class Translate extends Model
         'translatable_id',
         'field',
         'value',
+        'is_machine_translated',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_machine_translated' => 'boolean',
+        ];
+    }
 
     public function language(): BelongsTo
     {

@@ -15,6 +15,8 @@ document.querySelectorAll('.new-arrivals-swiper').forEach((element) => {
         mousewheel: {
             forceToAxis: true,
         },
+        observer: true,
+        observeParents: true,
         breakpoints: {
             640: { spaceBetween: 24 },
             1024: { spaceBetween: 28 },

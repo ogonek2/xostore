@@ -35,6 +35,11 @@ class CatalogSeeder extends Seeder
             'en' => ['name' => 'New in', 'slug' => 'new-in'],
         ], showOnHome: true, sort: 3);
 
+        $this->catalog('ready_to_ship', CatalogType::Manual, $pl, $en, [
+            'pl' => ['name' => 'Towary w magazynie', 'slug' => 'w-magazynie'],
+            'en' => ['name' => 'In stock now', 'slug' => 'in-stock'],
+        ], sort: 4);
+
         $women = Category::query()->where('code', 'women')->first();
         $men = Category::query()->where('code', 'men')->first();
 

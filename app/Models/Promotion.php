@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Enums\PromotionLayout;
+use App\Enums\PromotionProductTargetType;
 use App\Models\Concerns\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Promotion extends Model
 {
@@ -18,6 +20,8 @@ class Promotion extends Model
         'image_path',
         'link_url',
         'category_id',
+        'product_target_type',
+        'catalog_id',
         'discount_percent',
         'starts_at',
         'expires_at',
@@ -30,6 +34,7 @@ class Promotion extends Model
     {
         return [
             'layout' => PromotionLayout::class,
+            'product_target_type' => PromotionProductTargetType::class,
             'discount_percent' => 'integer',
             'starts_at' => 'datetime',
             'expires_at' => 'datetime',
@@ -41,6 +46,18 @@ class Promotion extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function catalog(): BelongsTo
+    {
+        return $this->belongsTo(Catalog::class);
+    }
+
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'promotion_product')
+            ->withPivot('sort_order')
+            ->orderByPivot('sort_order');
     }
 
     public function scopeActive(Builder $query): Builder

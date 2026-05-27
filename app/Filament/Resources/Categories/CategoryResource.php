@@ -10,6 +10,7 @@ use App\Filament\Resources\Categories\Tables\CategoriesTable;
 use App\Models\Category;
 use BackedEnum;
 use Filament\Resources\Resource;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -18,13 +19,13 @@ class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static ?string $navigationLabel = 'Kategorie';
+    protected static ?string $navigationLabel = 'Категории';
 
-    protected static ?string $modelLabel = 'kategoria';
+    protected static ?string $modelLabel = 'категория';
 
-    protected static ?string $pluralModelLabel = 'Kategorie';
+    protected static ?string $pluralModelLabel = 'Категории';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Katalog';
+    protected static string|\UnitEnum|null $navigationGroup = 'Каталог';
 
     protected static ?int $navigationSort = 1;
 
@@ -40,11 +41,9 @@ class CategoryResource extends Resource
         return CategoriesTable::configure($table);
     }
 
-    public static function getRelations(): array
+    public static function getEloquentQuery(): Builder
     {
-        return [
-            //
-        ];
+        return parent::getEloquentQuery()->with('translates');
     }
 
     public static function getPages(): array

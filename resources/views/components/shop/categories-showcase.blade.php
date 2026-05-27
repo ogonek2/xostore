@@ -1,6 +1,7 @@
 @props(['cards', 'title' => null, 'viewAll' => null])
 
 <div
+    class="w-full"
     data-vue="categories-swiper"
     data-cards='@json($cards)'
     data-title="{{ $title ?? __('shop.categories.title') }}"

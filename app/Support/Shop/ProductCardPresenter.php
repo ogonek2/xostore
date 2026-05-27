@@ -28,12 +28,11 @@ class ProductCardPresenter
         }
 
         $price = $product->variants->min('price') ?? $product->base_price;
-        $slug = $product->translate('slug', $locale);
+        $slug = $product->translate('slug', $locale) ?? $product->sku;
 
         return [
-            'url' => $slug
-                ? route('product.show', ['locale' => $locale, 'product' => $slug])
-                : '#',
+            'product_id' => $product->id,
+            'url' => route('product.show', ['locale' => $locale, 'product' => $slug]),
             'name' => $displayName,
             'category' => $compact ? null : $product->primaryCategory?->translate('name', $locale),
             'price' => $price,
@@ -61,7 +60,7 @@ class ProductCardPresenter
         return number_format($value, 0, ',', ' ').' '.config('shop.currency_symbol', 'zł');
     }
 
-    protected static function resolveImage(Product $product): string
+    public static function resolveImage(Product $product): string
     {
         $image = $product->images->firstWhere('is_primary', true)
             ?? $product->images->first();

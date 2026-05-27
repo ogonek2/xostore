@@ -22,16 +22,16 @@ class CatalogForm
         return $schema
             ->columns(2)
             ->components([
-                Section::make('Ustawienia katalogu')
+                Section::make('Настройки каталога')
                     ->schema([
                         TextInput::make('code')
-                            ->label('Kod')
+                            ->label('Код')
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->maxLength(64)
                             ->alphaDash(),
                         Select::make('type')
-                            ->label('Typ katalogu')
+                            ->label('Тип каталога')
                             ->options(collect(CatalogType::cases())->mapWithKeys(
                                 fn (CatalogType $type) => [$type->value => $type->label()]
                             ))
@@ -39,30 +39,30 @@ class CatalogForm
                             ->live()
                             ->native(false),
                         TextInput::make('sort_order')
-                            ->label('Kolejność')
+                            ->label('Порядок')
                             ->numeric()
                             ->default(0),
                         Toggle::make('is_active')
-                            ->label('Aktywny')
+                            ->label('Активен')
                             ->default(true),
                         Toggle::make('show_on_homepage')
-                            ->label('Na stronie głównej')
+                            ->label('На главной')
                             ->default(false),
                         DateTimePicker::make('published_at')
-                            ->label('Data publikacji')
+                            ->label('Дата публикации')
                             ->seconds(false),
                         FileUpload::make('image_path')
-                            ->label('Okładka')
+                            ->label('Обложка')
                             ->image()
                             ->directory('catalogs')
                             ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
-                Section::make('Powiązania')
+                Section::make('Связи')
                     ->schema([
                         Select::make('categories')
-                            ->label('Kategorie')
+                            ->label('Категории')
                             ->relationship('categories', 'code')
                             ->getOptionLabelFromRecordUsing(
                                 fn (Category $record) => $record->translate('name', 'pl') ?? $record->code
@@ -76,7 +76,7 @@ class CatalogForm
                             ], true))
                             ->columnSpanFull(),
                         Select::make('products')
-                            ->label('Produkty')
+                            ->label('Товары')
                             ->relationship('products', 'sku')
                             ->getOptionLabelFromRecordUsing(
                                 fn (Product $record) => ($record->translate('name', 'pl') ?? $record->sku).' ('.$record->sku.')'

@@ -1,6 +1,11 @@
 import './bootstrap';
 import './shop/trending-swiper';
 import './shop/new-arrivals-swiper';
+import { initCartBadges } from './shop/cart-badges';
+import { initShopAnalytics } from './shop/analytics';
+
+initCartBadges();
+initShopAnalytics();
 import { createApp } from 'vue';
 
 const vueMounts = document.querySelectorAll('[data-vue]');
@@ -17,9 +22,23 @@ vueMounts.forEach((el) => {
         });
     }
 
-    if (component === 'cart-modal') {
-        import('./vue/CartModal.vue').then(({ default: CartModal }) => {
-            createApp(CartModal).mount(el);
+    if (component === 'cart-drawer') {
+        import('./vue/CartDrawer.vue').then(({ default: CartDrawer }) => {
+            createApp(CartDrawer, {
+                locale: el.dataset.locale,
+                labels: JSON.parse(el.dataset.labels || '{}'),
+                routes: JSON.parse(el.dataset.routes || '{}'),
+            }).mount(el);
+        });
+    }
+
+    if (component === 'product-page') {
+        import('./vue/ProductPage.vue').then(({ default: ProductPage }) => {
+            createApp(ProductPage, {
+                product: JSON.parse(el.dataset.product || '{}'),
+                labels: JSON.parse(el.dataset.labels || '{}'),
+                routes: JSON.parse(el.dataset.routes || '{}'),
+            }).mount(el);
         });
     }
 

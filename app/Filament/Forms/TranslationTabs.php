@@ -8,15 +8,21 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Illuminate\Support\Str;
 
 class TranslationTabs
 {
-    public static function make(string $configKey, string $heading = 'Tłumaczenia'): Tabs
+    /**
+     * @param  list<string>|null  $onlyFields
+     */
+    public static function make(string $configKey, ?string $heading = null, ?array $onlyFields = null): Tabs
     {
-        $fields = config("shop.{$configKey}.translatable_fields", ['name', 'slug']);
+        $fields = $onlyFields ?? config("shop.{$configKey}.translatable_fields", ['name', 'slug']);
         $languages = Language::query()->where('is_active', true)->orderBy('sort_order')->get();
 
-        return Tabs::make($heading)
+        return Tabs::make($heading ?? __('admin.translations'))
             ->tabs(
                 $languages->map(function (Language $language) use ($fields) {
                     $schema = collect($fields)->map(
@@ -33,26 +39,60 @@ class TranslationTabs
     protected static function fieldComponent(string $field, string $locale): TextInput|Textarea|RichEditor
     {
         $name = "trans_{$locale}_{$field}";
-        $label = match ($field) {
-            'name' => 'Nazwa',
-            'slug' => 'Slug (URL)',
-            'title' => 'Tytuł',
-            'subtitle' => 'Podtytuł',
-            'cta_label' => 'Przycisk CTA',
-            'short_description' => 'Krótki opis',
-            'description' => 'Opis',
-            'meta_title' => 'Meta tytuł',
-            'meta_description' => 'Meta opis',
-            default => ucfirst(str_replace('_', ' ', $field)),
-        };
+        $label = __('admin.fields.'.$field, [], 'ru');
+        $defaultLocale = (string) config('shop.default_language', 'pl');
+        $isRequiredOnLocale = in_array($field, ['name', 'title', 'label'], true) && $locale === $defaultLocale;
+
+        if ($label === 'admin.fields.'.$field) {
+            $label = ucfirst(str_replace('_', ' ', $field));
+        }
 
         return match ($field) {
-            'description' => RichEditor::make($name)->label($label)->columnSpanFull(),
-            'short_description', 'meta_description' => Textarea::make($name)->label($label)->rows(3)->columnSpanFull(),
+            'description' => RichEditor::make($name)
+                ->label($label)
+                ->columnSpanFull()
+                ->extraInputAttributes(['autocomplete' => 'off']),
+            'short_description', 'meta_description', 'tailoring_description', 'fit_description', 'fabric_description' => Textarea::make($name)
+                ->label($label)
+                ->rows(3)
+                ->columnSpanFull()
+                ->extraInputAttributes(['autocomplete' => 'off']),
+            'slug' => TextInput::make($name)
+                ->label($label)
+                ->maxLength(255)
+                ->helperText('Генерируется автоматически из названия, если оставить пустым')
+                ->extraInputAttributes(['autocomplete' => 'off'])
+                ->live(onBlur: true)
+                ->afterStateUpdated(function (?string $state, Set $set) use ($name): void {
+                    if (! is_string($state) || trim($state) === '') {
+                        return;
+                    }
+
+                    $set($name, Str::slug($state));
+                }),
             default => TextInput::make($name)
                 ->label($label)
-                ->required(in_array($field, ['name', 'title'], true))
-                ->maxLength($field === 'slug' ? 255 : null),
+                ->required($isRequiredOnLocale)
+                ->extraInputAttributes(['autocomplete' => 'off'])
+                ->live(onBlur: true)
+                ->afterStateUpdated(function (?string $state, Set $set, Get $get) use ($field, $locale): void {
+                    if (! in_array($field, ['name', 'title', 'label'], true)) {
+                        return;
+                    }
+
+                    $slugField = "trans_{$locale}_slug";
+                    $existingSlug = $get($slugField);
+
+                    if (is_string($existingSlug) && trim($existingSlug) !== '') {
+                        return;
+                    }
+
+                    if (! is_string($state) || trim($state) === '') {
+                        return;
+                    }
+
+                    $set($slugField, Str::slug($state));
+                }),
         };
     }
 }

@@ -10,6 +10,7 @@ use App\Filament\Resources\Promotions\Tables\PromotionsTable;
 use App\Models\Promotion;
 use BackedEnum;
 use Filament\Resources\Resource;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -18,13 +19,13 @@ class PromotionResource extends Resource
 {
     protected static ?string $model = Promotion::class;
 
-    protected static ?string $navigationLabel = 'Promocje';
+    protected static ?string $navigationLabel = 'Акции';
 
-    protected static ?string $modelLabel = 'promocja';
+    protected static ?string $modelLabel = 'акция';
 
-    protected static ?string $pluralModelLabel = 'Promocje';
+    protected static ?string $pluralModelLabel = 'Акции';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Маркетинг';
 
     protected static ?int $navigationSort = 1;
 
@@ -40,9 +41,9 @@ class PromotionResource extends Resource
         return PromotionsTable::configure($table);
     }
 
-    public static function getRelations(): array
+    public static function getEloquentQuery(): Builder
     {
-        return [];
+        return parent::getEloquentQuery()->with('translates');
     }
 
     public static function getPages(): array

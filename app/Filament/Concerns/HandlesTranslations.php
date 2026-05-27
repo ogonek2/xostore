@@ -2,12 +2,16 @@
 
 namespace App\Filament\Concerns;
 
-use App\Models\Language;
+use App\Filament\Support\TranslationFormHelper;
 use Illuminate\Database\Eloquent\Model;
 
 trait HandlesTranslations
 {
     protected array $pendingTranslations = [];
+
+    protected int $lastAutoTranslatedCount = 0;
+
+    protected bool $lastAutoTranslateFailed = false;
 
     protected function getTranslationConfigKey(): string
     {
@@ -16,92 +20,74 @@ trait HandlesTranslations
 
     protected function getTranslationFields(): array
     {
-        return config('shop.'.$this->getTranslationConfigKey().'.translatable_fields', ['name', 'slug']);
+        return TranslationFormHelper::fields($this->getTranslationConfigKey());
     }
 
     protected function translationFormDefaults(?Model $record = null): array
     {
-        $data = [];
-        $fields = $this->getTranslationFields();
-        $languages = Language::query()->where('is_active', true)->orderBy('sort_order')->get();
-
-        foreach ($languages as $language) {
-            foreach ($fields as $field) {
-                $key = "trans_{$language->code}_{$field}";
-                $data[$key] = $record
-                    ? $record->translate($field, $language->code)
-                    : null;
-            }
-        }
-
-        return $data;
+        return TranslationFormHelper::defaults($record, $this->getTranslationConfigKey());
     }
 
-    protected function mutateFormDataBeforeFill(array $data): array
+    protected function fillTranslationFormData(array $data, ?Model $record = null): array
     {
-        $this->getRecord()->loadMissing('translates');
+        $record ??= $this->getRecord();
+        $record->loadMissing('translates');
 
-        return array_merge($data, $this->translationFormDefaults($this->getRecord()));
+        return array_merge($data, $this->translationFormDefaults($record));
     }
 
     protected function extractTranslationData(array &$data): array
     {
-        $translationData = [];
-        $languages = Language::query()->where('is_active', true)->pluck('code');
+        return TranslationFormHelper::extract($data, $this->getTranslationConfigKey());
+    }
 
-        foreach ($languages as $code) {
-            foreach ($this->getTranslationFields() as $field) {
-                $key = "trans_{$code}_{$field}";
-                if (array_key_exists($key, $data)) {
-                    $translationData[$code][$field] = $data[$key];
-                    unset($data[$key]);
-                }
-            }
-        }
+    protected function captureTranslationFormData(array &$data): array
+    {
+        $this->pendingTranslations = $this->extractTranslationData($data);
 
-        return $translationData;
+        return $data;
     }
 
     protected function saveTranslations(Model $record, array $translationData): void
     {
-        foreach ($translationData as $code => $fields) {
-            foreach ($fields as $field => $value) {
-                if ($value !== null && $value !== '') {
-                    $record->setTranslation($field, $value, $code);
-                }
-            }
+        $result = TranslationFormHelper::save($record, $translationData, $this->getTranslationConfigKey());
+
+        $this->lastAutoTranslatedCount = $result['auto_translated'];
+        $this->lastAutoTranslateFailed = $result['auto_translate_failed'];
+    }
+
+    protected function persistPendingTranslations(?Model $record = null): void
+    {
+        if (empty($this->pendingTranslations)) {
+            return;
         }
+
+        $record ??= $this->getRecord();
+        $this->saveTranslations($record, $this->pendingTranslations);
+    }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        return $this->fillTranslationFormData($data);
     }
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $this->pendingTranslations = $this->extractTranslationData($data);
-
-        return $data;
+        return $this->captureTranslationFormData($data);
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $this->pendingTranslations = $this->extractTranslationData($data);
-
-        return $data;
+        return $this->captureTranslationFormData($data);
     }
 
     protected function afterCreate(): void
     {
-        if (! empty($this->pendingTranslations)) {
-            $this->saveTranslations($this->getRecord(), $this->pendingTranslations);
-        }
-
-        parent::afterCreate();
+        $this->persistPendingTranslations();
     }
 
     protected function afterSave(): void
     {
-        if (! empty($this->pendingTranslations)) {
-            $this->saveTranslations($this->getRecord(), $this->pendingTranslations);
-        }
-
-        parent::afterSave();
+        $this->persistPendingTranslations();
     }
 }

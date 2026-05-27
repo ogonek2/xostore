@@ -2,9 +2,8 @@
 
 namespace App\Filament\Resources\Categories\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
+use App\Enums\CategoryType;
+use App\Filament\Support\AdminTableColumns;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -18,47 +17,37 @@ class CategoriesTable
         return $table
             ->columns([
                 TextColumn::make('code')
-                    ->label('Kod')
+                    ->label('Код')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('display_name')
-                    ->label('Nazwa (PL)')
-                    ->getStateUsing(fn ($record) => $record->translate('name', 'pl'))
-                    ->searchable(false),
+                AdminTableColumns::plTranslation()->searchable(),
                 TextColumn::make('parent.code')
-                    ->label('Rodzic')
+                    ->label('Родитель')
                     ->placeholder('—'),
                 TextColumn::make('type')
-                    ->label('Typ')
-                    ->badge(),
+                    ->label('Тип')
+                    ->formatStateUsing(fn ($state) => $state instanceof CategoryType ? $state->label() : $state),
                 TextColumn::make('products_count')
-                    ->label('Produkty')
-                    ->counts('products')
-                    ->sortable(),
+                    ->label('Товары')
+                    ->counts('products'),
                 TextColumn::make('sort_order')
-                    ->label('Kolejność')
+                    ->label('Порядок')
                     ->sortable(),
                 IconColumn::make('is_active')
-                    ->label('Aktywna')
+                    ->label('Активна')
                     ->boolean(),
                 IconColumn::make('show_in_menu')
-                    ->label('Menu')
+                    ->label('Меню')
                     ->boolean(),
             ])
             ->defaultSort('sort_order')
             ->filters([
-                TernaryFilter::make('is_active')->label('Aktywna'),
+                TernaryFilter::make('is_active')->label('Активна'),
                 SelectFilter::make('type')
-                    ->label('Typ')
-                    ->options(config('shop.category.types', [])),
-            ])
-            ->recordActions([
-                EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                    ->label('Тип')
+                    ->options(collect(CategoryType::cases())->mapWithKeys(
+                        fn (CategoryType $type) => [$type->value => $type->label()]
+                    )->all()),
             ]);
     }
 }
