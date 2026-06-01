@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Concerns;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Support\Media\Media;
 use Illuminate\Support\Str;
 
 trait ManagesProductRecord
@@ -63,6 +64,7 @@ trait ManagesProductRecord
 
         $product->images()->create([
             'path' => $this->pendingPrimaryImage,
+            'disk' => Media::disk(),
             'is_primary' => true,
             'sort_order' => 0,
         ]);

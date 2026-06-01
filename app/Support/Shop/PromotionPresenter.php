@@ -4,6 +4,7 @@ namespace App\Support\Shop;
 
 use App\Enums\PromotionLayout;
 use App\Models\Promotion;
+use App\Support\Media\MediaUrl;
 use Illuminate\Support\Collection;
 
 class PromotionPresenter
@@ -52,16 +53,6 @@ class PromotionPresenter
             return null;
         }
 
-        $path = $promotion->image_path;
-
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-
-        if (str_starts_with($path, '/')) {
-            return asset(ltrim($path, '/'));
-        }
-
-        return asset($path);
+        return MediaUrl::fromPath($promotion->image_path);
     }
 }

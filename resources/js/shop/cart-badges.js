@@ -19,7 +19,7 @@ export function applyCartProductBadges(productIds) {
         card.classList.toggle('is-in-cart', inCart);
     });
 
-    document.querySelectorAll('.new-arrivals-swiper, .trending-swiper, .categories-swiper').forEach((el) => {
+    document.querySelectorAll('.new-arrivals-swiper, .trending-swiper, .categories-swiper, .product-similar-swiper').forEach((el) => {
         el.swiper?.update();
     });
 }
@@ -38,9 +38,20 @@ export function dispatchCartState(cart) {
             detail: {
                 count: cart?.count ?? 0,
                 product_ids: productIds,
+                items: cart?.items ?? [],
             },
         })
     );
+}
+
+export function productCartLines(cart, productId) {
+    return (cart?.items ?? [])
+        .filter((item) => Number(item.product_id) === Number(productId))
+        .map((item) => ({
+            variant_id: item.variant_id,
+            quantity: item.quantity,
+            variant_label: item.variant_label,
+        }));
 }
 
 export function initCartBadges() {
@@ -54,7 +65,7 @@ export function initCartBadges() {
     })
         .then((r) => (r.ok ? r.json() : null))
         .then((cart) => {
-            if (cart) applyCartProductBadges(extractProductIds(cart));
+            if (cart) dispatchCartState(cart);
         })
         .catch(() => {});
 

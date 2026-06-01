@@ -4,9 +4,9 @@ namespace App\Filament\Resources\Categories\Schemas;
 
 use App\Enums\CategoryType;
 use App\Filament\Forms\TranslationTabs;
+use App\Filament\Support\FilamentMedia;
 use App\Models\Category;
 use App\Models\SizeGrid;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -55,10 +55,8 @@ class CategoryForm
                         Toggle::make('show_in_menu')
                             ->label('В меню')
                             ->default(true),
-                        FileUpload::make('image_path')
+                        FilamentMedia::image('image_path', 'categories')
                             ->label('Изображение')
-                            ->image()
-                            ->directory('categories')
                             ->columnSpanFull(),
                         Select::make('sizeGrids')
                             ->label('Размерные сетки')

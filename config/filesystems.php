@@ -17,6 +17,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Media Disk (shop + Filament uploads)
+    |--------------------------------------------------------------------------
+    */
+    'media_disk' => env('MEDIA_DISK', 'bunny'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -58,6 +65,19 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
             'report' => false,
+        ],
+
+        'bunny' => [
+            'driver' => 'bunny',
+            'storage_zone' => env('BUNNY_STORAGE_ZONE', env('BUNNY_STORAGE_NAME')),
+            'api_key' => env('BUNNY_API_KEY', env('BUNNY_STORAGE_PASSWORD')),
+            'region' => env('BUNNY_REGION', env('BUNNY_STORAGE_REGION', 'de')),
+            'pull_zone' => env('BUNNY_PULL_ZONE', env('BUNNY_CDN_URL')),
+            'token_auth_key' => env('BUNNY_TOKEN_AUTH_KEY'),
+            'root' => env('BUNNY_STORAGE_ROOT', ''),
+            'verify_ssl' => env('BUNNY_VERIFY_SSL'),
+            'throw' => true,
+            'report' => true,
         ],
 
     ],

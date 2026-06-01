@@ -5,13 +5,13 @@ namespace App\Filament\Resources\Products\Schemas;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Filament\Forms\TranslationTabs;
+use App\Filament\Support\FilamentMedia;
 use App\Models\Brand;
 use App\Models\Catalog;
 use App\Models\Category;
 use App\Models\SizeGrid;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -198,10 +198,8 @@ class ProductForm
                 ->columnSpanFull(),
             Section::make('Главное фото')
                 ->schema([
-                    FileUpload::make('primary_image')
+                    FilamentMedia::image('primary_image', 'products')
                         ->label('Главное фото')
-                        ->image()
-                        ->directory('products')
                         ->columnSpanFull(),
                 ])
                 ->columnSpanFull(),

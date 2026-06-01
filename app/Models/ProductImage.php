@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Media\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -32,5 +33,14 @@ class ProductImage extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (ProductImage $image): void {
+            if (blank($image->disk)) {
+                $image->disk = Media::disk();
+            }
+        });
     }
 }

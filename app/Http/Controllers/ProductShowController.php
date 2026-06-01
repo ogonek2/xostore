@@ -44,9 +44,26 @@ class ProductShowController extends Controller
 
         $breadcrumbs[] = ['label' => $presented['name'], 'url' => null];
 
+        $cartService = app(CartService::class);
+        $cart = $cartService->present($locale);
+        $cartLines = collect($cart['items'])
+            ->where('product_id', $record->id)
+            ->map(fn (array $item) => [
+                'variant_id' => $item['variant_id'],
+                'quantity' => $item['quantity'],
+                'variant_label' => $item['variant_label'],
+            ])
+            ->values()
+            ->all();
+
+        $presented['cart'] = [
+            'in_cart' => $cartLines !== [],
+            'lines' => $cartLines,
+        ];
+
         return view('shop.product', [
             ...ShopLayoutData::shared(),
-            'cartCount' => app(CartService::class)->count(),
+            'cartCount' => $cartService->count(),
             'product' => $presented,
             'breadcrumbs' => $breadcrumbs,
         ]);

@@ -5,7 +5,8 @@ namespace App\Filament\Resources\Products\RelationManagers;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\FileUpload;
+use App\Filament\Support\FilamentMedia;
+use App\Support\Media\Media;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -24,10 +25,8 @@ class ImagesRelationManager extends RelationManager
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            FileUpload::make('path')
+            FilamentMedia::image('path', 'products')
                 ->label('Фото')
-                ->image()
-                ->directory('products')
                 ->required()
                 ->columnSpanFull(),
             TextInput::make('alt')
@@ -48,7 +47,7 @@ class ImagesRelationManager extends RelationManager
             ->columns([
                 ImageColumn::make('path')
                     ->label('Фото')
-                    ->disk('public'),
+                    ->disk(fn ($record) => $record->disk ?? Media::disk()),
                 TextColumn::make('alt')
                     ->label('Alt')
                     ->placeholder('—'),

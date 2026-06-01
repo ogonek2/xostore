@@ -4,10 +4,10 @@ namespace App\Filament\Resources\Catalogs\Schemas;
 
 use App\Enums\CatalogType;
 use App\Filament\Forms\TranslationTabs;
+use App\Filament\Support\FilamentMedia;
 use App\Models\Category;
 use App\Models\Product;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -51,10 +51,8 @@ class CatalogForm
                         DateTimePicker::make('published_at')
                             ->label('Дата публикации')
                             ->seconds(false),
-                        FileUpload::make('image_path')
+                        FilamentMedia::image('image_path', 'catalogs')
                             ->label('Обложка')
-                            ->image()
-                            ->directory('catalogs')
                             ->columnSpanFull(),
                     ])
                     ->columns(2)

@@ -5,6 +5,7 @@ namespace App\Support\Shop;
 use App\Enums\ProductRelationType;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Support\Media\MediaUrl;
 use Illuminate\Support\Collection;
 
 class ProductDetailPresenter
@@ -22,6 +23,8 @@ class ProductDetailPresenter
             'productRelations.relatedProduct.images',
             'productRelations.relatedProduct.translates',
             'productRelations.relatedProduct.brand.translates',
+            'productRelations.relatedProduct.variants',
+            'detailItems.translates',
         ]);
 
         $name = $product->translate('name', $locale) ?? $product->sku;
@@ -67,7 +70,7 @@ class ProductDetailPresenter
             'category_slug' => $product->primaryCategory?->translate('slug', $locale),
             'images' => $product->images->isNotEmpty()
                 ? $product->images->map(fn ($img) => [
-                    'url' => static::imageUrl($img->path, $img->disk),
+                    'url' => MediaUrl::fromPath($img->path, $img->disk) ?? asset('images/products/placeholder.jpg'),
                     'alt' => $img->alt ?: $name,
                 ])->all()
                 : [['url' => asset('images/products/placeholder.jpg'), 'alt' => $name]],
@@ -82,7 +85,78 @@ class ProductDetailPresenter
                 'product' => $slug,
             ]),
             'related' => static::buildRelatedGroups($product, $locale),
+            'detail_items' => static::mapDetailItems($product, $locale),
+            'similar_products' => static::resolveSimilarProducts($product, $locale),
         ];
+    }
+
+    /**
+     * @return list<array{label: ?string, description: ?string}>
+     */
+    protected static function mapDetailItems(Product $product, string $locale): array
+    {
+        return $product->detailItems
+            ->map(fn ($item) => [
+                'label' => $item->translate('label', $locale),
+                'description' => $item->translate('description', $locale),
+            ])
+            ->filter(fn (array $row) => filled($row['label']) || filled($row['description']))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    protected static function resolveSimilarProducts(Product $product, string $locale, int $limit = 8): array
+    {
+        $cards = [];
+
+        foreach ($product->productRelations->sortBy('sort_order') as $relation) {
+            if ($relation->type !== ProductRelationType::Similar) {
+                continue;
+            }
+
+            $related = $relation->relatedProduct;
+
+            if (! $related || $related->status !== 'published') {
+                continue;
+            }
+
+            $cards[] = ProductCardPresenter::fromProduct($related, $locale);
+
+            if (count($cards) >= $limit) {
+                return $cards;
+            }
+        }
+
+        if (count($cards) >= $limit) {
+            return $cards;
+        }
+
+        $excludeIds = array_merge(
+            [$product->id],
+            array_map(fn (array $card) => $card['product_id'], $cards),
+        );
+
+        $random = Product::query()
+            ->published()
+            ->with([
+                'brand.translates',
+                'primaryCategory.translates',
+                'images',
+                'variants.attributeValues',
+                'translates',
+            ])
+            ->whereNotIn('id', $excludeIds)
+            ->inRandomOrder()
+            ->limit($limit - count($cards))
+            ->get();
+
+        return array_merge(
+            $cards,
+            ProductCardPresenter::collection($random, $locale)->all(),
+        );
     }
 
     protected static function buildRelatedGroups(Product $product, string $locale): array
@@ -166,16 +240,4 @@ class ProductDetailPresenter
             ->all();
     }
 
-    protected static function imageUrl(string $path, string $disk = 'public'): string
-    {
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-
-        if (str_starts_with($path, 'images/')) {
-            return asset($path);
-        }
-
-        return $disk === 'public' ? asset('storage/'.$path) : asset($path);
-    }
 }

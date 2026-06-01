@@ -5,11 +5,11 @@ namespace App\Filament\Resources\Promotions\Schemas;
 use App\Enums\PromotionLayout;
 use App\Enums\PromotionProductTargetType;
 use App\Filament\Forms\TranslationTabs;
+use App\Filament\Support\FilamentMedia;
 use App\Models\Catalog;
 use App\Models\Category;
 use App\Models\Product;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -101,10 +101,8 @@ class PromotionForm
                         DateTimePicker::make('expires_at')
                             ->label('Окончание')
                             ->seconds(false),
-                        FileUpload::make('image_path')
+                        FilamentMedia::image('image_path', 'promotions')
                             ->label('Изображение')
-                            ->image()
-                            ->directory('promotions')
                             ->columnSpanFull(),
                         TextInput::make('link_url')
                             ->label('Ссылка (необязательно)')

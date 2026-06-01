@@ -1,5 +1,9 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import ProductGallery from './ProductGallery.vue';
+import ProductCharacteristics from './ProductCharacteristics.vue';
+import ProductSimilarProducts from './ProductSimilarProducts.vue';
+import { productCartLines } from '../shop/cart-badges';
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -10,10 +14,9 @@ const props = defineProps({
 const selectedColorId = ref(props.product.selected_color_id);
 const selectedVariantId = ref(props.product.default_variant_id);
 const quantity = ref(1);
-const activeImage = ref(props.product.images[0]?.url ?? '');
-const activeTab = ref('details');
 const adding = ref(false);
 const error = ref('');
+const cartLines = ref(props.product.cart?.lines ?? []);
 
 const variants = computed(() => props.product.variants);
 
@@ -35,6 +38,43 @@ const selectedVariant = computed(() =>
     variants.value.find((v) => v.id === selectedVariantId.value) ?? null
 );
 
+const inCart = computed(() => cartLines.value.length > 0);
+
+const cartTotalQty = computed(() =>
+    cartLines.value.reduce((sum, line) => sum + line.quantity, 0),
+);
+
+const selectedVariantCartLine = computed(() =>
+    cartLines.value.find((line) => line.variant_id === selectedVariantId.value) ?? null,
+);
+
+function applyCartItems(items) {
+    cartLines.value = productCartLines({ items }, props.product.id);
+}
+
+function openCart() {
+    window.dispatchEvent(new Event('cart:open'));
+}
+
+function formatLabel(template, replacements) {
+    return Object.entries(replacements).reduce(
+        (text, [key, value]) => text.replace(`:${key}`, String(value)),
+        template ?? '',
+    );
+}
+
+function onCartUpdated(event) {
+    applyCartItems(event.detail?.items ?? []);
+}
+
+onMounted(() => {
+    window.addEventListener('cart:updated', onCartUpdated);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('cart:updated', onCartUpdated);
+});
+
 watch(selectedColorId, (colorId) => {
     const color = props.product.colors.find((c) => c.id === colorId);
     if (color) {
@@ -52,10 +92,6 @@ watch(sizes, (list) => {
         selectedVariantId.value = list[0].variant_id;
     }
 }, { immediate: true });
-
-function selectImage(url) {
-    activeImage.value = url;
-}
 
 async function addToCart() {
     if (!selectedVariantId.value) {
@@ -90,6 +126,7 @@ async function addToCart() {
 
         const { dispatchCartState } = await import('../shop/cart-badges');
         dispatchCartState(data);
+        applyCartItems(data.items ?? []);
         window.dispatchEvent(new Event('cart:open'));
     } catch {
         error.value = props.labels.error;
@@ -101,33 +138,53 @@ async function addToCart() {
 
 <template>
     <div class="grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <div class="space-y-4">
-            <div class="relative aspect-[4/5] overflow-hidden rounded-2xl bg-[#eceae6]">
-                <img :src="activeImage" :alt="product.name" class="size-full object-cover object-center">
-                <span
-                    v-if="product.is_new"
-                    class="absolute left-4 top-4 bg-surface-DEFAULT px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
-                >
-                    {{ labels.new_badge }}
-                </span>
-            </div>
-            <div v-if="product.images.length > 1" class="flex gap-2 overflow-x-auto pb-1">
-                <button
-                    v-for="(image, index) in product.images"
-                    :key="index"
-                    type="button"
-                    class="h-20 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-[#eceae6] transition"
-                    :class="activeImage === image.url ? 'border-primary-DEFAULT' : 'border-transparent'"
-                    @click="selectImage(image.url)"
-                >
-                    <img :src="image.url" :alt="image.alt" class="size-full object-cover">
-                </button>
-            </div>
-        </div>
+        <ProductGallery
+            :images="product.images"
+            :product-name="product.name"
+            :is-new="product.is_new"
+            :new-badge="labels.new_badge"
+            :labels="labels"
+        />
 
         <div class="lg:py-2">
             <p v-if="product.brand" class="text-sm uppercase tracking-[0.16em] text-text-muted">{{ product.brand }}</p>
-            <h1 class="mt-2 text-2xl font-semibold tracking-tight lg:text-[2rem]">{{ product.name }}</h1>
+            <div class="mt-2 flex flex-wrap items-start gap-3">
+                <h1 class="text-2xl font-semibold tracking-tight lg:text-[2rem]">{{ product.name }}</h1>
+                <span
+                    v-if="inCart"
+                    class="mt-1 inline-flex items-center gap-1.5 border border-primary-DEFAULT bg-primary-DEFAULT/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-DEFAULT"
+                >
+                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M5 12l5 5L20 7" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    {{ labels.in_cart }}
+                </span>
+            </div>
+
+            <div
+                v-if="inCart"
+                class="mt-4 flex flex-col gap-2 rounded-lg border border-primary-DEFAULT/30 bg-primary-DEFAULT/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <div class="text-sm text-text-DEFAULT">
+                    <p class="font-medium">{{ labels.in_cart_notice }}</p>
+                    <p v-if="selectedVariantCartLine" class="mt-1 text-text-muted">
+                        {{ formatLabel(labels.in_cart_variant, {
+                            label: selectedVariantCartLine.variant_label || labels.size,
+                            count: selectedVariantCartLine.quantity,
+                        }) }}
+                    </p>
+                    <p v-else-if="cartLines.length > 1" class="mt-1 text-text-muted">
+                        {{ formatLabel(labels.in_cart_total, { count: cartTotalQty }) }}
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    class="shrink-0 text-sm font-medium text-primary-DEFAULT underline-offset-2 hover:underline"
+                    @click="openCart"
+                >
+                    {{ labels.view_cart }}
+                </button>
+            </div>
 
             <div class="mt-4 flex items-baseline gap-3">
                 <p class="text-2xl font-semibold">{{ selectedVariant?.price_formatted }}</p>
@@ -191,40 +248,47 @@ async function addToCart() {
 
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button
+                    v-if="selectedVariantCartLine"
                     type="button"
-                    class="min-h-[3.25rem] flex-1 bg-primary-DEFAULT px-8 text-sm font-medium text-text-inverse transition hover:bg-primary-hover disabled:opacity-60"
+                    class="min-h-[3.25rem] flex-1 border border-primary-DEFAULT bg-surface-DEFAULT px-8 text-sm font-medium text-primary-DEFAULT transition hover:bg-primary-DEFAULT/5"
+                    @click="openCart"
+                >
+                    {{ labels.in_cart }}
+                </button>
+                <button
+                    type="button"
+                    class="min-h-[3.25rem] flex-1 px-8 text-sm font-medium transition disabled:opacity-60"
+                    :class="selectedVariantCartLine
+                        ? 'border border-border-DEFAULT bg-surface-DEFAULT text-text-DEFAULT hover:border-primary-DEFAULT'
+                        : 'bg-primary-DEFAULT text-text-inverse hover:bg-primary-hover'"
                     :disabled="adding"
                     @click="addToCart"
                 >
-                    {{ adding ? labels.adding : labels.add_to_cart }}
+                    {{ adding ? labels.adding : (selectedVariantCartLine ? labels.add_another : labels.add_to_cart) }}
                 </button>
                 <a
                     :href="product.consultation_url"
-                    class="inline-flex min-h-[3.25rem] flex-1 items-center justify-center border border-border-DEFAULT px-8 text-sm font-medium transition hover:border-primary-DEFAULT"
+                    class="inline-flex min-h-[3.25rem] flex-1 items-center justify-center border border-border-DEFAULT px-8 text-sm font-medium transition hover:border-primary-DEFAULT sm:max-w-[14rem]"
                 >
                     {{ labels.consultation }}
                 </a>
             </div>
 
-            <div class="mt-12 border-t border-border-DEFAULT pt-8">
-                <div class="flex gap-6 border-b border-border-DEFAULT">
-                    <button
-                        v-for="tab in ['details', 'fit', 'fabric']"
-                        :key="tab"
-                        type="button"
-                        class="pb-3 text-sm font-medium uppercase tracking-[0.14em] transition"
-                        :class="activeTab === tab ? 'border-b-2 border-primary-DEFAULT text-primary-DEFAULT' : 'text-text-muted'"
-                        @click="activeTab = tab"
-                    >
-                        {{ labels['tab_' + tab] }}
-                    </button>
-                </div>
-                <div class="prose prose-sm mt-6 max-w-none text-text-muted">
-                    <div v-show="activeTab === 'details'" v-html="product.description || labels.no_details" />
-                    <div v-show="activeTab === 'fit'" v-html="product.fit_description || labels.no_details" />
-                    <div v-show="activeTab === 'fabric'" v-html="product.fabric_description || labels.no_details" />
-                </div>
-            </div>
         </div>
+    </div>
+
+    <div
+        v-if="product.similar_products?.length || product.detail_items?.length || product.description || product.fit_description || product.fabric_description"
+        class="mt-12 space-y-12"
+    >
+        <ProductCharacteristics
+            v-if="product.detail_items?.length || product.description || product.fit_description || product.fabric_description"
+            :product="product"
+            :labels="labels"
+        />
+        <ProductSimilarProducts
+            :products="product.similar_products ?? []"
+            :labels="labels"
+        />
     </div>
 </template>

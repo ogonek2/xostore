@@ -3,6 +3,7 @@
 namespace App\Support\Shop;
 
 use App\Models\Product;
+use App\Support\Media\MediaUrl;
 use Illuminate\Support\Collection;
 
 class ProductCardPresenter
@@ -66,16 +67,11 @@ class ProductCardPresenter
             ?? $product->images->first();
 
         if ($image?->path) {
-            if (str_starts_with($image->path, 'http://')
-                || str_starts_with($image->path, 'https://')
-                || str_starts_with($image->path, '/')
-                || str_starts_with($image->path, 'images/')) {
-                return asset($image->path);
-            }
-
-            return $image->disk === 'public'
-                ? asset('storage/'.$image->path)
-                : asset($image->path);
+            return MediaUrl::orPlaceholder(
+                $image->path,
+                $image->disk,
+                'images/products/placeholder.jpg',
+            );
         }
 
         return asset('images/products/placeholder.jpg');
