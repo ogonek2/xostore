@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Cart\CartService;
+use App\Support\Shop\HomepageBanners;
 use App\Support\Shop\HomepageCategoryShowcase;
-use App\Support\Shop\ShopLayoutData;
+use App\Support\Shop\HomepageHeroBanners;
 use App\Support\Shop\HomepagePromotions;
 use App\Support\Shop\NewArrivalsProducts;
+use App\Support\Shop\ShopLayoutData;
 use App\Support\Shop\TrendingProducts;
 use Illuminate\View\View;
 
@@ -17,7 +20,10 @@ class HomeController extends Controller
 
         return view('home', [
             ...ShopLayoutData::shared(),
-            'cartCount' => app(\App\Services\Cart\CartService::class)->count(),
+            'cartCount' => app(CartService::class)->count(),
+            'heroBannerSections' => HomepageHeroBanners::sections(),
+            'bannersEnabled' => (bool) config('shop.homepage_banners.enabled', true),
+            'banners' => HomepageBanners::items(),
             'categoryCards' => HomepageCategoryShowcase::cards($locale),
             'trendingProducts' => TrendingProducts::forHomepage($locale),
             'promotions' => HomepagePromotions::forHomepage($locale),

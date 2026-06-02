@@ -9,6 +9,7 @@ const props = defineProps({
     initialItems: { type: Array, default: () => [] },
     initialTotal: { type: Number, default: 0 },
     facets: { type: Object, required: true },
+    categories: { type: Array, default: () => [] },
     labels: { type: Object, required: true },
     locale: { type: String, default: 'pl' },
     perPage: { type: Number, default: 24 },
@@ -18,6 +19,7 @@ const filters = reactive({
     sort: props.initialFilters.sort ?? 'newest',
     q: props.initialFilters.q ?? '',
     brands: [...(props.initialFilters.brands ?? [])],
+    sizes: [...(props.initialFilters.sizes ?? [])],
     colors: [...(props.initialFilters.colors ?? [])],
     price_min: props.initialFilters.price_min ?? '',
     price_max: props.initialFilters.price_max ?? '',
@@ -27,6 +29,7 @@ const filters = reactive({
 
 const items = ref([...props.initialItems]);
 const total = ref(props.initialTotal);
+const facetsState = ref({ ...(props.facets ?? {}) });
 
 watch(items, () => {
     nextTick(() => refreshCartProductBadges());
@@ -39,10 +42,14 @@ const page = ref(props.initialItems.length > 0 ? 2 : 1);
 const loadingMore = ref(false);
 const filtering = ref(false);
 const hasMore = ref(props.initialItems.length >= props.perPage);
+const mobileFiltersOpen = ref(false);
+const expandedParents = ref([]);
+const currentPath = ref(typeof window !== 'undefined' ? window.location.pathname : '');
 
 const hasActiveFilters = computed(() => {
     return (
         filters.brands.length > 0
+        || filters.sizes.length > 0
         || filters.colors.length > 0
         || filters.price_min !== ''
         || filters.price_max !== ''
@@ -74,6 +81,7 @@ function buildQueryObject() {
 
     if (filters.q.trim()) query.q = filters.q.trim();
     if (filters.brands.length) query.brands = [...filters.brands];
+    if (filters.sizes.length) query.sizes = [...filters.sizes];
     if (filters.colors.length) query.colors = [...filters.colors];
     if (filters.price_min !== '' && filters.price_min !== null) query.price_min = Number(filters.price_min);
     if (filters.price_max !== '' && filters.price_max !== null) query.price_max = Number(filters.price_max);
@@ -114,7 +122,7 @@ function syncBrowserUrl() {
     });
 
     [...url.searchParams.keys()].forEach((key) => {
-        if (key.startsWith('brands') || key.startsWith('colors')) {
+        if (key.startsWith('brands') || key.startsWith('sizes') || key.startsWith('colors')) {
             url.searchParams.delete(key);
         }
     });
@@ -144,6 +152,7 @@ async function applyFilters() {
         items.value = data.data ?? [];
         total.value = data.meta?.total ?? 0;
         hasMore.value = data.meta?.has_more ?? false;
+        facetsState.value = { ...(data.meta?.facets ?? facetsState.value) };
         page.value = 2;
         syncBrowserUrl();
         syncSearchInputs();
@@ -191,6 +200,11 @@ function toggleBrand(id) {
     applyFilters();
 }
 
+function toggleSize(id) {
+    toggleInArray(filters.sizes, id);
+    applyFilters();
+}
+
 function toggleColor(id) {
     toggleInArray(filters.colors, id);
     applyFilters();
@@ -200,6 +214,7 @@ function clearFilters() {
     filters.sort = 'newest';
     filters.q = '';
     filters.brands = [];
+    filters.sizes = [];
     filters.colors = [];
     filters.price_min = '';
     filters.price_max = '';
@@ -209,24 +224,47 @@ function clearFilters() {
     applyFilters();
 }
 
-function syncSearchInputs() {
-    document.querySelectorAll('[data-listing-search] input[name="q"], #catalog-search-mobile').forEach((input) => {
-        input.value = filters.q;
-    });
+function normalizePath(url) {
+    try {
+        const parsed = new URL(url, window.location.origin);
+        return parsed.pathname.replace(/\/+$/, '');
+    } catch (error) {
+        return '';
+    }
 }
 
-let searchTimeout = null;
-
-function onSearchInput() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => applyFilters(), 400);
+function isCategoryActive(url) {
+    const targetPath = normalizePath(url);
+    const activePath = (currentPath.value || '').replace(/\/+$/, '');
+    return targetPath !== '' && targetPath === activePath;
 }
 
-function onSearchSubmit(event) {
-    event.preventDefault();
-    clearTimeout(searchTimeout);
-    applyFilters();
+function isParentActive(category) {
+    if (isCategoryActive(category.url)) return true;
+    return (category.children ?? []).some((child) => isCategoryActive(child.url));
 }
+
+function isParentExpanded(categoryUrl) {
+    return expandedParents.value.includes(categoryUrl);
+}
+
+function toggleParent(categoryUrl) {
+    const index = expandedParents.value.indexOf(categoryUrl);
+    if (index === -1) expandedParents.value.push(categoryUrl);
+    else expandedParents.value.splice(index, 1);
+}
+
+function openMobileFilters() {
+    mobileFiltersOpen.value = true;
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeMobileFilters() {
+    mobileFiltersOpen.value = false;
+    document.body.classList.remove('overflow-hidden');
+}
+
+function syncSearchInputs() {}
 
 onMounted(() => {
     const host = document.querySelector('[data-vue="catalog-page"]');
@@ -247,22 +285,246 @@ onMounted(() => {
     window.addEventListener('scroll', onScroll, { passive: true });
 
     nextTick(() => refreshCartProductBadges());
+
+    expandedParents.value = props.categories
+        .filter((category) => isParentActive(category))
+        .map((category) => category.url);
 });
 
 onUnmounted(() => {
     window.removeEventListener('scroll', onScroll);
-    clearTimeout(searchTimeout);
+    document.body.classList.remove('overflow-hidden');
 });
 </script>
 
 <template>
-    <div class="grid gap-10 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
-        <aside class="lg:sticky lg:top-24 lg:self-start">
-            <p class="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-text-muted lg:hidden">
-                {{ labels.filters }}
-            </p>
+    <div>
+        <div class="mb-5 flex items-center justify-between gap-3 lg:hidden">
+            <p class="text-sm text-text-muted">{{ productsCountLabel }}</p>
+            <button
+                type="button"
+                class="inline-flex min-h-[2.75rem] items-center gap-2 border border-border-DEFAULT px-4 text-sm font-medium text-text-DEFAULT"
+                @click="openMobileFilters"
+            >
+                <span aria-hidden="true">☰</span>
+                {{ labels.open_filters || labels.filters }}
+            </button>
+        </div>
 
-            <form class="space-y-8" @submit.prevent>
+        <div v-if="mobileFiltersOpen" class="fixed inset-0 z-[110] lg:hidden">
+            <button
+                type="button"
+                class="absolute inset-0 bg-black/45"
+                aria-label="Close filters"
+                @click="closeMobileFilters"
+            />
+
+            <aside class="relative z-[1] h-full w-[86%] max-w-[24rem] overflow-y-auto bg-surface-DEFAULT p-5 shadow-2xl">
+                <div class="mb-6 flex items-center justify-between gap-3">
+                    <p class="text-sm font-semibold uppercase tracking-[0.12em] text-primary-DEFAULT">
+                        {{ labels.filters }}
+                    </p>
+                    <button
+                        type="button"
+                        class="inline-flex min-h-[2.5rem] items-center border border-border-DEFAULT px-3 text-sm"
+                        @click="closeMobileFilters"
+                    >
+                        {{ labels.close }}
+                    </button>
+                </div>
+
+                <div v-if="categories.length" class="mb-8">
+                    <p class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                        {{ labels.categories }}
+                    </p>
+                    <ul class="space-y-2">
+                        <li v-for="category in categories" :key="category.url">
+                            <div class="rounded-lg border border-border-DEFAULT/70">
+                                <div class="flex items-stretch">
+                                    <a
+                                        :href="category.url"
+                                        class="min-w-0 flex-1 px-3 py-2.5 text-sm transition-colors"
+                                        :class="isParentActive(category) ? 'font-semibold text-primary-DEFAULT' : 'font-medium text-text-DEFAULT hover:text-primary-DEFAULT'"
+                                    >
+                                        {{ category.label }}
+                                    </a>
+                                    <button
+                                        v-if="category.children?.length"
+                                        type="button"
+                                        class="inline-flex w-11 items-center justify-center border-l border-border-DEFAULT/70 text-text-muted transition-colors hover:text-primary-DEFAULT"
+                                        :aria-expanded="isParentExpanded(category.url)"
+                                        :aria-label="`Toggle ${category.label}`"
+                                        @click="toggleParent(category.url)"
+                                    >
+                                        <svg class="size-4 transition-transform" :class="{ 'rotate-180': isParentExpanded(category.url) }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                            <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <ul
+                                    v-if="category.children?.length && isParentExpanded(category.url)"
+                                    class="space-y-0.5 border-t border-border-DEFAULT/70 bg-surface-muted/40 px-2 py-2"
+                                >
+                                    <li v-for="child in category.children" :key="child.url">
+                                        <a
+                                            :href="child.url"
+                                            class="block rounded-md px-2.5 py-2 text-sm transition-colors"
+                                            :class="isCategoryActive(child.url) ? 'font-semibold text-primary-DEFAULT bg-primary-DEFAULT/5' : 'text-text-muted hover:bg-surface-muted hover:text-primary-DEFAULT'"
+                                        >
+                                            {{ child.label }}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <form class="space-y-8" @submit.prevent>
+                    <div>
+                        <label class="mb-3 block text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                            {{ labels.sort }}
+                        </label>
+                        <select
+                            v-model="filters.sort"
+                            class="w-full border border-border-DEFAULT bg-surface-DEFAULT px-3 py-2.5 text-sm outline-none focus:border-primary-DEFAULT"
+                            @change="applyFilters"
+                        >
+                            <option value="newest">{{ labels.sort_newest }}</option>
+                            <option value="featured">{{ labels.sort_featured }}</option>
+                            <option value="price_asc">{{ labels.sort_price_asc }}</option>
+                            <option value="price_desc">{{ labels.sort_price_desc }}</option>
+                        </select>
+                    </div>
+
+                    <fieldset>
+                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                            {{ labels.filters }}
+                        </legend>
+                        <div class="space-y-2">
+                            <label class="flex cursor-pointer items-center gap-2 text-sm">
+                                <input v-model="filters.new" type="checkbox" class="size-4 border-border-DEFAULT" @change="applyFilters">
+                                <span>{{ labels.only_new }}</span>
+                            </label>
+                            <label class="flex cursor-pointer items-center gap-2 text-sm">
+                                <input v-model="filters.sale" type="checkbox" class="size-4 border-border-DEFAULT" @change="applyFilters">
+                                <span>{{ labels.only_sale }}</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset v-if="facetsState.brands?.length">
+                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                            {{ labels.brand }}
+                        </legend>
+                        <ul class="max-h-48 space-y-2 overflow-y-auto">
+                            <li v-for="brand in facetsState.brands" :key="brand.id">
+                                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        :checked="filters.brands.includes(brand.id)"
+                                        class="size-4 border-border-DEFAULT"
+                                        @change="toggleBrand(brand.id)"
+                                    >
+                                    <span>{{ brand.label }}</span>
+                                </label>
+                            </li>
+                        </ul>
+                    </fieldset>
+
+                    <fieldset v-if="facetsState.sizes?.length">
+                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                            {{ labels.size }}
+                        </legend>
+                        <ul class="max-h-48 space-y-2 overflow-y-auto">
+                            <li v-for="size in facetsState.sizes" :key="size.id">
+                                <label class="flex cursor-pointer items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        :checked="filters.sizes.includes(size.id)"
+                                        class="size-4 border-border-DEFAULT"
+                                        @change="toggleSize(size.id)"
+                                    >
+                                    <span>{{ size.label }}</span>
+                                </label>
+                            </li>
+                        </ul>
+                    </fieldset>
+
+                    <fieldset v-if="facetsState.colors?.length">
+                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                            {{ labels.color }}
+                        </legend>
+                        <ul class="max-h-48 space-y-2 overflow-y-auto">
+                            <li v-for="color in facetsState.colors" :key="color.id">
+                                <label class="flex cursor-pointer items-center gap-2.5 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        :checked="filters.colors.includes(color.id)"
+                                        class="size-4 border-border-DEFAULT"
+                                        @change="toggleColor(color.id)"
+                                    >
+                                    <span
+                                        class="size-5 shrink-0 rounded-full border border-border-DEFAULT ring-1 ring-inset ring-black/5"
+                                        :class="{ 'ring-2 ring-primary-DEFAULT': filters.colors.includes(color.id) }"
+                                        :style="{ backgroundColor: color.hex || '#e8e6e2' }"
+                                        :title="color.label"
+                                    />
+                                    <span :class="filters.colors.includes(color.id) ? 'font-semibold text-primary-DEFAULT' : 'text-text-DEFAULT'">
+                                        {{ color.label }}
+                                    </span>
+                                </label>
+                            </li>
+                        </ul>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                            {{ labels.price }}
+                        </legend>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input
+                                v-model="filters.price_min"
+                                type="number"
+                                min="0"
+                                step="1"
+                                :placeholder="facetsState.price_min ? String(Math.round(facetsState.price_min)) : labels.from"
+                                class="border border-border-DEFAULT px-3 py-2 text-sm outline-none focus:border-primary-DEFAULT"
+                            >
+                            <input
+                                v-model="filters.price_max"
+                                type="number"
+                                min="0"
+                                step="1"
+                                :placeholder="facetsState.price_max ? String(Math.round(facetsState.price_max)) : labels.to"
+                                class="border border-border-DEFAULT px-3 py-2 text-sm outline-none focus:border-primary-DEFAULT"
+                            >
+                        </div>
+                        <button
+                            type="button"
+                            class="mt-3 w-full border border-primary-DEFAULT py-2 text-sm font-medium transition-colors hover:bg-primary-DEFAULT hover:text-text-inverse"
+                            @click="applyFilters"
+                        >
+                            {{ labels.apply_price }}
+                        </button>
+                    </fieldset>
+
+                    <button
+                        v-if="hasActiveFilters"
+                        type="button"
+                        class="text-sm text-text-muted underline underline-offset-4 hover:text-primary-DEFAULT"
+                        @click="clearFilters"
+                    >
+                        {{ labels.clear_filters }}
+                    </button>
+                </form>
+            </aside>
+        </div>
+
+        <div class="grid gap-10 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
+            <aside class="hidden lg:sticky lg:top-24 lg:block lg:self-start">
+                <form class="space-y-8" @submit.prevent>
                 <div>
                     <label class="mb-3 block text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
                         {{ labels.sort }}
@@ -295,12 +557,12 @@ onUnmounted(() => {
                     </div>
                 </fieldset>
 
-                <fieldset v-if="facets.brands?.length">
+                <fieldset v-if="facetsState.brands?.length">
                     <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
                         {{ labels.brand }}
                     </legend>
                     <ul class="max-h-48 space-y-2 overflow-y-auto">
-                        <li v-for="brand in facets.brands" :key="brand.id">
+                        <li v-for="brand in facetsState.brands" :key="brand.id">
                             <label class="flex cursor-pointer items-center gap-2 text-sm">
                                 <input
                                     type="checkbox"
@@ -314,22 +576,48 @@ onUnmounted(() => {
                     </ul>
                 </fieldset>
 
-                <fieldset v-if="facets.colors?.length">
+                <fieldset v-if="facetsState.sizes?.length">
+                    <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                        {{ labels.size }}
+                    </legend>
+                    <ul class="max-h-48 space-y-2 overflow-y-auto">
+                        <li v-for="size in facetsState.sizes" :key="size.id">
+                            <label class="flex cursor-pointer items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    :checked="filters.sizes.includes(size.id)"
+                                    class="size-4 border-border-DEFAULT"
+                                    @change="toggleSize(size.id)"
+                                >
+                                <span>{{ size.label }}</span>
+                            </label>
+                        </li>
+                    </ul>
+                </fieldset>
+
+                <fieldset v-if="facetsState.colors?.length">
                     <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
                         {{ labels.color }}
                     </legend>
-                    <ul class="flex flex-wrap gap-2">
-                        <li v-for="color in facets.colors" :key="color.id">
-                            <button
-                                type="button"
-                                class="size-8 rounded-full border-2 border-transparent ring-1 ring-border-DEFAULT transition hover:scale-105"
-                                :class="{ 'ring-2 ring-primary-DEFAULT': filters.colors.includes(color.id) }"
-                                :style="{ backgroundColor: color.hex || '#ccc' }"
-                                :title="color.label"
-                                :aria-label="color.label"
-                                :aria-pressed="filters.colors.includes(color.id)"
-                                @click="toggleColor(color.id)"
-                            />
+                    <ul class="max-h-48 space-y-2 overflow-y-auto">
+                        <li v-for="color in facetsState.colors" :key="color.id">
+                            <label class="flex cursor-pointer items-center gap-2.5 text-sm">
+                                <input
+                                    type="checkbox"
+                                    :checked="filters.colors.includes(color.id)"
+                                    class="size-4 border-border-DEFAULT"
+                                    @change="toggleColor(color.id)"
+                                >
+                                <span
+                                    class="size-5 shrink-0 rounded-full border border-border-DEFAULT ring-1 ring-inset ring-black/5"
+                                    :class="{ 'ring-2 ring-primary-DEFAULT': filters.colors.includes(color.id) }"
+                                    :style="{ backgroundColor: color.hex || '#e8e6e2' }"
+                                    :title="color.label"
+                                />
+                                <span :class="filters.colors.includes(color.id) ? 'font-semibold text-primary-DEFAULT' : 'text-text-DEFAULT'">
+                                    {{ color.label }}
+                                </span>
+                            </label>
                         </li>
                     </ul>
                 </fieldset>
@@ -344,7 +632,7 @@ onUnmounted(() => {
                             type="number"
                             min="0"
                             step="1"
-                            :placeholder="facets.price_min ? String(Math.round(facets.price_min)) : labels.from"
+                            :placeholder="facetsState.price_min ? String(Math.round(facetsState.price_min)) : labels.from"
                             class="border border-border-DEFAULT px-3 py-2 text-sm outline-none focus:border-primary-DEFAULT"
                         >
                         <input
@@ -352,7 +640,7 @@ onUnmounted(() => {
                             type="number"
                             min="0"
                             step="1"
-                            :placeholder="facets.price_max ? String(Math.round(facets.price_max)) : labels.to"
+                            :placeholder="facetsState.price_max ? String(Math.round(facetsState.price_max)) : labels.to"
                             class="border border-border-DEFAULT px-3 py-2 text-sm outline-none focus:border-primary-DEFAULT"
                         >
                     </div>
@@ -373,33 +661,16 @@ onUnmounted(() => {
                 >
                     {{ labels.clear_filters }}
                 </button>
-            </form>
-        </aside>
+                </form>
+            </aside>
 
-        <div class="relative min-h-[200px]">
+            <div class="relative min-h-[200px]">
             <div
                 v-if="filtering"
                 class="absolute inset-0 z-10 flex items-start justify-center bg-surface-DEFAULT/60 pt-16 backdrop-blur-[1px]"
             >
                 <p class="text-sm text-text-muted">{{ labels.loading }}</p>
             </div>
-
-            <form class="mb-6 flex w-full gap-2 lg:hidden" @submit="onSearchSubmit">
-                <label class="sr-only" for="catalog-search-mobile">{{ labels.search }}</label>
-                <input
-                    id="catalog-search-mobile"
-                    v-model="filters.q"
-                    type="search"
-                    :placeholder="labels.search_placeholder"
-                    class="min-h-[2.75rem] flex-1 border border-border-DEFAULT px-4 text-sm outline-none focus:border-primary-DEFAULT"
-                    @input="onSearchInput"
-                >
-                <button type="submit" class="shrink-0 bg-primary-DEFAULT px-5 text-sm font-medium text-text-inverse hover:bg-primary-hover">
-                    {{ labels.search }}
-                </button>
-            </form>
-
-            <p class="mb-4 text-sm text-text-muted lg:hidden">{{ productsCountLabel }}</p>
 
             <div v-if="items.length === 0 && !filtering" class="py-20 text-center text-sm text-text-muted">
                 {{ labels.empty }}
@@ -489,6 +760,7 @@ onUnmounted(() => {
             </div>
 
             <p v-if="loadingMore" class="py-10 text-center text-sm text-text-muted">{{ labels.loading }}</p>
+            </div>
         </div>
     </div>
 </template>

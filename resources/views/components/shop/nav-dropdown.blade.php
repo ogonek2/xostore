@@ -17,6 +17,7 @@
                 <a
                     href="{{ $item['url'] ?? '#' }}"
                     class="block px-4 py-2 text-sm text-text-DEFAULT transition-colors hover:bg-surface-muted"
+                    @if ($item['open_in_new_tab'] ?? false) target="_blank" rel="noopener noreferrer" @endif
                 >
                     {{ $item['label'] }}
                 </a>

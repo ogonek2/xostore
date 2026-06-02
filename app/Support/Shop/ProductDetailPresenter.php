@@ -5,6 +5,7 @@ namespace App\Support\Shop;
 use App\Enums\ProductRelationType;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\Promotion\PromotionDiscountService;
 use App\Support\Media\MediaUrl;
 use Illuminate\Support\Collection;
 
@@ -36,7 +37,7 @@ class ProductDetailPresenter
             ->values();
 
         $variantRows = $variants->map(
-            fn (ProductVariant $variant) => static::mapVariant($variant, $locale),
+            fn (ProductVariant $variant) => static::mapVariant($variant, $locale, $product),
         );
 
         $colorOptions = static::buildColorOptions($variants, $locale);
@@ -186,18 +187,32 @@ class ProductDetailPresenter
         return $groups;
     }
 
-    protected static function mapVariant(ProductVariant $variant, string $locale): array
+    protected static function mapVariant(ProductVariant $variant, string $locale, ?Product $product = null): array
     {
         $color = $variant->attributeValues->first(fn ($v) => $v->color_hex);
+
+        $basePrice = (float) $variant->price;
+        $compareAt = $variant->compare_at_price ? (float) $variant->compare_at_price : null;
+        $price = $basePrice;
+
+        if ($product) {
+            $discounts = app(PromotionDiscountService::class);
+            $discounted = $discounts->applyDiscount($basePrice, $product);
+
+            if ($discounted < $basePrice) {
+                $compareAt = $compareAt && $compareAt > $basePrice ? $compareAt : $basePrice;
+                $price = $discounted;
+            }
+        }
 
         return [
             'id' => $variant->id,
             'sku' => $variant->sku,
-            'price' => (float) $variant->price,
-            'price_formatted' => ProductCardPresenter::formatPrice($variant->price),
-            'compare_at_price' => $variant->compare_at_price ? (float) $variant->compare_at_price : null,
-            'compare_at_formatted' => $variant->compare_at_price
-                ? ProductCardPresenter::formatPrice($variant->compare_at_price)
+            'price' => $price,
+            'price_formatted' => ProductCardPresenter::formatPrice($price),
+            'compare_at_price' => $compareAt,
+            'compare_at_formatted' => $compareAt
+                ? ProductCardPresenter::formatPrice($compareAt)
                 : null,
             'size' => $variant->sizeGridValue?->display_value ?? $variant->sizeGridValue?->value,
             'size_value' => $variant->sizeGridValue?->value,
@@ -239,5 +254,4 @@ class ProductDetailPresenter
             ->values()
             ->all();
     }
-
 }

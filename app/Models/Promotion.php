@@ -22,6 +22,7 @@ class Promotion extends Model
         'category_id',
         'product_target_type',
         'catalog_id',
+        'brand_id',
         'discount_percent',
         'starts_at',
         'expires_at',
@@ -51,6 +52,11 @@ class Promotion extends Model
     public function catalog(): BelongsTo
     {
         return $this->belongsTo(Catalog::class);
+    }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
     }
 
     public function products(): BelongsToMany

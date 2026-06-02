@@ -7,6 +7,7 @@ use App\Http\Requests\ProductListingRequest;
 use App\Models\Catalog;
 use App\Models\Category;
 use App\Support\Shop\ProductCardPresenter;
+use App\Support\Shop\ProductListingFacets;
 use App\Support\Shop\ProductListingQuery;
 use Illuminate\Http\JsonResponse;
 
@@ -38,6 +39,7 @@ class ProductListingController extends Controller
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
                 'has_more' => $paginator->hasMorePages(),
+                'facets' => ProductListingFacets::build($listing, $locale),
             ],
         ]);
     }

@@ -14,6 +14,7 @@ return [
         'title' => 'Заголовок',
         'subtitle' => 'Подзаголовок',
         'cta_label' => 'Текст кнопки CTA',
+        'button_label' => 'Текст кнопки',
         'fit_description' => 'Посадка',
         'fabric_description' => 'Материал',
         'tailoring_description' => 'Описание индивидуального пошива',

@@ -3,6 +3,7 @@
 namespace App\Support\Shop;
 
 use App\Enums\PromotionLayout;
+use App\Enums\PromotionProductTargetType;
 use App\Models\Promotion;
 use App\Support\Media\MediaUrl;
 use Illuminate\Support\Collection;
@@ -11,7 +12,11 @@ class PromotionPresenter
 {
     public static function fromPromotion(Promotion $promotion, string $locale): array
     {
-        $promotion->loadMissing('category.translates');
+        $promotion->loadMissing([
+            'category.translates',
+            'catalog.translates',
+            'brand.translates',
+        ]);
 
         return [
             'layout' => $promotion->layout instanceof PromotionLayout
@@ -38,13 +43,38 @@ class PromotionPresenter
             return $promotion->link_url;
         }
 
+        $target = $promotion->product_target_type;
+
+        if ($target === PromotionProductTargetType::Catalog && $promotion->catalog) {
+            $slug = $promotion->catalog->translate('slug', $locale) ?? $promotion->catalog->code;
+
+            return route('catalog.show', ['locale' => $locale, 'catalog' => $slug]);
+        }
+
+        if ($target === PromotionProductTargetType::Category && $promotion->category) {
+            $slug = $promotion->category->translate('slug', $locale) ?? $promotion->category->code;
+
+            return route('category.show', ['locale' => $locale, 'category' => $slug]);
+        }
+
+        if ($target === PromotionProductTargetType::Brand && $promotion->brand) {
+            return route('products.index', [
+                'locale' => $locale,
+                'brands' => [$promotion->brand->id],
+            ]);
+        }
+
+        if ($target === PromotionProductTargetType::Products) {
+            return route('promotions.index', ['locale' => $locale]);
+        }
+
         $slug = $promotion->category?->translate('slug', $locale);
 
         if ($slug) {
-            return url("/{$locale}/c/{$slug}");
+            return route('category.show', ['locale' => $locale, 'category' => $slug]);
         }
 
-        return '#';
+        return route('promotions.index', ['locale' => $locale]);
     }
 
     protected static function resolveImage(Promotion $promotion): ?string

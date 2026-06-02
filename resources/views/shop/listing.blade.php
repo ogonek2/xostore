@@ -1,12 +1,41 @@
 @php
+    $locale = app()->getLocale();
+
+    $listingCategories = $menuRoots
+        ->values()
+        ->map(function ($root) use ($locale) {
+            $rootSlug = $root->translate('slug', $locale) ?? $root->code;
+
+            return [
+                'label' => $root->translate('name', $locale) ?? $root->code,
+                'url' => route('category.show', ['locale' => $locale, 'category' => $rootSlug]),
+                'children' => $root->children
+                    ->map(function ($child) use ($locale) {
+                        $slug = $child->translate('slug', $locale) ?? $child->code;
+
+                        return [
+                            'label' => $child->translate('name', $locale) ?? $child->code,
+                            'url' => route('category.show', ['locale' => $locale, 'category' => $slug]),
+                        ];
+                    })
+                    ->values()
+                    ->all(),
+            ];
+        })
+        ->all();
+
     $listingLabels = [
         'filters' => __('shop.listing.filters'),
+        'categories' => __('shop.categories.title'),
+        'open_filters' => __('shop.listing.filters'),
+        'close' => __('shop.product.gallery_close'),
         'sort' => __('shop.listing.sort'),
         'sort_newest' => __('shop.listing.sort_newest'),
         'sort_featured' => __('shop.listing.sort_featured'),
         'sort_price_asc' => __('shop.listing.sort_price_asc'),
         'sort_price_desc' => __('shop.listing.sort_price_desc'),
         'brand' => __('shop.listing.brand'),
+        'size' => __('shop.product.select_variant'),
         'color' => __('shop.listing.color'),
         'price' => __('shop.listing.price'),
         'from' => __('shop.listing.from'),
@@ -33,7 +62,7 @@
 
 @section('content')
     <x-shop.header
-        :menu-roots="$menuRoots"
+        :navigation="$navigation"
         :languages="$languages"
         :cart-count="$cartCount"
     />
@@ -42,7 +71,7 @@
         <div class="mx-auto max-w-[90rem] px-5 py-8 lg:px-8 lg:py-10">
             <x-shop.breadcrumbs :items="$breadcrumbs" />
 
-            <div class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="mt-6">
                 <div>
                     <h1 class="text-2xl font-semibold tracking-tight text-primary-DEFAULT lg:text-3xl">
                         {{ $pageTitle }}
@@ -51,25 +80,6 @@
                         {{ trans_choice('shop.listing.products_count', $total, ['count' => $total]) }}
                     </p>
                 </div>
-
-                <form
-                    id="listing-search-form"
-                    class="flex w-full max-w-md gap-2 lg:w-auto"
-                    data-listing-search
-                >
-                    <label class="sr-only" for="catalog-search">{{ __('shop.search') }}</label>
-                    <input
-                        id="catalog-search"
-                        type="search"
-                        name="q"
-                        value="{{ request('q') }}"
-                        placeholder="{{ __('shop.listing.search_placeholder') }}"
-                        class="min-h-[2.75rem] flex-1 border border-border-DEFAULT px-4 text-sm outline-none focus:border-primary-DEFAULT"
-                    >
-                    <button type="submit" class="shrink-0 bg-primary-DEFAULT px-5 text-sm font-medium text-text-inverse hover:bg-primary-hover">
-                        {{ __('shop.search') }}
-                    </button>
-                </form>
             </div>
 
             @if ($subcategories->isNotEmpty())
@@ -94,6 +104,7 @@
                 data-initial-items="{{ json_encode($products->values()) }}"
                 data-initial-total="{{ $total }}"
                 data-facets="{{ json_encode($facets) }}"
+                data-categories="{{ json_encode($listingCategories) }}"
                 data-labels="{{ json_encode($listingLabels) }}"
                 data-locale="{{ app()->getLocale() }}"
                 data-per-page="{{ config('shop.listing.per_page', 24) }}"
@@ -132,33 +143,13 @@
             document.addEventListener('DOMContentLoaded', () => {
                 const mount = document.querySelector('[data-vue="catalog-page"]');
                 const countEl = document.getElementById('listing-products-count');
-                const searchForm = document.getElementById('listing-search-form');
-                const searchInput = document.getElementById('catalog-search');
-
-                if (!mount || !searchForm) return;
+                if (!mount) return;
 
                 const syncCount = (text) => {
                     if (countEl) countEl.textContent = text;
                 };
 
                 mount.addEventListener('catalog:count', (e) => syncCount(e.detail));
-
-                searchForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    mount.dispatchEvent(new CustomEvent('catalog:search', {
-                        detail: { q: searchInput?.value ?? '' },
-                    }));
-                });
-
-                let searchDebounce;
-                searchInput?.addEventListener('input', () => {
-                    clearTimeout(searchDebounce);
-                    searchDebounce = setTimeout(() => {
-                        mount.dispatchEvent(new CustomEvent('catalog:search', {
-                            detail: { q: searchInput.value },
-                        }));
-                    }, 400);
-                });
             });
         </script>
     @endpush

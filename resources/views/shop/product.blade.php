@@ -40,7 +40,7 @@
 
 @section('content')
     <x-shop.header
-        :menu-roots="$menuRoots"
+        :navigation="$navigation"
         :languages="$languages"
         :cart-count="$cartCount"
     />

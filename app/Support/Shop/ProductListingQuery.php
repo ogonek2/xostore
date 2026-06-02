@@ -2,9 +2,11 @@
 
 namespace App\Support\Shop;
 
+use App\Models\AttributeValue;
 use App\Models\Catalog;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\Promotion\PromotionDiscountService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -15,6 +17,23 @@ class ProductListingQuery
         protected ?Catalog $catalog = null,
         protected array $filters = [],
     ) {}
+
+    public function withoutFilter(string $key): self
+    {
+        $filters = $this->filters;
+
+        if (in_array($key, ['brands', 'colors', 'sizes'], true)) {
+            $filters[$key] = [];
+        } elseif ($key === 'price_min' || $key === 'price_max') {
+            $filters[$key] = null;
+        } elseif ($key === 'new' || $key === 'sale') {
+            $filters[$key] = false;
+        } elseif ($key === 'q') {
+            $filters['q'] = null;
+        }
+
+        return new self($this->category, $this->catalog, $filters);
+    }
 
     public function baseQuery(): Builder
     {
@@ -64,19 +83,38 @@ class ProductListingQuery
         }
 
         if (! empty($this->filters['colors'])) {
-            $query->whereHas('variants', function (Builder $q) {
-                $q->where('is_active', true)
-                    ->whereHas('attributeValues', fn (Builder $av) => $av->whereIn('attribute_values.id', $this->filters['colors']));
+            $hexes = AttributeValue::query()
+                ->whereIn('id', $this->filters['colors'])
+                ->pluck('color_hex')
+                ->filter()
+                ->values()
+                ->all();
+
+            $query->where(function (Builder $q) use ($hexes) {
+                $q->whereHas('variants', function (Builder $v) {
+                    $v->where('is_active', true)
+                        ->whereHas('attributeValues', fn (Builder $av) => $av->whereIn('attribute_values.id', $this->filters['colors']));
+                });
+
+                if ($hexes !== []) {
+                    $q->orWhereIn('color_hex', $hexes);
+                }
             });
         }
 
-        if ($this->filters['price_min'] !== null) {
+        if (! empty($this->filters['sizes'])) {
+            $query->whereHas('variants', fn (Builder $q) => $q
+                ->where('is_active', true)
+                ->whereIn('size_grid_value_id', $this->filters['sizes']));
+        }
+
+        if (($this->filters['price_min'] ?? null) !== null) {
             $query->whereHas('variants', fn (Builder $q) => $q
                 ->where('is_active', true)
                 ->where('price', '>=', $this->filters['price_min']));
         }
 
-        if ($this->filters['price_max'] !== null) {
+        if (($this->filters['price_max'] ?? null) !== null) {
             $query->whereHas('variants', fn (Builder $q) => $q
                 ->where('is_active', true)
                 ->where('price', '<=', $this->filters['price_max']));
@@ -87,7 +125,9 @@ class ProductListingQuery
         }
 
         if (! empty($this->filters['sale'])) {
-            $query->where(function (Builder $q) {
+            $promotionProductIds = app(PromotionDiscountService::class)->discountedProductIds();
+
+            $query->where(function (Builder $q) use ($promotionProductIds) {
                 $q->where(function (Builder $inner) {
                     $inner->whereNotNull('compare_at_price')
                         ->whereColumn('compare_at_price', '>', 'base_price');
@@ -96,6 +136,10 @@ class ProductListingQuery
                         ->whereNotNull('compare_at_price')
                         ->whereColumn('compare_at_price', '>', 'price');
                 });
+
+                if ($promotionProductIds->isNotEmpty()) {
+                    $q->orWhereIn('products.id', $promotionProductIds);
+                }
             });
         }
 

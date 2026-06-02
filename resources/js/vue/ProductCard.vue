@@ -75,9 +75,17 @@ function openCart(event) {
                 <p v-if="product.category" class="mt-1 text-sm text-text-muted">
                     {{ product.category }}
                 </p>
-                <p v-if="product.price_formatted" class="mt-2 text-[0.95rem] font-semibold text-primary-DEFAULT">
-                    {{ product.price_formatted }}
-                </p>
+                <div v-if="product.price_formatted" class="mt-2 flex items-baseline gap-2">
+                    <p class="text-[0.95rem] font-semibold text-primary-DEFAULT">
+                        {{ product.price_formatted }}
+                    </p>
+                    <p
+                        v-if="product.compare_at_formatted"
+                        class="text-sm text-text-muted line-through"
+                    >
+                        {{ product.compare_at_formatted }}
+                    </p>
+                </div>
             </div>
         </a>
 

@@ -12,6 +12,15 @@ return [
         'phone' => env('SHOP_PHONE', '+48 22 000 00 00'),
     ],
 
+    'chat' => [
+        'provider' => env('SHOP_CHAT_PROVIDER'), // telegram | jivo | crisp | tawk
+        'telegram_url' => env('SHOP_CHAT_TELEGRAM_URL'),
+        'jivo_widget_id' => env('SHOP_CHAT_JIVO_WIDGET_ID'),
+        'crisp_website_id' => env('SHOP_CHAT_CRISP_WEBSITE_ID'),
+        'tawk_property_id' => env('SHOP_CHAT_TAWK_PROPERTY_ID'),
+        'tawk_widget_id' => env('SHOP_CHAT_TAWK_WIDGET_ID'),
+    ],
+
     'social' => [
         'instagram' => env('SHOP_INSTAGRAM_URL', 'https://instagram.com'),
         'facebook' => env('SHOP_FACEBOOK_URL', 'https://facebook.com'),
@@ -21,6 +30,10 @@ return [
     'listing' => [
         'per_page' => (int) env('SHOP_CATALOG_PER_PAGE', 24),
         'infinite_scroll' => true,
+    ],
+
+    'homepage_banners' => [
+        'enabled' => (bool) env('SHOP_HOMEPAGE_BANNERS_ENABLED', true),
     ],
 
     'checkout' => [
@@ -93,6 +106,14 @@ return [
             'title',
             'subtitle',
             'cta_label',
+        ],
+    ],
+
+    'hero_banner_item' => [
+        'translatable_fields' => [
+            'title',
+            'subtitle',
+            'button_label',
         ],
     ],
 

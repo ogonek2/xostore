@@ -10,6 +10,11 @@ return [
         'men' => 'Men',
         'accessories' => 'Accessories',
         'contact' => 'Contact',
+        'promo_badge' => 'Sale',
+        'all_in_category' => 'All :name',
+        'catalog' => 'Catalog',
+        'open_menu' => 'Open menu',
+        'close_menu' => 'Close menu',
     ],
     'hero' => [
         'subtitle' => 'Discover the new collection',
@@ -34,6 +39,11 @@ return [
         'view_all' => 'View all',
         'view_more' => 'See more',
         'cta' => 'Shop now',
+    ],
+
+    'banners' => [
+        'title' => 'Advertising banners',
+        'alt' => 'Advertising banner',
     ],
 
     'cart' => [

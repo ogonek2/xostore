@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\PromotionLayout;
+use App\Enums\PromotionProductTargetType;
 use App\Models\Category;
 use App\Models\Language;
 use App\Models\Promotion;
@@ -114,6 +115,9 @@ class PromotionSeeder extends Seeder
             ['code' => $code],
             [
                 'layout' => $layout,
+                'product_target_type' => $category
+                    ? PromotionProductTargetType::Category
+                    : null,
                 'category_id' => $category?->id,
                 'discount_percent' => $discount,
                 'image_path' => $image,

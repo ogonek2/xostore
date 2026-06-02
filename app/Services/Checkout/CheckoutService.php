@@ -4,11 +4,13 @@ namespace App\Services\Checkout;
 
 use App\Enums\OrderStatus;
 use App\Enums\ShopEventType;
+use App\Mail\OrderPlacedMail;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Analytics\ShopAnalyticsService;
 use App\Services\Cart\CartService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -78,6 +80,9 @@ class CheckoutService
                 ShopEventType::OrderPlaced,
                 payload: ['order_id' => $order->id, 'total' => (float) $order->total],
             );
+
+            $order->loadMissing('items');
+            Mail::to($order->email)->send(new OrderPlacedMail($order));
 
             return $order;
         });

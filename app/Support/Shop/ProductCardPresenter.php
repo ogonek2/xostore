@@ -3,6 +3,7 @@
 namespace App\Support\Shop;
 
 use App\Models\Product;
+use App\Services\Promotion\PromotionDiscountService;
 use App\Support\Media\MediaUrl;
 use Illuminate\Support\Collection;
 
@@ -28,7 +29,10 @@ class ProductCardPresenter
             $displayName = $name ?? $product->sku;
         }
 
-        $price = $product->variants->min('price') ?? $product->base_price;
+        $basePrice = $product->variants->min('price') ?? $product->base_price;
+        $discounts = app(PromotionDiscountService::class);
+        $price = $discounts->applyDiscount((float) $basePrice, $product);
+        $compareAt = $price < (float) $basePrice ? (float) $basePrice : null;
         $slug = $product->translate('slug', $locale) ?? $product->sku;
 
         return [
@@ -38,6 +42,8 @@ class ProductCardPresenter
             'category' => $compact ? null : $product->primaryCategory?->translate('name', $locale),
             'price' => $price,
             'price_formatted' => static::formatPrice($price),
+            'compare_at_price' => $compareAt,
+            'compare_at_formatted' => $compareAt ? static::formatPrice($compareAt) : null,
             'image' => static::resolveImage($product),
             'colors' => $compact ? [] : static::resolveColors($product),
             'alt' => $displayName,

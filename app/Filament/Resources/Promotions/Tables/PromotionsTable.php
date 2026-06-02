@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Promotions\Tables;
 
 use App\Enums\PromotionLayout;
+use App\Enums\PromotionProductTargetType;
 use App\Filament\Support\AdminTableColumns;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -24,6 +25,13 @@ class PromotionsTable
                 TextColumn::make('layout')
                     ->label('Макет')
                     ->formatStateUsing(fn ($state) => $state instanceof PromotionLayout ? $state->label() : $state),
+                TextColumn::make('product_target_type')
+                    ->label('Область')
+                    ->formatStateUsing(
+                        fn ($state) => $state instanceof PromotionProductTargetType
+                            ? $state->label()
+                            : ($state ?: '—')
+                    ),
                 TextColumn::make('discount_percent')
                     ->label('Скидка')
                     ->suffix('%'),

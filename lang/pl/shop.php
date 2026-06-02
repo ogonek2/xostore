@@ -10,6 +10,11 @@ return [
         'men' => 'Męskie',
         'accessories' => 'Akcesoria',
         'contact' => 'Kontakt',
+        'promo_badge' => 'Promocja',
+        'all_in_category' => 'Wszystkie :name',
+        'catalog' => 'Katalog',
+        'open_menu' => 'Otwórz menu',
+        'close_menu' => 'Zamknij menu',
     ],
     'hero' => [
         'subtitle' => 'Odkryj nową kolekcję',
@@ -34,6 +39,11 @@ return [
         'view_all' => 'Zobacz wszystko',
         'view_more' => 'Zobacz więcej',
         'cta' => 'Zobacz',
+    ],
+
+    'banners' => [
+        'title' => 'Banery reklamowe',
+        'alt' => 'Baner reklamowy',
     ],
 
     'cart' => [

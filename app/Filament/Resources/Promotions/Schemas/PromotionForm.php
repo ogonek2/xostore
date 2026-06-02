@@ -6,6 +6,7 @@ use App\Enums\PromotionLayout;
 use App\Enums\PromotionProductTargetType;
 use App\Filament\Forms\TranslationTabs;
 use App\Filament\Support\FilamentMedia;
+use App\Models\Brand;
 use App\Models\Catalog;
 use App\Models\Category;
 use App\Models\Product;
@@ -46,13 +47,13 @@ class PromotionForm
                             ->maxValue(100)
                             ->helperText('Скидка автоматически применяется к цене в корзине'),
                         Select::make('product_target_type')
-                            ->label('Товары со скидкой')
+                            ->label('Область акции')
                             ->options(collect(PromotionProductTargetType::cases())->mapWithKeys(
                                 fn (PromotionProductTargetType $type) => [$type->value => $type->label()]
                             ))
+                            ->required()
                             ->native(false)
-                            ->live()
-                            ->nullable(),
+                            ->live(),
                         Select::make('category_id')
                             ->label('Категория')
                             ->relationship('category', 'code')
@@ -61,18 +62,30 @@ class PromotionForm
                             )
                             ->searchable()
                             ->preload()
-                            ->visible(fn (Get $get) => $get('product_target_type') === PromotionProductTargetType::Category->value
-                                || blank($get('product_target_type')))
+                            ->required(fn (Get $get) => $get('product_target_type') === PromotionProductTargetType::Category->value)
+                            ->visible(fn (Get $get) => $get('product_target_type') === PromotionProductTargetType::Category->value)
                             ->nullable(),
                         Select::make('catalog_id')
-                            ->label('Каталог (коллекция)')
+                            ->label('Группа (каталог)')
                             ->relationship('catalog', 'code')
                             ->getOptionLabelFromRecordUsing(
                                 fn (Catalog $record) => $record->translate('name', 'pl') ?? $record->code
                             )
                             ->searchable()
                             ->preload()
+                            ->required(fn (Get $get) => $get('product_target_type') === PromotionProductTargetType::Catalog->value)
                             ->visible(fn (Get $get) => $get('product_target_type') === PromotionProductTargetType::Catalog->value)
+                            ->nullable(),
+                        Select::make('brand_id')
+                            ->label('Бренд')
+                            ->relationship('brand', 'code')
+                            ->getOptionLabelFromRecordUsing(
+                                fn (Brand $record) => $record->translate('name', 'pl') ?? $record->code
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->required(fn (Get $get) => $get('product_target_type') === PromotionProductTargetType::Brand->value)
+                            ->visible(fn (Get $get) => $get('product_target_type') === PromotionProductTargetType::Brand->value)
                             ->nullable(),
                         Select::make('products')
                             ->label('Товары')
@@ -83,6 +96,7 @@ class PromotionForm
                             ->multiple()
                             ->searchable()
                             ->preload()
+                            ->required(fn (Get $get) => $get('product_target_type') === PromotionProductTargetType::Products->value)
                             ->visible(fn (Get $get) => $get('product_target_type') === PromotionProductTargetType::Products->value)
                             ->columnSpanFull(),
                         TextInput::make('sort_order')

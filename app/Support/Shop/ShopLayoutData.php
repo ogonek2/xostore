@@ -40,6 +40,7 @@ class ShopLayoutData
         return [
             'menuRoots' => static::menuRoots(),
             'languages' => static::languages(),
+            'navigation' => ShopNavigation::tree('header'),
         ];
     }
 }

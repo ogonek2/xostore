@@ -3,7 +3,7 @@
 @section('title', __('shop.checkout.thankyou_title').' — '.config('shop.name'))
 
 @section('content')
-    <x-shop.header :menu-roots="$menuRoots" :languages="$languages" :cart-count="$cartCount" />
+    <x-shop.header :navigation="$navigation" :languages="$languages" :cart-count="$cartCount" />
 
     <main class="flex-1">
         <div class="mx-auto max-w-2xl px-5 py-16 text-center lg:px-8">

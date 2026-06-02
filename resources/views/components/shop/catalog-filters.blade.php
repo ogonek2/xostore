@@ -68,28 +68,54 @@
         </fieldset>
     @endif
 
+    @if (! empty($facets['sizes']))
+        <fieldset>
+            <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                {{ __('shop.product.select_variant') }}
+            </legend>
+            <ul class="max-h-48 space-y-2 overflow-y-auto">
+                @foreach ($facets['sizes'] as $size)
+                    <li>
+                        <label class="flex cursor-pointer items-center gap-2 text-sm">
+                            <input
+                                type="checkbox"
+                                name="sizes[]"
+                                value="{{ $size['id'] }}"
+                                @checked(in_array($size['id'], $filters['sizes'] ?? [], true))
+                                class="size-4 border-border-DEFAULT"
+                                onchange="this.form.requestSubmit()"
+                            >
+                            <span>{{ $size['label'] }}</span>
+                        </label>
+                    </li>
+                @endforeach
+            </ul>
+        </fieldset>
+    @endif
+
     @if (! empty($facets['colors']))
         <fieldset>
             <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
                 {{ __('shop.listing.color') }}
             </legend>
-            <ul class="flex flex-wrap gap-2">
+            <ul class="max-h-48 space-y-2 overflow-y-auto">
                 @foreach ($facets['colors'] as $color)
                     <li>
-                        <label class="group relative flex cursor-pointer items-center">
+                        <label class="flex cursor-pointer items-center gap-2.5 text-sm">
                             <input
                                 type="checkbox"
                                 name="colors[]"
                                 value="{{ $color['id'] }}"
                                 @checked(in_array($color['id'], $filters['colors'] ?? [], true))
-                                class="peer sr-only"
+                                class="size-4 border-border-DEFAULT"
                                 onchange="this.form.requestSubmit()"
                             >
                             <span
-                                class="size-8 rounded-full border-2 border-transparent ring-1 ring-border-DEFAULT transition group-hover:scale-105 peer-checked:ring-primary-DEFAULT peer-checked:ring-2"
-                                style="background-color: {{ $color['hex'] ?? '#ccc' }}"
+                                class="size-5 shrink-0 rounded-full border border-border-DEFAULT ring-1 ring-inset ring-black/5"
+                                style="background-color: {{ $color['hex'] ?? '#e8e6e2' }}"
                                 title="{{ $color['label'] }}"
                             ></span>
+                            <span>{{ $color['label'] }}</span>
                         </label>
                     </li>
                 @endforeach
@@ -126,7 +152,7 @@
         </button>
     </fieldset>
 
-    @if (collect($filters)->only(['brands', 'colors', 'price_min', 'price_max', 'sale', 'new'])->filter()->isNotEmpty())
+    @if (collect($filters)->only(['brands', 'sizes', 'colors', 'price_min', 'price_max', 'sale', 'new'])->filter()->isNotEmpty())
         <a href="{{ $formAction }}" class="inline-block text-sm text-text-muted underline underline-offset-4 hover:text-primary-DEFAULT">
             {{ __('shop.listing.clear_filters') }}
         </a>

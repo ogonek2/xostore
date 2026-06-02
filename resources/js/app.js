@@ -3,9 +3,11 @@ import './shop/trending-swiper';
 import './shop/new-arrivals-swiper';
 import { initCartBadges } from './shop/cart-badges';
 import { initShopAnalytics } from './shop/analytics';
+import { initHeaderNav } from './shop/header-nav';
 
 initCartBadges();
 initShopAnalytics();
+initHeaderNav();
 import { createApp } from 'vue';
 
 const vueMounts = document.querySelectorAll('[data-vue]');
@@ -61,6 +63,7 @@ vueMounts.forEach((el) => {
                 initialItems: JSON.parse(el.dataset.initialItems || '[]'),
                 initialTotal: Number(el.dataset.initialTotal || 0),
                 facets: JSON.parse(el.dataset.facets || '{}'),
+                categories: JSON.parse(el.dataset.categories || '[]'),
                 labels: JSON.parse(el.dataset.labels || '{}'),
                 locale: el.dataset.locale || 'pl',
                 perPage: Number(el.dataset.perPage || 24),

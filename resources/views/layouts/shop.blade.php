@@ -58,5 +58,49 @@
             });
         });
     </script>
+
+    @php
+        $chatProvider = config('shop.chat.provider');
+    @endphp
+
+    @if ($chatProvider === 'telegram' && config('shop.chat.telegram_url'))
+        <a
+            href="{{ config('shop.chat.telegram_url') }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            style="position:fixed;right:18px;bottom:18px;z-index:9999;display:inline-flex;align-items:center;gap:8px;padding:10px 14px;background:#229ED9;color:#fff;border-radius:9999px;text-decoration:none;font:600 13px/1 Arial,sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.2);"
+            aria-label="Telegram chat"
+        >
+            <span>Telegram</span>
+        </a>
+    @elseif ($chatProvider === 'jivo' && config('shop.chat.jivo_widget_id'))
+        <script src="//code.jivosite.com/widget/{{ config('shop.chat.jivo_widget_id') }}" async></script>
+    @elseif ($chatProvider === 'crisp' && config('shop.chat.crisp_website_id'))
+        <script>
+            window.$crisp = [];
+            window.CRISP_WEBSITE_ID = @json(config('shop.chat.crisp_website_id'));
+            (function () {
+                var d = document;
+                var s = d.createElement('script');
+                s.src = 'https://client.crisp.chat/l.js';
+                s.async = 1;
+                d.getElementsByTagName('head')[0].appendChild(s);
+            })();
+        </script>
+    @elseif ($chatProvider === 'tawk' && config('shop.chat.tawk_property_id'))
+        <script>
+            var Tawk_API = Tawk_API || {};
+            var Tawk_LoadStart = new Date();
+            (function () {
+                var s1 = document.createElement('script');
+                var s0 = document.getElementsByTagName('script')[0];
+                s1.async = true;
+                s1.src = 'https://embed.tawk.to/{{ config('shop.chat.tawk_property_id') }}/{{ config('shop.chat.tawk_widget_id', '1') }}';
+                s1.charset = 'UTF-8';
+                s1.setAttribute('crossorigin', '*');
+                s0.parentNode.insertBefore(s1, s0);
+            })();
+        </script>
+    @endif
 </body>
 </html>
