@@ -52,6 +52,20 @@ class NavPanel extends Model
         return $this->belongsTo(Catalog::class);
     }
 
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'nav_panel_category')
+            ->withPivot('sort_order')
+            ->orderByPivot('sort_order');
+    }
+
+    public function catalogs(): BelongsToMany
+    {
+        return $this->belongsToMany(Catalog::class, 'nav_panel_catalog')
+            ->withPivot('sort_order')
+            ->orderByPivot('sort_order');
+    }
+
     public function links(): HasMany
     {
         return $this->hasMany(NavPanelLink::class)->orderBy('sort_order');

@@ -25,7 +25,7 @@ class NavMenuForm
         return $schema
             ->components([
                 Section::make('Меню')
-                    ->description('Мега-меню: выберите категорию или товары из каталога — подписи и ссылки подставятся автоматически.')
+                    ->description('Мега-меню: в колонке можно выбрать несколько категорий или каталогов — каждый станет отдельной ссылкой.')
                     ->schema([
                         TextInput::make('name')
                             ->label('Название (админка)')
@@ -134,19 +134,28 @@ class NavMenuForm
                     ->helperText('Необязательно — для категории подставится название из каталога.'),
                 NavItemLabelFields::make('title_labels'),
             ),
-            Select::make('category_id')
-                ->label('Категория')
-                ->relationship('category', 'code')
+            Select::make('categories')
+                ->label('Категории')
+                ->relationship(
+                    name: 'categories',
+                    titleAttribute: 'code',
+                    modifyQueryUsing: fn ($query) => $query->where('is_active', true),
+                )
                 ->getOptionLabelFromRecordUsing(
                     fn (Category $record) => $record->translate('name', 'pl') ?? $record->code
                 )
+                ->multiple()
                 ->searchable()
                 ->preload()
+                ->orderColumn('sort_order')
                 ->required(fn (Get $get) => $get('type') === NavPanelType::Category->value)
-                ->visible(fn (Get $get) => $get('type') === NavPanelType::Category->value),
+                ->helperText('Несколько категорий — отдельные ссылки (обувь, одежда, сумки…). Одна категория + «Подкатегории» — список дочерних разделов.')
+                ->visible(fn (Get $get) => $get('type') === NavPanelType::Category->value)
+                ->columnSpanFull(),
             Toggle::make('show_subcategories')
                 ->label('Показать подкатегории')
                 ->default(true)
+                ->helperText('Только если выбрана одна категория.')
                 ->visible(fn (Get $get) => $get('type') === NavPanelType::Category->value),
             Toggle::make('show_products')
                 ->label('Показать товары категории')
@@ -169,16 +178,24 @@ class NavMenuForm
                 ->required(fn (Get $get) => $get('type') === NavPanelType::SelectedProducts->value)
                 ->visible(fn (Get $get) => $get('type') === NavPanelType::SelectedProducts->value)
                 ->columnSpanFull(),
-            Select::make('catalog_id')
-                ->label('Каталог (коллекция)')
-                ->relationship('catalog', 'code')
+            Select::make('catalogs')
+                ->label('Каталоги (коллекции)')
+                ->relationship(
+                    name: 'catalogs',
+                    titleAttribute: 'code',
+                    modifyQueryUsing: fn ($query) => $query->where('is_active', true),
+                )
                 ->getOptionLabelFromRecordUsing(
                     fn (Catalog $record) => $record->translate('name', 'pl') ?? $record->code
                 )
+                ->multiple()
                 ->searchable()
                 ->preload()
+                ->orderColumn('sort_order')
                 ->required(fn (Get $get) => $get('type') === NavPanelType::CatalogProducts->value)
-                ->visible(fn (Get $get) => $get('type') === NavPanelType::CatalogProducts->value),
+                ->helperText('Несколько каталогов — ссылки на страницы коллекций. Один каталог — превью товаров в колонке.')
+                ->visible(fn (Get $get) => $get('type') === NavPanelType::CatalogProducts->value)
+                ->columnSpanFull(),
             TextInput::make('columns')
                 ->label('Колонок текста')
                 ->numeric()
@@ -199,8 +216,9 @@ class NavMenuForm
                 ->helperText(fn (Get $get) => match ($get('type')) {
                     NavPanelType::SelectedProducts->value => 'Не используется — показываются все выбранные товары.',
                     NavPanelType::Category->value => $get('show_products')
-                        ? 'Макс. подкатегорий и товаров.'
-                        : 'Макс. подкатегорий (+ ссылка «все»).',
+                        ? 'Макс. подкатегорий и товаров (одна категория).'
+                        : 'Макс. ссылок в колонке (категории, подкатегории или каталоги).',
+                    NavPanelType::CatalogProducts->value => 'Макс. ссылок при нескольких каталогах; при одном — число товаров в превью.',
                     default => 'Макс. элементов в колонке.',
                 }),
             Toggle::make('is_active')

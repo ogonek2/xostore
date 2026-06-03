@@ -14,10 +14,10 @@ enum NavPanelType: string
     public function label(): string
     {
         return match ($this) {
-            self::Category => 'Категория (подкатегории и/или товары)',
+            self::Category => 'Категории (одна или несколько ссылок)',
             self::SelectedProducts => 'Выбранные товары',
             self::Brands => 'Бренды (#теги)',
-            self::CatalogProducts => 'Товары из каталога',
+            self::CatalogProducts => 'Каталоги (ссылки или превью товаров)',
             self::PromotionProducts => 'Товары по акциям',
             self::Links => 'Произвольные ссылки',
         };

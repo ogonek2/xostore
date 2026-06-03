@@ -32,6 +32,14 @@ class ShopNavigation
                                 'links' => fn ($l) => $l->orderBy('sort_order'),
                                 'category.translates',
                                 'catalog.translates',
+                                'categories' => fn ($q) => $q
+                                    ->where('is_active', true)
+                                    ->with('translates')
+                                    ->orderByPivot('sort_order'),
+                                'catalogs' => fn ($q) => $q
+                                    ->where('is_active', true)
+                                    ->with('translates')
+                                    ->orderByPivot('sort_order'),
                                 'products' => fn ($pr) => $pr->orderByPivot('sort_order'),
                             ])
                             ->orderBy('sort_order'),

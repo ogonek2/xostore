@@ -4,6 +4,7 @@ namespace App\Support\Shop;
 
 use App\Enums\NavPanelType;
 use App\Models\Brand;
+use App\Models\Catalog;
 use App\Models\Category;
 use App\Models\NavPanel;
 use App\Models\Product;
@@ -48,6 +49,8 @@ class NavPanelPresenter
             'columns' => max(1, min(2, (int) $panel->columns)),
             'links' => $payload['links'] ?? [],
             'products' => $payload['products'] ?? [],
+            'view_all_url' => $payload['view_all_url'] ?? null,
+            'view_all_label' => $payload['view_all_label'] ?? null,
         ];
     }
 
@@ -59,13 +62,28 @@ class NavPanelPresenter
             return $custom;
         }
 
-        if ($panel->category_id) {
+        $categories = static::resolveCategories($panel);
+        $catalogs = static::resolveCatalogs($panel);
+
+        if ($categories->count() === 1) {
+            $category = $categories->first();
+
+            return $category->translate('name', $locale) ?? $category->code;
+        }
+
+        if ($catalogs->count() === 1) {
+            $catalog = $catalogs->first();
+
+            return $catalog->translate('name', $locale) ?? $catalog->code;
+        }
+
+        if ($panel->category_id && $categories->isEmpty()) {
             $panel->loadMissing('category.translates');
 
             return $panel->category?->translate('name', $locale);
         }
 
-        if ($panel->catalog_id) {
+        if ($panel->catalog_id && $catalogs->isEmpty()) {
             $panel->loadMissing('catalog.translates');
 
             return $panel->catalog?->translate('name', $locale);
@@ -75,26 +93,96 @@ class NavPanelPresenter
     }
 
     /**
+     * @return Collection<int, Category>
+     */
+    protected static function resolveCategories(NavPanel $panel): Collection
+    {
+        if ($panel->relationLoaded('categories') && $panel->categories->isNotEmpty()) {
+            return $panel->categories;
+        }
+
+        $categories = $panel->categories()
+            ->where('is_active', true)
+            ->with('translates')
+            ->orderByPivot('sort_order')
+            ->get();
+
+        if ($categories->isNotEmpty()) {
+            return $categories;
+        }
+
+        if ($panel->category_id) {
+            $category = Category::query()
+                ->where('is_active', true)
+                ->with('translates')
+                ->find($panel->category_id);
+
+            return $category ? collect([$category]) : collect();
+        }
+
+        return collect();
+    }
+
+    /**
+     * @return Collection<int, Catalog>
+     */
+    protected static function resolveCatalogs(NavPanel $panel): Collection
+    {
+        if ($panel->relationLoaded('catalogs') && $panel->catalogs->isNotEmpty()) {
+            return $panel->catalogs;
+        }
+
+        $catalogs = $panel->catalogs()
+            ->where('is_active', true)
+            ->with('translates')
+            ->orderByPivot('sort_order')
+            ->get();
+
+        if ($catalogs->isNotEmpty()) {
+            return $catalogs;
+        }
+
+        if ($panel->catalog_id) {
+            $catalog = Catalog::query()
+                ->where('is_active', true)
+                ->with('translates')
+                ->find($panel->catalog_id);
+
+            return $catalog ? collect([$catalog]) : collect();
+        }
+
+        return collect();
+    }
+
+    /**
      * @return array{links?: list<array<string, mixed>>, products?: list<array<string, mixed>>}|null
      */
     protected static function presentCategory(NavPanel $panel, string $locale): ?array
     {
-        if (! $panel->category_id) {
+        $categories = static::resolveCategories($panel);
+
+        if ($categories->isEmpty()) {
             return null;
         }
 
         $result = [];
 
-        if ($panel->show_subcategories) {
-            $links = static::categorySubcategoryLinks($panel, $locale);
+        if ($panel->show_subcategories && $categories->count() === 1) {
+            $links = static::categorySubcategoryLinks((int) $categories->first()->id, $panel, $locale);
+
+            if ($links !== []) {
+                $result['links'] = $links;
+            }
+        } else {
+            $links = static::categoryDirectLinks($categories, $locale, (int) $panel->item_limit);
 
             if ($links !== []) {
                 $result['links'] = $links;
             }
         }
 
-        if ($panel->show_products) {
-            $products = static::categoryProducts($panel);
+        if ($panel->show_products && $categories->count() === 1) {
+            $products = static::categoryProducts((int) $categories->first()->id, $panel);
 
             if ($products->isNotEmpty()) {
                 $cards = static::presentProductCards($products, $locale);
@@ -111,7 +199,28 @@ class NavPanelPresenter
     /**
      * @return list<array{label: string, url: string, open_in_new_tab: bool}>
      */
-    protected static function categorySubcategoryLinks(NavPanel $panel, string $locale): array
+    protected static function categoryDirectLinks(Collection $categories, string $locale, int $limit): array
+    {
+        return $categories
+            ->take(max(1, $limit))
+            ->map(function (Category $category) use ($locale) {
+                $slug = $category->translate('slug', $locale) ?? $category->code;
+                $label = $category->translate('name', $locale) ?? $category->code;
+
+                return [
+                    'label' => $label,
+                    'url' => route('category.show', ['locale' => $locale, 'category' => $slug]),
+                    'open_in_new_tab' => false,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{label: string, url: string, open_in_new_tab: bool}>
+     */
+    protected static function categorySubcategoryLinks(int $categoryId, NavPanel $panel, string $locale): array
     {
         $category = Category::query()
             ->with([
@@ -122,7 +231,7 @@ class NavPanelPresenter
                     ->with('translates'),
             ])
             ->where('is_active', true)
-            ->find($panel->category_id);
+            ->find($categoryId);
 
         if (! $category) {
             return [];
@@ -156,9 +265,9 @@ class NavPanelPresenter
     /**
      * @return Collection<int, Product>
      */
-    protected static function categoryProducts(NavPanel $panel): Collection
+    protected static function categoryProducts(int $categoryId, NavPanel $panel): Collection
     {
-        $categoryIds = Category::idsIncludingDescendants((int) $panel->category_id);
+        $categoryIds = Category::idsIncludingDescendants($categoryId);
 
         return Product::query()
             ->published()
@@ -261,20 +370,23 @@ class NavPanelPresenter
     }
 
     /**
-     * @return array{products: list<array<string, mixed>>}|null
+     * @return array<string, mixed>|null
      */
     protected static function presentCatalogProducts(NavPanel $panel, string $locale): ?array
     {
-        if (! $panel->catalog_id) {
+        $catalogs = static::resolveCatalogs($panel);
+
+        if ($catalogs->isEmpty()) {
             return null;
         }
 
-        $catalog = $panel->catalog()->where('is_active', true)->first();
+        if ($catalogs->count() > 1) {
+            $links = static::catalogDirectLinks($catalogs, $locale, (int) $panel->item_limit);
 
-        if (! $catalog) {
-            return null;
+            return $links === [] ? null : ['links' => $links];
         }
 
+        $catalog = $catalogs->first();
         $slug = $catalog->translate('slug', $locale) ?? $catalog->code;
         $name = $catalog->translate('name', $locale) ?? $catalog->code;
 
@@ -296,6 +408,27 @@ class NavPanelPresenter
             'view_all_url' => route('catalog.show', ['locale' => $locale, 'catalog' => $slug]),
             'view_all_label' => __('shop.nav.all_in_category', ['name' => $name]),
         ]);
+    }
+
+    /**
+     * @return list<array{label: string, url: string, open_in_new_tab: bool}>
+     */
+    protected static function catalogDirectLinks(Collection $catalogs, string $locale, int $limit): array
+    {
+        return $catalogs
+            ->take(max(1, $limit))
+            ->map(function (Catalog $catalog) use ($locale) {
+                $slug = $catalog->translate('slug', $locale) ?? $catalog->code;
+                $label = $catalog->translate('name', $locale) ?? $catalog->code;
+
+                return [
+                    'label' => $label,
+                    'url' => route('catalog.show', ['locale' => $locale, 'catalog' => $slug]),
+                    'open_in_new_tab' => false,
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /**
