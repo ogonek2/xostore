@@ -3,6 +3,7 @@
 namespace App\View\Composers;
 
 use App\Services\Cart\CartService;
+use App\Support\Shop\ShopFooter;
 use App\Support\Shop\ShopLayoutData;
 use Illuminate\View\View;
 
@@ -20,6 +21,10 @@ class ShopLayoutComposer
 
         if (! $view->offsetExists('cartCount')) {
             $view->with('cartCount', app(CartService::class)->count());
+        }
+
+        if (! $view->offsetExists('footer')) {
+            $view->with('footer', ShopFooter::data());
         }
     }
 }

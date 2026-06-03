@@ -16,5 +16,13 @@ class NavMenuSeeder extends Seeder
                 'is_active' => true,
             ],
         );
+
+        NavMenu::query()->updateOrCreate(
+            ['code' => 'footer'],
+            [
+                'name' => 'Футер',
+                'is_active' => true,
+            ],
+        );
     }
 }

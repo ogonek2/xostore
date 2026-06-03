@@ -22,7 +22,7 @@
         @yield('content')
     </div>
 
-    <x-shop.footer :menu-roots="$menuRoots" :languages="$languages" />
+    <x-shop.footer :footer="$footer" :languages="$languages" />
 
     @php
         $locale = app()->getLocale();

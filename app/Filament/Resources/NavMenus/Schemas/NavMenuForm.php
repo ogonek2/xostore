@@ -6,6 +6,7 @@ use App\Enums\NavPanelType;
 use App\Filament\Forms\NavItemLabelFields;
 use App\Models\Catalog;
 use App\Models\Category;
+use App\Models\NavMenu;
 use App\Models\Product;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Repeater;
@@ -35,7 +36,7 @@ class NavMenuForm
                             ->unique(ignoreRecord: true)
                             ->alphaDash()
                             ->maxLength(64)
-                            ->helperText('Для шапки используйте код header'),
+                            ->helperText('header — шапка, footer — колонки футера (редактируются в «Футер — колонки»)'),
                         Toggle::make('is_active')
                             ->label('Активно')
                             ->default(true),
@@ -91,6 +92,7 @@ class NavMenuForm
                 ->orderColumn('sort_order')
                 ->collapsible()
                 ->itemLabel(fn (array $state): ?string => static::panelPreviewLabel($state))
+                ->visible(fn (Get $get, ?NavMenu $record) => static::menuCode($get, $record) !== 'footer')
                 ->columnSpanFull();
 
             $schema[] = Repeater::make('children')
@@ -104,6 +106,7 @@ class NavMenuForm
                 ->collapsible()
                 ->itemLabel(fn (array $state): ?string => static::itemPreviewLabel($state))
                 ->helperText('Только если колонки мега-меню не используются.')
+                ->visible(fn (Get $get, ?NavMenu $record) => static::menuCode($get, $record) !== 'footer')
                 ->columnSpanFull();
         }
 
@@ -241,5 +244,10 @@ class NavMenuForm
         $title = static::itemPreviewLabel(['labels' => $state['title_labels'] ?? []]);
 
         return $title ?? $type?->label() ?? 'Колонка';
+    }
+
+    protected static function menuCode(Get $get, ?NavMenu $record): ?string
+    {
+        return $get('code') ?? $record?->code;
     }
 }

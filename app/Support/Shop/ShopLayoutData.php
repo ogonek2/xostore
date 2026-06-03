@@ -41,6 +41,7 @@ class ShopLayoutData
             'menuRoots' => static::menuRoots(),
             'languages' => static::languages(),
             'navigation' => ShopNavigation::tree('header'),
+            'footer' => ShopFooter::data(),
         ];
     }
 }
