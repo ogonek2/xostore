@@ -162,6 +162,16 @@ return [
         'gallery_zoom_in' => 'Zoom in',
         'gallery_zoom_out' => 'Zoom out',
         'gallery_thumbnail' => 'Thumbnail',
+        'size' => 'Size',
+        'size_chart_title' => 'Size guide',
+        'size_chart_size' => 'Size',
+        'size_chart_chest' => 'Chest',
+        'size_chart_waist' => 'Waist',
+        'size_chart_hips' => 'Hips',
+        'size_chart_inseam' => 'Inseam',
+        'ready_to_ship' => 'In stock — ships now',
+        'tailoring_available' => 'Made-to-measure available',
+        'color_current' => 'Selected colour',
     ],
 
     'listing' => [

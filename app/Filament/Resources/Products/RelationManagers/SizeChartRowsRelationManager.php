@@ -2,9 +2,13 @@
 
 namespace App\Filament\Resources\Products\RelationManagers;
 
+use App\Filament\Support\ProductSizeGridOptions;
+use App\Models\Product;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -55,6 +59,47 @@ class SizeChartRowsRelationManager extends RelationManager
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
             ->headerActions([
+                Action::make('fillFromPreset')
+                    ->label('Заполнить размеры из пресета')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->requiresConfirmation()
+                    ->modalDescription('Создаёт строки с колонкой «Размер» из пресета товара. Мерки (грудь, талия…) заполните вручную.')
+                    ->visible(fn (): bool => filled($this->getOwnerRecord()->size_grid_id))
+                    ->action(function (): void {
+                        /** @var Product $product */
+                        $product = $this->getOwnerRecord();
+                        $seeds = ProductSizeGridOptions::emptyChartRows($product->size_grid_id);
+
+                        if ($seeds === []) {
+                            Notification::make()
+                                ->title('Пресет пуст')
+                                ->body('Назначьте пресет на вкладке «Пресет размеров» или добавьте размеры в справочнике.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $existing = $product->sizeChartRows()->pluck('size')->filter()->all();
+                        $created = 0;
+
+                        foreach ($seeds as $row) {
+                            if (in_array($row['size'], $existing, true)) {
+                                continue;
+                            }
+
+                            $product->sizeChartRows()->create($row);
+                            $created++;
+                        }
+
+                        Notification::make()
+                            ->title($created > 0 ? 'Строки добавлены' : 'Без изменений')
+                            ->body($created > 0
+                                ? "Добавлено строк: {$created}. Заполните мерки в таблице."
+                                : 'Все размеры из пресета уже есть в таблице.')
+                            ->success()
+                            ->send();
+                    }),
                 CreateAction::make()
                     ->label('Новая строка'),
             ])

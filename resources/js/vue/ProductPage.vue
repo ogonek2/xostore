@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import ProductGallery from './ProductGallery.vue';
 import ProductCharacteristics from './ProductCharacteristics.vue';
 import ProductSimilarProducts from './ProductSimilarProducts.vue';
+import ProductSizeChart from './ProductSizeChart.vue';
 import { productCartLines } from '../shop/cart-badges';
 
 const props = defineProps({
@@ -18,11 +19,13 @@ const adding = ref(false);
 const error = ref('');
 const cartLines = ref(props.product.cart?.lines ?? []);
 
-const variants = computed(() => props.product.variants);
+const variants = computed(() => props.product.variants ?? []);
+const colorProducts = computed(() => props.product.color_products ?? []);
+const hasMultipleColorProducts = computed(() => colorProducts.value.length > 1);
 
 const sizes = computed(() => {
-    if (!selectedColorId.value) {
-        return props.product.sizes;
+    if (hasMultipleColorProducts.value || (props.product.colors?.length ?? 0) <= 1) {
+        return props.product.sizes ?? [];
     }
 
     return variants.value
@@ -35,7 +38,11 @@ const sizes = computed(() => {
 });
 
 const selectedVariant = computed(() =>
-    variants.value.find((v) => v.id === selectedVariantId.value) ?? null
+    variants.value.find((v) => v.id === selectedVariantId.value) ?? null,
+);
+
+const currentColorProduct = computed(() =>
+    colorProducts.value.find((c) => c.is_current) ?? null,
 );
 
 const inCart = computed(() => cartLines.value.length > 0);
@@ -46,6 +53,14 @@ const cartTotalQty = computed(() =>
 
 const selectedVariantCartLine = computed(() =>
     cartLines.value.find((line) => line.variant_id === selectedVariantId.value) ?? null,
+);
+
+const hasDetailsSection = computed(() =>
+    (props.product.detail_items?.length ?? 0) > 0
+    || props.product.description
+    || props.product.fit_description
+    || props.product.fabric_description
+    || props.product.size_chart,
 );
 
 function applyCartItems(items) {
@@ -76,7 +91,11 @@ onUnmounted(() => {
 });
 
 watch(selectedColorId, (colorId) => {
-    const color = props.product.colors.find((c) => c.id === colorId);
+    if (hasMultipleColorProducts.value) {
+        return;
+    }
+
+    const color = props.product.colors?.find((c) => c.id === colorId);
     if (color) {
         const url = new URL(window.location.href);
         url.searchParams.set('color', color.code);
@@ -84,7 +103,9 @@ watch(selectedColorId, (colorId) => {
     }
 
     const first = variants.value.find((v) => v.color_id === colorId);
-    if (first) selectedVariantId.value = first.id;
+    if (first) {
+        selectedVariantId.value = first.id;
+    }
 });
 
 watch(sizes, (list) => {
@@ -148,6 +169,9 @@ async function addToCart() {
 
         <div class="lg:py-2">
             <p v-if="product.brand" class="text-sm uppercase tracking-[0.16em] text-text-muted">{{ product.brand }}</p>
+            <p v-if="product.category" class="mt-1 text-xs uppercase tracking-[0.14em] text-text-muted">
+                {{ product.category }}
+            </p>
             <div class="mt-2 flex flex-wrap items-start gap-3">
                 <h1 class="text-2xl font-semibold tracking-tight lg:text-[2rem]">{{ product.name }}</h1>
                 <span
@@ -160,6 +184,16 @@ async function addToCart() {
                     {{ labels.in_cart }}
                 </span>
             </div>
+
+            <ul v-if="product.highlights?.length" class="mt-3 flex flex-wrap gap-2">
+                <li
+                    v-for="badge in product.highlights"
+                    :key="badge.key"
+                    class="rounded-full border border-border-DEFAULT px-3 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-text-muted"
+                >
+                    {{ badge.label }}
+                </li>
+            </ul>
 
             <div
                 v-if="inCart"
@@ -197,7 +231,30 @@ async function addToCart() {
                 {{ product.short_description }}
             </p>
 
-            <div v-if="product.colors.length" class="mt-8">
+            <div v-if="hasMultipleColorProducts" class="mt-8">
+                <p class="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                    {{ labels.colors }}
+                </p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <a
+                        v-for="color in colorProducts"
+                        :key="color.id"
+                        :href="color.url"
+                        class="size-9 rounded-full border-2 transition hover:scale-105"
+                        :class="color.is_current
+                            ? 'border-primary-DEFAULT ring-2 ring-primary-DEFAULT ring-offset-2'
+                            : 'border-border-DEFAULT'"
+                        :style="{ backgroundColor: color.hex || '#e5e5e5' }"
+                        :title="color.label"
+                        :aria-current="color.is_current ? 'true' : undefined"
+                    />
+                </div>
+                <p v-if="currentColorProduct" class="mt-2 text-sm text-text-muted">
+                    {{ labels.color }}: {{ currentColorProduct.label }}
+                </p>
+            </div>
+
+            <div v-else-if="product.colors?.length" class="mt-8">
                 <p class="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
                     {{ labels.color }}<span v-if="selectedVariant?.color_label">: {{ selectedVariant.color_label }}</span>
                 </p>
@@ -216,9 +273,7 @@ async function addToCart() {
             </div>
 
             <div v-if="sizes.length" class="mt-8">
-                <div class="flex items-center justify-between gap-4">
-                    <p class="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">{{ labels.size }}</p>
-                </div>
+                <p class="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">{{ labels.size }}</p>
                 <div class="mt-3 flex flex-wrap gap-2">
                     <button
                         v-for="size in sizes"
@@ -278,13 +333,18 @@ async function addToCart() {
     </div>
 
     <div
-        v-if="product.similar_products?.length || product.detail_items?.length || product.description || product.fit_description || product.fabric_description"
+        v-if="product.similar_products?.length || hasDetailsSection"
         class="mt-12 space-y-12"
     >
         <ProductCharacteristics
             v-if="product.detail_items?.length || product.description || product.fit_description || product.fabric_description"
             :product="product"
             :labels="labels"
+        />
+        <ProductSizeChart
+            v-if="product.size_chart"
+            :chart="product.size_chart"
+            :title="labels.size_chart_title"
         />
         <ProductSimilarProducts
             :products="product.similar_products ?? []"

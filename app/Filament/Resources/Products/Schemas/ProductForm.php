@@ -218,19 +218,20 @@ class ProductForm
     protected static function sizeGridTabSchema(): array
     {
         return [
-            Section::make('Пресет из справочника')
-                ->description('Готовые сетки (S, M, L…) создаются в «Каталог → Размерные сетки». Здесь вы только выбираете пресет для этого товара.')
+            Section::make('Пресет размеров для кнопок на сайте')
+                ->description('Это НЕ таблица мерок. Пресет задаёт кнопки rozmiaru (S, M, L, 38…) в карточке товара. Справочник: Каталог → Размерные сетки.')
                 ->schema([
                     Select::make('size_grid_id')
-                        ->label('Размерная сетка')
-                        ->options(fn (Get $get) => ProductSizeGridOptions::presets(
+                        ->label('Пресет')
+                        ->options(fn (Get $get): array => ProductSizeGridOptions::presets(
                             $get('primary_category_id') ? (int) $get('primary_category_id') : null,
                         ))
                         ->searchable()
                         ->preload()
+                        ->native(false)
                         ->live()
                         ->nullable()
-                        ->helperText('Сначала привяжите основную категорию на вкладке «Основное» — список пресетов можно сузить по категории.'),
+                        ->helperText('После выбора сохраните товар. На вкладке «Размеры» в вариантах появятся размеры из пресета.'),
                     Placeholder::make('size_grid_sizes_preview')
                         ->label('Размеры в пресете')
                         ->content(function (Get $get): string {

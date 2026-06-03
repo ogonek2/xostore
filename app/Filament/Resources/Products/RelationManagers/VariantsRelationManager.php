@@ -6,10 +6,12 @@ use App\Filament\Support\ProductAdminOptions;
 use App\Filament\Support\ProductSizeGridOptions;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Support\Shop\ProductVariantColorSync;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -27,9 +29,6 @@ class VariantsRelationManager extends RelationManager
 
     protected static ?string $title = 'Размеры';
 
-    /** @var array<int, array{color_attribute_value_id?: int|null}> */
-    protected array $pendingVariantColors = [];
-
     public function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -37,12 +36,20 @@ class VariantsRelationManager extends RelationManager
                 ->label('SKU')
                 ->required()
                 ->maxLength(64),
-            Select::make('color_attribute_value_id')
-                ->label('Цвет')
-                ->options(fn () => ProductAdminOptions::colorAttributeValues())
-                ->searchable()
-                ->nullable()
-                ->dehydrated(false),
+            Placeholder::make('product_color')
+                ->label('Цвет товара')
+                ->content(function (): string {
+                    $product = $this->getOwnerRecord();
+                    $parts = array_filter([
+                        $product->color_label,
+                        $product->color_hex,
+                    ]);
+
+                    return $parts === []
+                        ? 'Задайте цвет на вкладке «Основное» (поля «Цвет» и HEX).'
+                        : implode(' · ', $parts);
+                })
+                ->columnSpanFull(),
             Select::make('size_grid_value_id')
                 ->label('Размер')
                 ->options(fn () => ProductAdminOptions::sizeGridValues(
@@ -130,52 +137,19 @@ class VariantsRelationManager extends RelationManager
                     }),
                 CreateAction::make()
                     ->label('Новый вариант')
-                    ->mutateFormDataUsing(function (array $data): array {
-                        $this->extractVariantColor($data);
-
-                        return $data;
-                    })
-                    ->after(fn (ProductVariant $record) => $this->syncVariantColor($record)),
+                    ->after(function (ProductVariant $record): void {
+                        ProductVariantColorSync::syncVariant($this->getOwnerRecord(), $record);
+                    }),
             ])
             ->recordActions([
                 EditAction::make()
-                    ->mutateRecordDataUsing(function (array $data, ProductVariant $record): array {
-                        $color = $record->attributeValues->first(fn ($v) => $v->color_hex);
-
-                        $data['color_attribute_value_id'] = $color?->id;
-
-                        return $data;
-                    })
-                    ->mutateFormDataUsing(function (array $data): array {
-                        $this->extractVariantColor($data);
-
-                        return $data;
-                    })
-                    ->after(fn (ProductVariant $record) => $this->syncVariantColor($record)),
+                    ->after(function (ProductVariant $record): void {
+                        ProductVariantColorSync::syncVariant($this->getOwnerRecord(), $record);
+                    }),
                 DeleteAction::make(),
             ])
             ->emptyStateHeading('Нет вариантов')
             ->emptyStateDescription('Выберите пресет кнопкой выше, затем создайте варианты с размером и ценой.');
     }
 
-    protected function extractVariantColor(array &$data): void
-    {
-        $this->pendingVariantColors = [];
-
-        if (isset($data['color_attribute_value_id'])) {
-            $this->pendingVariantColors[0] = [
-                'color_attribute_value_id' => $data['color_attribute_value_id'],
-            ];
-            unset($data['color_attribute_value_id']);
-        }
-    }
-
-    protected function syncVariantColor(ProductVariant $variant): void
-    {
-        $colorId = $this->pendingVariantColors[0]['color_attribute_value_id'] ?? null;
-
-        if ($colorId) {
-            $variant->attributeValues()->sync([$colorId]);
-        }
-    }
 }

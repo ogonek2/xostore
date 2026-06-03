@@ -162,6 +162,16 @@ return [
         'gallery_zoom_in' => 'Powiększ',
         'gallery_zoom_out' => 'Pomniejsz',
         'gallery_thumbnail' => 'Miniatura',
+        'size' => 'Rozmiar',
+        'size_chart_title' => 'Tabela rozmiarów',
+        'size_chart_size' => 'Rozmiar',
+        'size_chart_chest' => 'Klatka',
+        'size_chart_waist' => 'Talia',
+        'size_chart_hips' => 'Biodra',
+        'size_chart_inseam' => 'Wewnętrzna',
+        'ready_to_ship' => 'W magazynie — wysyłka od ręki',
+        'tailoring_available' => 'Dostępny szycie na miarę',
+        'color_current' => 'Wybrany kolor',
     ],
 
     'listing' => [

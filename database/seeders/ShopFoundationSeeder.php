@@ -94,6 +94,7 @@ class ShopFoundationSeeder extends Seeder
             [
                 'brand_id' => $chanel->id,
                 'primary_category_id' => $women->id,
+                'size_grid_id' => $euShoes->id,
                 'status' => 'published',
                 'type' => 'variable',
                 'base_price' => 1190,

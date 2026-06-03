@@ -1,7 +1,7 @@
 @php
     $productLabels = [
         'color' => __('shop.product.color'),
-        'size' => __('shop.product.select_variant'),
+        'size' => __('shop.product.size'),
         'quantity' => __('shop.product.quantity'),
         'add_to_cart' => __('shop.product.add_to_cart'),
         'add_another' => __('shop.product.add_another'),
@@ -31,6 +31,7 @@
         'zoom_in' => __('shop.product.gallery_zoom_in'),
         'zoom_out' => __('shop.product.gallery_zoom_out'),
         'thumbnail' => __('shop.product.gallery_thumbnail'),
+        'size_chart_title' => __('shop.product.size_chart_title'),
     ];
 @endphp
 

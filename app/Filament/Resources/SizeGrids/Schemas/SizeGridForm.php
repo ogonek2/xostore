@@ -14,36 +14,43 @@ class SizeGridForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Пресет размерной сетки')
+            Section::make('Справочник пресета')
+                ->description('Пресет используется в товарах для кнопок выбора размера на сайте (S, M, L, 36…). Таблица мерок (грудь, талия) заполняется отдельно в каждом товаре.')
                 ->schema([
                     TextInput::make('code')
-                        ->label('Код')
+                        ->label('Код (латиница)')
                         ->required()
                         ->unique(ignoreRecord: true)
                         ->alphaDash()
-                        ->maxLength(64),
+                        ->maxLength(64)
+                        ->helperText('Напр. clothing_standard, footwear_eu'),
                     TextInput::make('unit')
-                        ->label('Единица (EU, US, см)')
-                        ->maxLength(16),
+                        ->label('Подпись единицы')
+                        ->placeholder('EU, US, см')
+                        ->maxLength(16)
+                        ->helperText('Показывается рядом с таблицей мерок на сайте'),
                     Toggle::make('is_active')
-                        ->label('Активна')
+                        ->label('Активен')
                         ->default(true),
                 ])
                 ->columns(2)
                 ->columnSpanFull(),
-            Section::make('Размеры')
+            Section::make('Размеры для кнопок на сайте')
+                ->description('«Код» — внутреннее значение. «На сайте» — текст на кнопке (S, M, 38…).')
                 ->schema([
                     Repeater::make('values')
                         ->label('')
                         ->relationship()
                         ->schema([
                             TextInput::make('value')
-                                ->label('Значение')
+                                ->label('Код размера')
                                 ->required()
-                                ->maxLength(32),
+                                ->maxLength(32)
+                                ->placeholder('s, m, 38'),
                             TextInput::make('display_value')
-                                ->label('Отображение')
-                                ->maxLength(32),
+                                ->label('На сайте')
+                                ->maxLength(32)
+                                ->placeholder('S, M, 38'),
                             TextInput::make('sort_order')
                                 ->label('Порядок')
                                 ->numeric()
@@ -51,13 +58,14 @@ class SizeGridForm
                         ])
                         ->columns(3)
                         ->defaultItems(0)
+                        ->addActionLabel('Добавить размер')
                         ->collapsible()
                         ->reorderable()
                         ->orderColumn('sort_order')
                         ->columnSpanFull(),
                 ])
                 ->columnSpanFull(),
-            TranslationTabs::make('size_grid'),
+            TranslationTabs::make('size_grid', 'Название и описание'),
         ]);
     }
 }

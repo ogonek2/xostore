@@ -17,6 +17,8 @@ class ProductDetailPresenter
             'brand.translates',
             'primaryCategory.translates',
             'categories.translates',
+            'sizeGrid',
+            'sizeChartRows',
             'images',
             'variants.attributeValues.attribute',
             'variants.sizeGridValue',
@@ -40,13 +42,20 @@ class ProductDetailPresenter
             fn (ProductVariant $variant) => static::mapVariant($variant, $locale, $product),
         );
 
-        $colorOptions = static::buildColorOptions($variants, $locale);
-        $selectedColor = $colorCode
-            ? $colorOptions->first(fn (array $c) => $c['code'] === $colorCode)
-            : null;
-        $selectedColor ??= $colorOptions->first();
+        $colorProducts = ProductColorPresenter::colorProducts($product, $locale);
+        $colorOptions = ProductColorPresenter::variantColors($product, $variants, $locale);
+        $hasProductColor = filled($product->color_hex);
 
-        $sizesForColor = static::sizesForColor($variantRows, $selectedColor['id'] ?? null);
+        $selectedColor = $colorCode
+            ? collect($colorOptions)->first(fn (array $c) => $c['code'] === $colorCode)
+            : null;
+        $selectedColor ??= collect($colorOptions)->first();
+
+        $sizesForColor = ProductColorPresenter::sizesForColor(
+            $variantRows,
+            $selectedColor['id'] ?? null,
+            $hasProductColor,
+        );
 
         $defaultVariant = $variantRows->firstWhere('is_default', true)
             ?? $variantRows->firstWhere('color_id', $selectedColor['id'] ?? null)
@@ -77,10 +86,13 @@ class ProductDetailPresenter
                     'alt' => $img->alt ?: $name,
                 ])->all()
                 : [['url' => asset('images/products/placeholder.jpg'), 'alt' => $name]],
-            'colors' => $colorOptions->values()->all(),
+            'colors' => $colorOptions,
+            'color_products' => $colorProducts,
             'sizes' => $sizesForColor,
             'variants' => $variantRows->values()->all(),
             'selected_color_id' => $selectedColor['id'] ?? null,
+            'size_chart' => ProductSizeChartPresenter::forProduct($product, $locale),
+            'highlights' => static::highlights($product, $locale),
             'default_variant_id' => $defaultVariant['id'] ?? null,
             'url' => route('product.show', ['locale' => $locale, 'product' => $slug]),
             'consultation_url' => route('consultation.show', [
@@ -218,42 +230,42 @@ class ProductDetailPresenter
                 : null,
             'size' => $variant->sizeGridValue?->display_value ?? $variant->sizeGridValue?->value,
             'size_value' => $variant->sizeGridValue?->value,
-            'color_id' => $color?->id,
-            'color_code' => $color?->code,
-            'color_label' => $color?->translate('label', $locale) ?? $color?->code,
-            'color_hex' => $color?->color_hex,
+            'color_id' => $color?->id ?? (filled($product?->color_hex) ? 0 : null),
+            'color_code' => $color?->code ?? $product?->color_slug,
+            'color_label' => $color?->translate('label', $locale) ?? $color?->code ?? $product?->color_label,
+            'color_hex' => $color?->color_hex ?? $product?->color_hex,
             'is_default' => $variant->is_default,
         ];
     }
 
-    protected static function buildColorOptions(Collection $variants, string $locale): Collection
+    /**
+     * @return list<array{key: string, label: string}>
+     */
+    protected static function highlights(Product $product, string $locale): array
     {
-        return $variants
-            ->flatMap(fn (ProductVariant $variant) => $variant->attributeValues->filter(fn ($v) => $v->color_hex))
-            ->unique('id')
-            ->map(fn ($value) => [
-                'id' => $value->id,
-                'code' => $value->code,
-                'label' => $value->translate('label', $locale) ?? $value->code,
-                'hex' => $value->color_hex,
-            ])
-            ->values();
-    }
+        $items = [];
 
-    protected static function sizesForColor(Collection $variantRows, ?int $colorId): array
-    {
-        $filtered = $colorId
-            ? $variantRows->where('color_id', $colorId)
-            : $variantRows;
+        if ($product->is_ready_to_ship) {
+            $items[] = [
+                'key' => 'ready_to_ship',
+                'label' => __('shop.product.ready_to_ship', locale: $locale),
+            ];
+        }
 
-        return $filtered
-            ->map(fn (array $variant) => [
-                'variant_id' => $variant['id'],
-                'label' => $variant['size'] ?? $variant['sku'],
-                'value' => $variant['size_value'] ?? $variant['sku'],
-            ])
-            ->unique('variant_id')
-            ->values()
-            ->all();
+        if ($product->is_new) {
+            $items[] = [
+                'key' => 'new',
+                'label' => __('shop.new_arrivals.badge', locale: $locale),
+            ];
+        }
+
+        if ($product->custom_tailoring_enabled) {
+            $items[] = [
+                'key' => 'tailoring',
+                'label' => __('shop.product.tailoring_available', locale: $locale),
+            ];
+        }
+
+        return $items;
     }
 }

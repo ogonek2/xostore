@@ -6,6 +6,7 @@ use App\Filament\Concerns\HandlesTranslations;
 use App\Filament\Resources\Products\Concerns\ManagesProductRecord;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Product;
+use App\Support\Shop\ProductVariantColorSync;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
@@ -95,7 +96,9 @@ class EditProduct extends EditRecord
 
     protected function afterSave(): void
     {
-        $this->syncPrimaryImage($this->getRecord());
+        $product = $this->getRecord();
+        $this->syncPrimaryImage($product);
+        ProductVariantColorSync::syncProductVariants($product);
         $this->notifyAutoTranslationResult();
     }
 
