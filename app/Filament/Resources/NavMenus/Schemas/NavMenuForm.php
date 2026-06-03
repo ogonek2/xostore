@@ -6,6 +6,7 @@ use App\Enums\NavPanelType;
 use App\Filament\Forms\NavItemLabelFields;
 use App\Models\Catalog;
 use App\Models\Category;
+use App\Models\NavItem;
 use App\Models\NavMenu;
 use App\Models\Product;
 use Filament\Forms\Components\Component;
@@ -92,7 +93,7 @@ class NavMenuForm
                 ->orderColumn('sort_order')
                 ->collapsible()
                 ->itemLabel(fn (array $state): ?string => static::panelPreviewLabel($state))
-                ->visible(fn (Get $get, ?NavMenu $record) => static::menuCode($get, $record) !== 'footer')
+                ->visible(fn (Get $get, $record = null) => static::isHeaderMenu($get, $record))
                 ->columnSpanFull();
 
             $schema[] = Repeater::make('children')
@@ -106,7 +107,7 @@ class NavMenuForm
                 ->collapsible()
                 ->itemLabel(fn (array $state): ?string => static::itemPreviewLabel($state))
                 ->helperText('Только если колонки мега-меню не используются.')
-                ->visible(fn (Get $get, ?NavMenu $record) => static::menuCode($get, $record) !== 'footer')
+                ->visible(fn (Get $get, $record = null) => static::isHeaderMenu($get, $record))
                 ->columnSpanFull();
         }
 
@@ -246,8 +247,23 @@ class NavMenuForm
         return $title ?? $type?->label() ?? 'Колонка';
     }
 
-    protected static function menuCode(Get $get, ?NavMenu $record): ?string
+    protected static function isHeaderMenu(Get $get, mixed $record = null): bool
     {
-        return $get('code') ?? $record?->code;
+        return static::menuCode($get, $record) !== 'footer';
+    }
+
+    protected static function menuCode(Get $get, mixed $record = null): ?string
+    {
+        if ($record instanceof NavMenu) {
+            return $record->code;
+        }
+
+        if ($record instanceof NavItem) {
+            return $record->relationLoaded('menu')
+                ? $record->menu?->code
+                : NavMenu::query()->whereKey($record->nav_menu_id)->value('code');
+        }
+
+        return $get('code');
     }
 }
