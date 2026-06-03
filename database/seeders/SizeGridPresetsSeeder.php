@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use App\Models\Language;
+use App\Models\Product;
 use App\Models\SizeGrid;
 use App\Models\SizeGridValue;
 use Illuminate\Database\Seeder;
@@ -19,48 +20,140 @@ class SizeGridPresetsSeeder extends Seeder
             return;
         }
 
-        $this->preset(
-            code: 'clothing_standard',
-            unit: 'EU',
-            plName: 'Odzież damska (XS–XXL)',
-            enName: 'Women\'s clothing (XS–XXL)',
-            sizes: [
-                ['value' => 'xs', 'display' => 'XS'],
-                ['value' => 's', 'display' => 'S'],
-                ['value' => 'm', 'display' => 'M'],
-                ['value' => 'l', 'display' => 'L'],
-                ['value' => 'xl', 'display' => 'XL'],
-                ['value' => 'xxl', 'display' => 'XXL'],
+        $letter = static fn (array $codes): array => array_map(
+            fn (string $code) => [
+                'value' => strtolower($code),
+                'display' => strtoupper($code),
             ],
+            $codes,
+        );
+
+        $numeric = static fn (int $from, int $to, int $step = 1): array => array_map(
+            fn (int $n) => ['value' => (string) $n, 'display' => (string) $n],
+            range($from, $to, $step),
+        );
+
+        $this->preset(
+            code: 'clothing_letter_women',
+            unit: null,
+            plName: 'Odzież damska (XXS–XXL)',
+            enName: 'Women\'s clothing (XXS–XXL)',
+            sizes: $letter(['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL']),
+            categoryCodes: ['women'],
+        );
+
+        $this->preset(
+            code: 'clothing_letter_men',
+            unit: null,
+            plName: 'Odzież męska (S–3XL)',
+            enName: 'Men\'s clothing (S–3XL)',
+            sizes: $letter(['S', 'M', 'L', 'XL', 'XXL', '3XL']),
+            categoryCodes: ['men'],
+        );
+
+        $this->preset(
+            code: 'clothing_letter_unisex',
+            unit: null,
+            plName: 'Odzież unisex (XS–XXL)',
+            enName: 'Unisex clothing (XS–XXL)',
+            sizes: $letter(['XS', 'S', 'M', 'L', 'XL', 'XXL']),
             categoryCodes: ['women', 'men'],
+        );
+
+        $this->preset(
+            code: 'clothing_eu_numeric',
+            unit: 'EU',
+            plName: 'Odzież numeryczna EU (32–48)',
+            enName: 'EU numeric clothing (32–48)',
+            sizes: $numeric(32, 48, 2),
+            categoryCodes: ['women', 'men'],
+        );
+
+        $this->preset(
+            code: 'denim_waist',
+            unit: 'EU',
+            plName: 'Jeansy / spodnie (talia 24–38)',
+            enName: 'Denim / trousers (waist 24–38)',
+            sizes: $numeric(24, 38, 2),
+            categoryCodes: ['women', 'men'],
+        );
+
+        $this->preset(
+            code: 'outerwear_letter',
+            unit: null,
+            plName: 'Kurtki i płaszcze (XS–XXL)',
+            enName: 'Outerwear (XS–XXL)',
+            sizes: $letter(['XS', 'S', 'M', 'L', 'XL', 'XXL']),
+            categoryCodes: ['women', 'men'],
+        );
+
+        $this->preset(
+            code: 'knitwear_letter',
+            unit: null,
+            plName: 'Swetry i dzianina (XS–XL)',
+            enName: 'Knitwear (XS–XL)',
+            sizes: $letter(['XS', 'S', 'M', 'L', 'XL']),
+            categoryCodes: ['women', 'men'],
+        );
+
+        $this->preset(
+            code: 'lingerie_letter',
+            unit: null,
+            plName: 'Bielizna (XS–L)',
+            enName: 'Lingerie (XS–L)',
+            sizes: $letter(['XS', 'S', 'M', 'L']),
+            categoryCodes: ['women'],
         );
 
         $this->preset(
             code: 'footwear_eu',
             unit: 'EU',
-            plName: 'Obuwie (EU 36–41)',
-            enName: 'Footwear (EU 36–41)',
-            sizes: [
-                ['value' => '36', 'display' => '36'],
-                ['value' => '37', 'display' => '37'],
-                ['value' => '38', 'display' => '38'],
-                ['value' => '39', 'display' => '39'],
-                ['value' => '40', 'display' => '40'],
-                ['value' => '41', 'display' => '41'],
-            ],
+            plName: 'Obuwie damskie/męskie (EU 35–42)',
+            enName: 'Footwear (EU 35–42)',
+            sizes: $numeric(35, 42),
             categoryCodes: ['women-shoes', 'women', 'men'],
         );
 
         $this->preset(
             code: 'accessories_one_size',
             unit: null,
-            plName: 'Akcesoria (universal)',
+            plName: 'Akcesoria (one size)',
             enName: 'Accessories (one size)',
             sizes: [
                 ['value' => 'one_size', 'display' => 'One size'],
             ],
             categoryCodes: ['accessories'],
         );
+
+        $this->preset(
+            code: 'belts_cm',
+            unit: 'cm',
+            plName: 'Paski (cm 80–110)',
+            enName: 'Belts (cm 80–110)',
+            sizes: $numeric(80, 110, 5),
+            categoryCodes: ['accessories', 'women', 'men'],
+        );
+
+        $this->migrateLegacyPreset('eu_footwear', 'footwear_eu');
+        $this->migrateLegacyPreset('clothing_standard', 'clothing_letter_unisex');
+    }
+
+    protected function migrateLegacyPreset(string $legacyCode, string $modernCode): void
+    {
+        $legacy = SizeGrid::query()->where('code', $legacyCode)->first();
+        $modern = SizeGrid::query()->where('code', $modernCode)->first();
+
+        if (! $legacy) {
+            return;
+        }
+
+        if ($modern) {
+            Product::query()
+                ->where('size_grid_id', $legacy->id)
+                ->update(['size_grid_id' => $modern->id]);
+        }
+
+        $legacy->update(['is_active' => false]);
     }
 
     /**
@@ -87,12 +180,12 @@ class SizeGridPresetsSeeder extends Seeder
         $grid->setTranslation('name', $enName, $enLang);
         $grid->setTranslation(
             'description',
-            'Rozmiary do wyboru na stronie produktu (przyciski S, M, L…). Tabelę mierki uzupełniasz osobno w karcie towaru.',
+            'Przyciski rozmiaru na stronie produktu (S, M, L, 38…). Tabelę mierki (klatka, talia) uzupełniasz osobno w towarze.',
             $plLang,
         );
         $grid->setTranslation(
             'description',
-            'Sizes for the product page selector (S, M, L buttons). Measurements table is filled separately on the product.',
+            'Size buttons on the product page (S, M, L, 38…). Fill the measurement table (chest, waist) separately on the product.',
             $enLang,
         );
 

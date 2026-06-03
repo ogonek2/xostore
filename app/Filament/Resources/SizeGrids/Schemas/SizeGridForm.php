@@ -23,7 +23,7 @@ class SizeGridForm
                         ->unique(ignoreRecord: true)
                         ->alphaDash()
                         ->maxLength(64)
-                        ->helperText('Напр. clothing_standard, footwear_eu'),
+                        ->helperText('Напр. clothing_letter_women, clothing_letter_men, footwear_eu, denim_waist'),
                     TextInput::make('unit')
                         ->label('Подпись единицы')
                         ->placeholder('EU, US, см')

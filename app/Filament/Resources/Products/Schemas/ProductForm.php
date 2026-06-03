@@ -224,14 +224,15 @@ class ProductForm
                     Select::make('size_grid_id')
                         ->label('Пресет')
                         ->options(fn (Get $get): array => ProductSizeGridOptions::presets(
-                            $get('primary_category_id') ? (int) $get('primary_category_id') : null,
+                            null,
+                            $get('size_grid_id') ? (int) $get('size_grid_id') : null,
                         ))
                         ->searchable()
                         ->preload()
                         ->native(false)
                         ->live()
                         ->nullable()
-                        ->helperText('После выбора сохраните товар. На вкладке «Размеры» в вариантах появятся размеры из пресета.'),
+                        ->helperText('Все активные пресеты (одежда, обувь, аксессуары). После выбора сохраните товар — размеры появятся на вкладке «Размеры».'),
                     Placeholder::make('size_grid_sizes_preview')
                         ->label('Размеры в пресете')
                         ->content(function (Get $get): string {

@@ -106,24 +106,34 @@ class VariantsRelationManager extends RelationManager
                     ->modalHeading('Выбор пресета из справочника')
                     ->modalDescription('Пресеты настраиваются в «Каталог → Размерные сетки». После выбора сохраните товар, если меняли пресет на вкладке «Основное».')
                     ->fillForm(fn (): array => [
-                        'size_grid_id' => $this->getOwnerRecord()->size_grid_id,
+                        'size_grid_id' => $this->getOwnerRecord()->size_grid_id
+                            ? (string) $this->getOwnerRecord()->size_grid_id
+                            : null,
                     ])
                     ->form([
                         Select::make('size_grid_id')
                             ->label('Пресет')
-                            ->options(fn () => ProductSizeGridOptions::presets(
-                                $this->getOwnerRecord()->primary_category_id,
-                            ))
+                            ->options(function (): array {
+                                $product = $this->getOwnerRecord();
+
+                                return ProductSizeGridOptions::presets(
+                                    null,
+                                    $product->size_grid_id,
+                                );
+                            })
                             ->searchable()
                             ->preload()
                             ->live()
                             ->nullable()
-                            ->helperText('Пусто — без пресета. Показаны сетки категории и универсальные (без привязки к категории).'),
+                            ->helperText('Показаны все активные пресеты из «Каталог → Размерные сетки». Пусто — без пресета.'),
                     ])
                     ->action(function (array $data): void {
                         /** @var Product $product */
                         $product = $this->getOwnerRecord();
-                        $product->update(['size_grid_id' => $data['size_grid_id'] ?? null]);
+                        $gridId = filled($data['size_grid_id'] ?? null)
+                            ? (int) $data['size_grid_id']
+                            : null;
+                        $product->update(['size_grid_id' => $gridId]);
 
                         $labels = ProductSizeGridOptions::sizeLabels($product->size_grid_id);
 

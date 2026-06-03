@@ -73,28 +73,17 @@ class ShopFoundationSeeder extends Seeder
         $black->setTranslation('label', 'Czarny', $pl);
         $black->setTranslation('label', 'Black', $en);
 
-        $euShoes = SizeGrid::query()->updateOrCreate(
-            ['code' => 'eu_footwear'],
-            ['unit' => 'EU', 'is_active' => true]
-        );
-        $euShoes->setTranslation('name', 'Rozmiary obuwia EU', $pl);
-        $euShoes->setTranslation('name', 'EU footwear sizes', $en);
-
-        foreach (['36', '37', '38', '39', '40'] as $i => $size) {
-            SizeGridValue::query()->updateOrCreate(
-                ['size_grid_id' => $euShoes->id, 'value' => $size],
-                ['display_value' => $size, 'sort_order' => $i + 1]
-            );
-        }
-
-        $women->sizeGrids()->syncWithoutDetaching([$euShoes->id]);
+        $footwearGrid = SizeGrid::query()
+            ->where('code', 'footwear_eu')
+            ->where('is_active', true)
+            ->first();
 
         $product = Product::query()->updateOrCreate(
             ['sku' => 'DEMO-CHANEL-25P'],
             [
                 'brand_id' => $chanel->id,
                 'primary_category_id' => $women->id,
-                'size_grid_id' => $euShoes->id,
+                'size_grid_id' => $footwearGrid?->id,
                 'status' => 'published',
                 'type' => 'variable',
                 'base_price' => 1190,
@@ -122,10 +111,12 @@ class ShopFoundationSeeder extends Seeder
             $women->id => ['is_primary' => true],
         ]);
 
-        $size38 = SizeGridValue::query()
-            ->where('size_grid_id', $euShoes->id)
-            ->where('value', '38')
-            ->first();
+        $size38 = $footwearGrid
+            ? SizeGridValue::query()
+                ->where('size_grid_id', $footwearGrid->id)
+                ->where('value', '38')
+                ->first()
+            : null;
 
         $variant = ProductVariant::query()->updateOrCreate(
             ['sku' => 'DEMO-CHANEL-25P-38-BLK'],

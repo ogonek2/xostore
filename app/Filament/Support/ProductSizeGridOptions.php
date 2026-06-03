@@ -4,48 +4,70 @@ namespace App\Filament\Support;
 
 use App\Models\SizeGrid;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 final class ProductSizeGridOptions
 {
     /**
-     * @return array<int, string>
+     * Все активные пресеты для выбора в товаре (без фильтра по категории — иначе текущий пресет может «пропасть» и валидация падает).
+     *
+     * @return array<string, string>
      */
-    public static function presets(?int $categoryId = null): array
+    public static function presets(?int $categoryId = null, ?int $alwaysIncludeGridId = null): array
     {
-        return static::presetsQuery($categoryId)
-            ->get()
+        $grids = static::presetsQuery($categoryId)->get();
+
+        if ($alwaysIncludeGridId && ! $grids->contains('id', $alwaysIncludeGridId)) {
+            $extra = SizeGrid::query()
+                ->with('values')
+                ->whereKey($alwaysIncludeGridId)
+                ->first();
+
+            if ($extra) {
+                $grids = $grids->prepend($extra);
+            }
+        }
+
+        return $grids
+            ->unique('id')
             ->mapWithKeys(fn (SizeGrid $grid) => [
-                $grid->id => static::label($grid),
+                (string) $grid->id => static::label($grid),
             ])
             ->all();
     }
 
     public static function presetsQuery(?int $categoryId = null): Builder
     {
-        $query = SizeGrid::query()
+        return SizeGrid::query()
             ->where('is_active', true)
             ->with('values')
             ->orderBy('code');
-
-        if ($categoryId) {
-            $query->where(function (Builder $q) use ($categoryId): void {
-                $q->whereHas('categories', fn (Builder $c) => $c->where('categories.id', $categoryId))
-                    ->orWhereDoesntHave('categories');
-            });
-        }
-
-        return $query;
     }
 
     public static function label(SizeGrid $grid): string
     {
         $name = $grid->translate('name', 'pl') ?? $grid->code;
         $count = $grid->values->count();
-        $unit = filled($grid->unit) ? " ({$grid->unit})" : '';
+        $unit = filled($grid->unit) ? " · {$grid->unit}" : '';
+        $sizes = $count > 0
+            ? ' — '.static::previewSizes($grid->values)
+            : '';
 
-        return $count > 0
-            ? "{$name}{$unit} — {$count} разм."
-            : "{$name}{$unit}";
+        return "{$name}{$unit}{$sizes}";
+    }
+
+    protected static function previewSizes(Collection $values): string
+    {
+        $labels = $values
+            ->sortBy('sort_order')
+            ->map(fn ($value) => $value->display_value ?? $value->value)
+            ->values();
+
+        if ($labels->count() <= 8) {
+            return $labels->implode(', ');
+        }
+
+        return $labels->take(6)->implode(', ').'… +'.($labels->count() - 6);
     }
 
     /**
