@@ -1,8 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\CheckoutQuoteController;
+use App\Http\Controllers\Api\NewsletterSubscriptionController;
+use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\Api\ProductListingController;
 use App\Http\Controllers\Api\ShopAnalyticsController;
+use App\Http\Controllers\NewsletterUnsubscribeController;
 use App\Http\Controllers\CatalogShowController;
 use App\Http\Controllers\CategoryShowController;
 use App\Http\Controllers\CheckoutController;
@@ -10,11 +14,19 @@ use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductIndexController;
 use App\Http\Controllers\ProductShowController;
+use App\Http\Controllers\RobotsController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+Route::get('/robots.txt', RobotsController::class)->name('robots');
 
 Route::get('/', function () {
     return redirect()->route('home', ['locale' => config('shop.default_language')]);
 });
+
+Route::get('/newsletter/unsubscribe/{token}', NewsletterUnsubscribeController::class)
+    ->name('newsletter.unsubscribe');
 
 Route::get('/{locale?}', HomeController::class)
     ->where(['locale' => 'pl|en'])
@@ -25,6 +37,8 @@ Route::prefix('{locale}')
     ->group(function () {
         Route::get('/api/produkty', ProductListingController::class)->name('api.products.index');
         Route::post('/api/analytics', [ShopAnalyticsController::class, 'store'])->name('api.analytics.store');
+        Route::post('/api/newsletter', [NewsletterSubscriptionController::class, 'store'])->name('api.newsletter.subscribe');
+        Route::get('/api/zamowienie/wycena', CheckoutQuoteController::class)->name('api.checkout.quote');
 
         Route::get('/api/koszyk', [CartController::class, 'show'])->name('api.cart.show');
         Route::post('/api/koszyk', [CartController::class, 'store'])->name('api.cart.store');
@@ -45,6 +59,9 @@ Route::prefix('{locale}')
         Route::get('/zamowienie', [CheckoutController::class, 'show'])->name('checkout.show');
         Route::post('/zamowienie', [CheckoutController::class, 'store'])->name('checkout.store');
         Route::get('/zamowienie/dziekujemy/{order}', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
+
+        Route::get('/zamowienie/sledzenie', [OrderTrackingController::class, 'show'])->name('order.track');
+        Route::post('/zamowienie/sledzenie', [OrderTrackingController::class, 'lookup'])->name('order.track.lookup');
 
         Route::get('/konsultacja/{product?}', [ConsultationController::class, 'show'])->name('consultation.show');
         Route::post('/konsultacja', [ConsultationController::class, 'store'])->name('consultation.store');

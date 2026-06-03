@@ -36,8 +36,6 @@
 
 @extends('layouts.shop')
 
-@section('title', $product['display_name'].' — '.config('shop.name'))
-
 @section('content')
     <x-shop.header
         :navigation="$navigation"

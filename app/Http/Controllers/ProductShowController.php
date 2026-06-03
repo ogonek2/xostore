@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ShopEventType;
 use App\Services\Analytics\ShopAnalyticsService;
 use App\Services\Cart\CartService;
+use App\Support\Seo\SeoBuilder;
 use App\Support\Shop\ProductDetailPresenter;
 use App\Support\Shop\ShopLayoutData;
 use App\Support\Shop\SlugResolver;
@@ -63,6 +64,7 @@ class ProductShowController extends Controller
 
         return view('shop.product', [
             ...ShopLayoutData::shared(),
+            'seo' => SeoBuilder::forProduct($presented, $locale),
             'cartCount' => $cartService->count(),
             'product' => $presented,
             'breadcrumbs' => $breadcrumbs,

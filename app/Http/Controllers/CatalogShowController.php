@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\RendersProductListing;
 use App\Http\Requests\ProductListingRequest;
+use App\Support\Seo\SeoBuilder;
 use App\Support\Shop\SlugResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -22,11 +23,18 @@ class CatalogShowController extends Controller
 
         $name = $record->translate('name', $locale) ?? $record->code;
 
+        $slug = $record->translate('slug', $locale) ?? $record->code;
+
         return $this->listingView(
             request: $request,
             locale: $locale,
             pageTitle: $name,
-            metaDescription: $record->translate('description', $locale),
+            seo: SeoBuilder::fromTranslatable(
+                $record,
+                $locale,
+                $name,
+                route('catalog.show', ['locale' => $locale, 'catalog' => $slug]),
+            ),
             breadcrumbs: [
                 ['label' => __('shop.nav.shop'), 'url' => route('products.index', ['locale' => $locale])],
                 ['label' => $name, 'url' => null],

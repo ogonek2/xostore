@@ -11,6 +11,9 @@ return [
         'title' => 'Twoje zamówienie zostało wysłane',
         'intro' => 'Przesyłka jest już w drodze.',
     ],
+    'newsletter' => [
+        'unsubscribe' => 'Wypisz się z newslettera',
+    ],
     'order' => [
         'common' => [
             'order_number' => 'Numer zamówienia',

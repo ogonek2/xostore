@@ -2,13 +2,15 @@
 
 namespace App\Services\Checkout;
 
-use App\Enums\OrderStatus;
 use App\Enums\ShopEventType;
+use App\Models\OrderStatus;
 use App\Mail\OrderPlacedMail;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PaymentMethod;
 use App\Services\Analytics\ShopAnalyticsService;
 use App\Services\Cart\CartService;
+use App\Support\Shop\OrderNumberGenerator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -18,9 +20,14 @@ class CheckoutService
 {
     public function __construct(
         protected CartService $cart,
+        protected OrderShippingCalculator $shippingCalculator,
+        protected PaymentRedirectBuilder $redirectBuilder,
     ) {}
 
-    public function createOrder(array $data, string $locale): Order
+    /**
+     * @return array{order: Order, redirect_url: ?string, bank: ?array}
+     */
+    public function createOrder(array $data, string $locale): array
     {
         $cartData = $this->cart->present($locale);
 
@@ -30,29 +37,41 @@ class CheckoutService
             ]);
         }
 
-        $shipping = (float) config('shop.checkout.shipping_cost', 0);
-        $freeFrom = (float) config('shop.checkout.free_shipping_from', 0);
-        $subtotal = (float) $cartData['subtotal'];
+        $paymentMethod = PaymentMethod::query()
+            ->where('is_active', true)
+            ->whereKey($data['payment_method_id'])
+            ->first();
 
-        if ($freeFrom > 0 && $subtotal >= $freeFrom) {
-            $shipping = 0;
+        if (! $paymentMethod) {
+            throw ValidationException::withMessages([
+                'payment_method_id' => [__('shop.checkout.invalid_payment')],
+            ]);
         }
 
-        return DB::transaction(function () use ($data, $locale, $cartData, $subtotal, $shipping) {
+        $subtotal = (float) $cartData['subtotal'];
+        $shipping = $this->shippingCalculator->calculate($paymentMethod, $subtotal);
+
+        $defaultStatus = OrderStatus::default();
+
+        if (! $defaultStatus) {
+            throw ValidationException::withMessages([
+                'cart' => [__('shop.checkout.no_order_status')],
+            ]);
+        }
+
+        $order = DB::transaction(function () use ($data, $locale, $cartData, $subtotal, $shipping, $paymentMethod, $defaultStatus) {
             $order = Order::query()->create([
-                'number' => $this->generateOrderNumber(),
+                'number' => OrderNumberGenerator::generate(),
                 'access_token' => (string) Str::uuid(),
-                'status' => OrderStatus::Pending,
+                'order_status_id' => $defaultStatus->id,
+                'payment_method_id' => $paymentMethod->id,
                 'locale' => $locale,
                 'currency' => config('shop.currency', 'PLN'),
                 'email' => $data['email'],
-                'phone' => $data['phone'] ?? null,
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'company' => $data['company'] ?? null,
-                'street' => $data['street'],
+                'phone' => $data['phone'],
+                'customer_name' => $data['customer_name'],
                 'city' => $data['city'],
-                'postal_code' => $data['postal_code'],
+                'delivery_address' => $data['delivery_address'],
                 'country' => $data['country'] ?? 'PL',
                 'notes' => $data['notes'] ?? null,
                 'subtotal' => $subtotal,
@@ -81,19 +100,51 @@ class CheckoutService
                 payload: ['order_id' => $order->id, 'total' => (float) $order->total],
             );
 
-            $order->loadMissing('items');
-            Mail::to($order->email)->send(new OrderPlacedMail($order));
+            $order->loadMissing(['items', 'paymentMethod']);
+
+            try {
+                Mail::to($order->email)->send(new OrderPlacedMail($order));
+            } catch (\Throwable) {
+                // Не блокируем оформление при ошибке почты
+            }
 
             return $order;
         });
+
+        $redirectUrl = $this->redirectBuilder->build($paymentMethod, $order);
+        $bank = $paymentMethod->type->value === 'bank_transfer'
+            ? $this->redirectBuilder->bankInstructions($paymentMethod, $order)
+            : null;
+
+        return [
+            'order' => $order,
+            'redirect_url' => $redirectUrl,
+            'bank' => $bank,
+        ];
     }
 
-    protected function generateOrderNumber(): string
+    /**
+     * @return array{shipping: float, shipping_formatted: string, total: float, total_formatted: string, free: bool}
+     */
+    public function quote(int $paymentMethodId, float $subtotal, string $locale): array
     {
-        do {
-            $number = 'XO-'.now()->format('ymd').'-'.strtoupper(Str::random(4));
-        } while (Order::query()->where('number', $number)->exists());
+        $method = PaymentMethod::query()
+            ->where('is_active', true)
+            ->whereKey($paymentMethodId)
+            ->firstOrFail();
 
-        return $number;
+        $shipping = $this->shippingCalculator->calculate($method, $subtotal);
+        $total = $subtotal + $shipping;
+        $symbol = config('shop.currency_symbol', 'zł');
+
+        return [
+            'shipping' => $shipping,
+            'shipping_formatted' => $shipping > 0
+                ? number_format($shipping, 0, ',', ' ').' '.$symbol
+                : __('shop.checkout.free'),
+            'total' => $total,
+            'total_formatted' => number_format($total, 0, ',', ' ').' '.$symbol,
+            'free' => $shipping <= 0,
+        ];
     }
 }

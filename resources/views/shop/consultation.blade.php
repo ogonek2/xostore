@@ -1,7 +1,5 @@
 @extends('layouts.shop')
 
-@section('title', __('shop.consultation.title').' — '.config('shop.name'))
-
 @section('content')
     <x-shop.header :navigation="$navigation" :languages="$languages" :cart-count="$cartCount" />
 

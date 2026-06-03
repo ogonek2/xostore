@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Observers\OrderObserver;
 use App\Observers\ProductObserver;
 use App\Services\Locale\CurrentLanguage;
+use App\Support\Analytics\ShopAnalytics;
 use App\View\Composers\ShopLayoutComposer;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -16,6 +17,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(CurrentLanguage::class);
+        $this->app->singleton(ShopAnalytics::class);
     }
 
     /**

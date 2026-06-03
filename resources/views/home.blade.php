@@ -1,7 +1,5 @@
 @extends('layouts.shop')
 
-@section('title', config('shop.name'))
-
 @section('content')
     <x-shop.header
         :navigation="$navigation"

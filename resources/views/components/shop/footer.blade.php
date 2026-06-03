@@ -34,12 +34,11 @@
 
             <form
                 class="mt-8 w-full max-w-md lg:mt-0 lg:shrink-0"
-                action="#"
                 method="post"
                 data-newsletter-form
-                onsubmit="event.preventDefault(); this.querySelector('[data-newsletter-success]')?.classList.remove('hidden'); this.querySelector('[data-newsletter-fields]')?.classList.add('hidden');"
+                data-newsletter-endpoint="{{ route('api.newsletter.subscribe', ['locale' => $locale]) }}"
+                data-newsletter-error="{{ __('shop.footer.newsletter.error') }}"
             >
-                @csrf
                 <div data-newsletter-fields class="flex flex-col gap-3 sm:flex-row">
                     <label class="sr-only" for="footer-newsletter-email">{{ __('shop.footer.newsletter.placeholder') }}</label>
                     <input
@@ -48,17 +47,20 @@
                         name="email"
                         required
                         autocomplete="email"
+                        data-newsletter-email
                         placeholder="{{ __('shop.footer.newsletter.placeholder') }}"
                         class="min-h-[3rem] flex-1 border border-border-DEFAULT bg-surface-DEFAULT px-4 text-sm text-primary-DEFAULT outline-none transition-colors placeholder:text-text-muted/70 focus:border-primary-DEFAULT"
                     >
                     <button
                         type="submit"
-                        class="min-h-[3rem] shrink-0 bg-primary-DEFAULT px-8 text-sm font-medium text-text-inverse transition-colors hover:bg-primary-hover"
+                        data-newsletter-submit
+                        class="min-h-[3rem] shrink-0 bg-primary-DEFAULT px-8 text-sm font-medium text-text-inverse transition-colors hover:bg-primary-hover disabled:opacity-60"
                     >
                         {{ __('shop.footer.newsletter.submit') }}
                     </button>
                 </div>
-                <p data-newsletter-success class="hidden text-sm text-status-success" role="status">
+                <p data-newsletter-error class="mt-3 hidden text-sm text-sale-DEFAULT" role="alert"></p>
+                <p data-newsletter-success class="mt-3 hidden text-sm text-status-success" role="status">
                     {{ __('shop.footer.newsletter.success') }}
                 </p>
             </form>

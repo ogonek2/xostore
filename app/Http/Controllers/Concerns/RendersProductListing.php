@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Http\Requests\ProductListingRequest;
+use App\Support\Seo\PageSeo;
+use App\Support\Seo\SeoBuilder;
 use App\Support\Shop\ProductCardPresenter;
 use App\Support\Shop\ProductListingFacets;
 use App\Support\Shop\ProductListingQuery;
@@ -20,7 +22,7 @@ trait RendersProductListing
         array $breadcrumbs,
         ?Category $category = null,
         ?Catalog $catalog = null,
-        ?string $metaDescription = null,
+        ?PageSeo $seo = null,
     ): View {
         $listing = new ProductListingQuery(
             category: $category,
@@ -51,11 +53,17 @@ trait RendersProductListing
             ]);
         }
 
+        $seo ??= SeoBuilder::forListing(
+            title: $pageTitle,
+            canonical: url()->current(),
+            fallbackDescription: __('seo.products_index_description', locale: $locale),
+        );
+
         return view('shop.listing', [
             ...ShopLayoutData::shared(),
             'cartCount' => app(\App\Services\Cart\CartService::class)->count(),
+            'seo' => $seo,
             'pageTitle' => $pageTitle,
-            'metaDescription' => $metaDescription,
             'breadcrumbs' => $breadcrumbs,
             'category' => $category,
             'catalog' => $catalog,

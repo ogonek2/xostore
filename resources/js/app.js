@@ -4,10 +4,12 @@ import './shop/new-arrivals-swiper';
 import { initCartBadges } from './shop/cart-badges';
 import { initShopAnalytics } from './shop/analytics';
 import { initHeaderNav } from './shop/header-nav';
+import { initNewsletterForms } from './shop/newsletter';
 
 initCartBadges();
 initShopAnalytics();
-initHeaderNav();
+    initHeaderNav();
+    initNewsletterForms();
 import { createApp } from 'vue';
 
 const vueMounts = document.querySelectorAll('[data-vue]');

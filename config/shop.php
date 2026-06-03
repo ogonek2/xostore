@@ -2,6 +2,12 @@
 
 return [
     'name' => env('SHOP_NAME', 'XOStore'),
+
+    'seo' => [
+        'default_title' => env('SHOP_SEO_DEFAULT_TITLE'),
+        'default_description' => env('SHOP_SEO_DEFAULT_DESCRIPTION'),
+        'og_image' => env('SHOP_SEO_OG_IMAGE'),
+    ],
     'default_language' => env('SHOP_DEFAULT_LANGUAGE', 'pl'),
     'fallback_language' => env('SHOP_FALLBACK_LANGUAGE', 'en'),
     'currency' => env('SHOP_CURRENCY', 'PLN'),
@@ -10,6 +16,12 @@ return [
     'contact' => [
         'email' => env('SHOP_CONTACT_EMAIL', 'hello@xostorebrand.com'),
         'phone' => env('SHOP_PHONE', '+48 22 000 00 00'),
+    ],
+
+    'newsletter' => [
+        'default_group_slug' => env('SHOP_NEWSLETTER_DEFAULT_GROUP', 'website'),
+        'from_name' => env('SHOP_NEWSLETTER_FROM_NAME', env('SHOP_NAME', 'XOStore')),
+        'from_address' => env('SHOP_NEWSLETTER_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
     ],
 
     'chat' => [

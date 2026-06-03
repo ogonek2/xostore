@@ -9,34 +9,33 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OrderShippedMail extends Mailable
+class OrderStatusChangedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Order $order) {}
+    public function __construct(
+        public Order $order,
+        public string $emailSubject,
+        public string $body,
+    ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('mail.order_shipped.subject', ['number' => $this->order->number]),
+            subject: $this->emailSubject,
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.orders.shipped',
+            view: 'emails.orders.status-changed',
             with: [
                 'order' => $this->order,
+                'body' => $this->body,
                 'contactEmail' => config('shop.contact.email'),
                 'contactPhone' => config('shop.contact.phone'),
-                'formattedTotal' => $this->formatAmount($this->order->total),
             ],
         );
-    }
-
-    protected function formatAmount(mixed $amount): string
-    {
-        return number_format((float) $amount, 2, ',', ' ').' '.config('shop.currency_symbol', 'zł');
     }
 }

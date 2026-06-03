@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             LanguageSeeder::class,
             NavMenuSeeder::class,
+            NewsletterGroupSeeder::class,
+            PaymentMethodSeeder::class,
             AdminUserSeeder::class,
             ShopFoundationSeeder::class,
             CatalogSeeder::class,

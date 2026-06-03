@@ -62,6 +62,8 @@ class ProductDetailPresenter
                 ? "{$brandName} {$name}"
                 : $name,
             'short_description' => $product->translate('short_description', $locale),
+            'meta_title' => $product->translate('meta_title', $locale),
+            'meta_description' => $product->translate('meta_description', $locale),
             'description' => $product->translate('description', $locale),
             'fit_description' => $product->translate('fit_description', $locale),
             'fabric_description' => $product->translate('fabric_description', $locale),

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ConsultationStatus;
 use App\Models\ConsultationRequest;
 use App\Models\Product;
+use App\Support\Seo\SeoBuilder;
 use App\Support\Shop\ShopLayoutData;
 use App\Support\Shop\SlugResolver;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +33,7 @@ class ConsultationController extends Controller
 
         return view('shop.consultation', [
             ...ShopLayoutData::shared(),
+            'seo' => SeoBuilder::privatePage(__('shop.consultation.title')),
             'cartCount' => app(\App\Services\Cart\CartService::class)->count(),
             'product' => $productContext,
             'breadcrumbs' => [

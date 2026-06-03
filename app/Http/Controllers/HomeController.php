@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Cart\CartService;
+use App\Support\Seo\SeoBuilder;
 use App\Support\Shop\HomepageBanners;
 use App\Support\Shop\HomepageCategoryShowcase;
 use App\Support\Shop\HomepageHeroBanners;
@@ -20,6 +21,7 @@ class HomeController extends Controller
 
         return view('home', [
             ...ShopLayoutData::shared(),
+            'seo' => SeoBuilder::forHome($locale),
             'cartCount' => app(CartService::class)->count(),
             'heroBannerSections' => HomepageHeroBanners::sections(),
             'bannersEnabled' => (bool) config('shop.homepage_banners.enabled', true),
