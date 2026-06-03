@@ -72,7 +72,7 @@ final class AdminMediaUpload
         }
 
         try {
-            Storage::disk('bunny')->writeStream($path, $stream);
+            Storage::disk(Media::disk())->writeStream($path, $stream);
         } finally {
             fclose($stream);
         }
@@ -86,7 +86,7 @@ final class AdminMediaUpload
             return;
         }
 
-        Storage::disk('bunny')->delete($file);
+        Storage::disk(Media::disk())->delete($file);
     }
 
     public static function mimeTypeForPath(string $path): string
