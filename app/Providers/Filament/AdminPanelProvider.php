@@ -34,6 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->assets([
                 Css::make('hero-banner-items-grid', resource_path('css/filament/hero-banner-items-grid.css')),
+                Css::make('admin-media-upload', resource_path('css/filament/admin-media-upload.css')),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

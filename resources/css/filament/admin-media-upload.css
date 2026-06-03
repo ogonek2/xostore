@@ -1,0 +1,49 @@
+/* CDN / FilePond: читаемые подписи и кнопки замены изображения в админке */
+.fi-fo-file-upload .filepond--root {
+    font-size: 0.875rem;
+}
+
+.fi-fo-file-upload .filepond--drop-label {
+    color: rgb(82 82 82);
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.dark .fi-fo-file-upload .filepond--drop-label {
+    color: rgb(212 212 212);
+}
+
+.fi-fo-file-upload .filepond--file-info-main,
+.fi-fo-file-upload .filepond--file-info-sub {
+    color: rgb(38 38 38);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+}
+
+.dark .fi-fo-file-upload .filepond--file-info-main,
+.dark .fi-fo-file-upload .filepond--file-info-sub {
+    color: rgb(245 245 245);
+}
+
+.fi-fo-file-upload .filepond--file-action-button {
+    cursor: pointer;
+    opacity: 1;
+}
+
+.fi-fo-file-upload .filepond--panel-root {
+    background-color: rgb(245 245 244);
+    border: 1px dashed rgb(163 163 163);
+}
+
+.dark .fi-fo-file-upload .filepond--panel-root {
+    background-color: rgb(38 38 38);
+    border-color: rgb(115 115 115);
+}
+
+.fi-fo-file-upload .filepond--image-preview-overlay-idle {
+    color: rgb(64 64 64);
+}
+
+.dark .fi-fo-file-upload .filepond--image-preview-overlay-idle {
+    color: rgb(212 212 212);
+}
