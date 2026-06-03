@@ -57,6 +57,12 @@ class TranslationTabs
                 ->rows(3)
                 ->columnSpanFull()
                 ->extraInputAttributes(['autocomplete' => 'off']),
+            'link_url' => TextInput::make($name)
+                ->label($label)
+                ->maxLength(500)
+                ->placeholder('produkty или https://…')
+                ->helperText('Относительный путь без /pl/ — подставится язык витрины.')
+                ->extraInputAttributes(['autocomplete' => 'off']),
             'slug' => TextInput::make($name)
                 ->label($label)
                 ->maxLength(255)

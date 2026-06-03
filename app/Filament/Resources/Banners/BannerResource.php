@@ -37,7 +37,8 @@ class BannerResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return BannersTable::configure($table);
+        return BannersTable::configure($table)
+            ->modifyQueryUsing(fn ($query) => $query->with('translates'));
     }
 
     public static function getPages(): array

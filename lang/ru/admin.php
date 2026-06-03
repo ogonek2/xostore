@@ -12,6 +12,7 @@ return [
         'name' => 'Название',
         'slug' => 'Slug (URL)',
         'title' => 'Заголовок',
+        'link_url' => 'Ссылка',
         'subtitle' => 'Подзаголовок',
         'cta_label' => 'Текст кнопки CTA',
         'button_label' => 'Текст кнопки',

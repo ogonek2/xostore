@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Banners\Tables;
 
+use App\Models\Banner;
 use App\Support\Media\Media;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
@@ -20,10 +21,21 @@ class BannersTable
                     ->disk(Media::disk()),
                 TextColumn::make('title')
                     ->label('Название')
-                    ->searchable()
+                    ->getStateUsing(
+                        fn (Banner $record): ?string => $record->translate(
+                            'title',
+                            (string) config('shop.default_language', 'pl'),
+                        )
+                    )
                     ->placeholder('—'),
                 TextColumn::make('link_url')
                     ->label('Ссылка')
+                    ->getStateUsing(
+                        fn (Banner $record): ?string => $record->translate(
+                            'link_url',
+                            (string) config('shop.default_language', 'pl'),
+                        )
+                    )
                     ->limit(40)
                     ->placeholder('—'),
                 TextColumn::make('sort_order')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Banners\Schemas;
 
+use App\Filament\Forms\TranslationTabs;
 use App\Filament\Support\FilamentMedia;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -13,20 +14,13 @@ class BannerForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
+            TranslationTabs::make('banner', 'Тексты баннера'),
             Section::make('Данные баннера')
                 ->schema([
-                    TextInput::make('title')
-                        ->label('Название')
-                        ->maxLength(160),
                     FilamentMedia::image('image_path', 'banners')
                         ->label('Изображение')
                         ->required()
                         ->columnSpanFull(),
-                    TextInput::make('link_url')
-                        ->label('Ссылка')
-                        ->url()
-                        ->maxLength(500)
-                        ->placeholder('https://…'),
                     TextInput::make('sort_order')
                         ->label('Порядок')
                         ->numeric()

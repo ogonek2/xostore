@@ -2,18 +2,27 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Banner extends Model
 {
+    use HasTranslations;
+
     protected $fillable = [
-        'title',
         'image_path',
-        'link_url',
         'sort_order',
         'is_active',
     ];
+
+    public function translatableFields(): array
+    {
+        return config('shop.banner.translatable_fields', [
+            'title',
+            'link_url',
+        ]);
+    }
 
     protected function casts(): array
     {

@@ -10,15 +10,22 @@ class HomepageBanners
 {
     public static function items(): Collection
     {
+        $locale = app()->getLocale();
+
         return Banner::query()
             ->active()
+            ->with('translates')
             ->orderBy('sort_order')
             ->orderByDesc('id')
             ->get()
-            ->map(fn (Banner $banner) => [
-                'title' => $banner->title,
-                'image' => MediaUrl::fromPath($banner->image_path),
-                'url' => $banner->link_url ?: '#',
-            ]);
+            ->map(function (Banner $banner) use ($locale) {
+                $url = ShopNavigation::resolveUrl($banner->translate('link_url', $locale), $locale);
+
+                return [
+                    'title' => $banner->translate('title', $locale),
+                    'image' => MediaUrl::fromPath($banner->image_path),
+                    'url' => $url ?: '#',
+                ];
+            });
     }
 }

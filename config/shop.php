@@ -48,6 +48,13 @@ return [
         'enabled' => (bool) env('SHOP_HOMEPAGE_BANNERS_ENABLED', true),
     ],
 
+    'banner' => [
+        'translatable_fields' => [
+            'title',
+            'link_url',
+        ],
+    ],
+
     'checkout' => [
         'shipping_cost' => (float) env('SHOP_SHIPPING_COST', 15),
         'free_shipping_from' => (float) env('SHOP_FREE_SHIPPING_FROM', 500),
