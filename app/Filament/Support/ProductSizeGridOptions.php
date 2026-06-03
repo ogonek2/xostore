@@ -93,24 +93,4 @@ final class ProductSizeGridOptions
             ->all();
     }
 
-    /**
-     * @return list<array{size: string, chest: null, waist: null, hips: null, inseam: null, sort_order: int}>
-     */
-    public static function emptyChartRows(?int $sizeGridId): array
-    {
-        $labels = static::sizeLabels($sizeGridId);
-
-        return array_map(
-            fn (string $size, int $index) => [
-                'size' => $size,
-                'chest' => null,
-                'waist' => null,
-                'hips' => null,
-                'inseam' => null,
-                'sort_order' => $index + 1,
-            ],
-            $labels,
-            array_keys($labels),
-        );
-    }
 }

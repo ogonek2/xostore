@@ -6,6 +6,7 @@ use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Filament\Forms\TranslationTabs;
 use App\Filament\Support\FilamentMedia;
+use App\Filament\Support\ProductSizeChartPresetOptions;
 use App\Filament\Support\ProductSizeGridOptions;
 use App\Models\Brand;
 use App\Models\Catalog;
@@ -47,6 +48,9 @@ class ProductForm
                         Tab::make('size_grid')
                             ->label('Пресет размеров')
                             ->schema(static::sizeGridTabSchema()),
+                        Tab::make('size_chart_preset')
+                            ->label('Таблица мерок')
+                            ->schema(static::sizeChartPresetTabSchema()),
                         Tab::make('seo')
                             ->label('SEO')
                             ->schema([
@@ -246,6 +250,57 @@ class ProductForm
                     Placeholder::make('size_grid_hint')
                         ->hiddenLabel()
                         ->content('Варианты с ценами добавляются на вкладке «Размеры» рядом. Таблица мерок (грудь, талия…) — вкладка «Таблица мерок».'),
+                ])
+                ->columnSpanFull(),
+        ];
+    }
+
+    /** @return list<\Filament\Schemas\Components\Component> */
+    protected static function sizeChartPresetTabSchema(): array
+    {
+        return [
+            Section::make('Пресет таблицы мерок (визуальная сетка)')
+                ->description('Точные мерки в сантиметрах для блока на странице товара. Справочник: Каталог → Таблицы мерок (см). Кнопки S/M/L — отдельный пресет «Пресет размеров».')
+                ->schema([
+                    Select::make('size_chart_preset_id')
+                        ->label('Пресет таблицы')
+                        ->options(fn (Get $get): array => ProductSizeChartPresetOptions::presets(
+                            $get('size_chart_preset_id') ? (int) $get('size_chart_preset_id') : null,
+                        ))
+                        ->searchable()
+                        ->preload()
+                        ->native(false)
+                        ->live()
+                        ->nullable()
+                        ->helperText('После выбора сохраните товар. Таблица появится на сайте. Свои правки — вкладка «Таблица мерок» у товара.'),
+                    Placeholder::make('size_chart_preset_preview')
+                        ->label('Превью')
+                        ->content(function (Get $get): string {
+                            $presetId = $get('size_chart_preset_id') ? (int) $get('size_chart_preset_id') : null;
+
+                            if (! $presetId) {
+                                return '—';
+                            }
+
+                            $rows = ProductSizeChartPresetOptions::rowsForProductCopy($presetId);
+
+                            if ($rows === []) {
+                                return 'В пресете нет строк.';
+                            }
+
+                            return collect($rows)
+                                ->map(fn (array $row) => sprintf(
+                                    '%s: klatka %s, talia %s',
+                                    $row['size'],
+                                    $row['chest'] ?? '—',
+                                    $row['waist'] ?? '—',
+                                ))
+                                ->implode("\n");
+                        })
+                        ->visible(fn (Get $get): bool => filled($get('size_chart_preset_id'))),
+                    Placeholder::make('size_chart_preset_hint')
+                        ->hiddenLabel()
+                        ->content('Чтобы скопировать пресет в товар для ручной правки: вкладка «Таблица мерок» → «Применить пресет таблицы мерок».'),
                 ])
                 ->columnSpanFull(),
         ];

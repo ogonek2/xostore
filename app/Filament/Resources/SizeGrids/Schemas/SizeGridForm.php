@@ -15,7 +15,7 @@ class SizeGridForm
     {
         return $schema->components([
             Section::make('Справочник пресета')
-                ->description('Пресет используется в товарах для кнопок выбора размера на сайте (S, M, L, 36…). Таблица мерок (грудь, талия) заполняется отдельно в каждом товаре.')
+                ->description('Кнопки rozmiaru na stronie produktu (S, M, L, 38…). Tabela mierki w cm — osobny moduł «Tabele mierok (cm)».')
                 ->schema([
                     TextInput::make('code')
                         ->label('Код (латиница)')

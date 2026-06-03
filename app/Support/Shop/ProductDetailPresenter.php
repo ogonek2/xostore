@@ -18,6 +18,7 @@ class ProductDetailPresenter
             'primaryCategory.translates',
             'categories.translates',
             'sizeGrid',
+            'sizeChartPreset.rows',
             'sizeChartRows',
             'images',
             'variants.attributeValues.attribute',

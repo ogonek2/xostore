@@ -152,6 +152,10 @@ return [
         'translatable_fields' => ['name', 'description'],
     ],
 
+    'size_chart_preset' => [
+        'translatable_fields' => ['name', 'description'],
+    ],
+
     /*
     | Homepage category showcase (horizontal cards block).
     | label / sublabel keys → lang/shop.php categories.labels|sublabels

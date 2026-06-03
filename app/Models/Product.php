@@ -18,6 +18,7 @@ class Product extends Model
         'brand_id',
         'primary_category_id',
         'size_grid_id',
+        'size_chart_preset_id',
         'sku',
         'model_slug',
         'color_label',
@@ -64,6 +65,11 @@ class Product extends Model
     public function sizeGrid(): BelongsTo
     {
         return $this->belongsTo(SizeGrid::class);
+    }
+
+    public function sizeChartPreset(): BelongsTo
+    {
+        return $this->belongsTo(SizeChartPreset::class);
     }
 
     public function productRelations(): HasMany

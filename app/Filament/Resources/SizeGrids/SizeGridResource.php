@@ -19,11 +19,11 @@ class SizeGridResource extends Resource
 {
     protected static ?string $model = SizeGrid::class;
 
-    protected static ?string $navigationLabel = 'Размерные сетки';
+    protected static ?string $navigationLabel = 'Размеры (кнопки)';
 
-    protected static ?string $modelLabel = 'размерная сетка';
+    protected static ?string $modelLabel = 'пресет кнопок размера';
 
-    protected static ?string $pluralModelLabel = 'Размерные сетки';
+    protected static ?string $pluralModelLabel = 'Пресеты кнопок размера';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Каталог';
 

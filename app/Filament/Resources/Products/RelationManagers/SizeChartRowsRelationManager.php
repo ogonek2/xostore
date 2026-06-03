@@ -2,14 +2,15 @@
 
 namespace App\Filament\Resources\Products\RelationManagers;
 
-use App\Filament\Support\ProductSizeGridOptions;
+use App\Filament\Support\ProductSizeChartPresetOptions;
 use App\Models\Product;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Notifications\Notification;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -19,7 +20,7 @@ class SizeChartRowsRelationManager extends RelationManager
 {
     protected static string $relationship = 'sizeChartRows';
 
-    protected static ?string $title = 'Таблица мерок';
+    protected static ?string $title = 'Таблица мерок товара';
 
     public function form(Schema $schema): Schema
     {
@@ -29,7 +30,8 @@ class SizeChartRowsRelationManager extends RelationManager
                 ->maxLength(32),
             TextInput::make('chest')
                 ->label('Грудь')
-                ->maxLength(32),
+                ->maxLength(32)
+                ->placeholder('86 cm'),
             TextInput::make('waist')
                 ->label('Талия')
                 ->maxLength(32),
@@ -37,7 +39,7 @@ class SizeChartRowsRelationManager extends RelationManager
                 ->label('Бёдра')
                 ->maxLength(32),
             TextInput::make('inseam')
-                ->label('Шов')
+                ->label('Внутр. шов')
                 ->maxLength(32),
             TextInput::make('sort_order')
                 ->label('Сорт.')
@@ -59,44 +61,51 @@ class SizeChartRowsRelationManager extends RelationManager
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
             ->headerActions([
-                Action::make('fillFromPreset')
-                    ->label('Заполнить размеры из пресета')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->requiresConfirmation()
-                    ->modalDescription('Создаёт строки с колонкой «Размер» из пресета товара. Мерки (грудь, талия…) заполните вручную.')
-                    ->visible(fn (): bool => filled($this->getOwnerRecord()->size_grid_id))
-                    ->action(function (): void {
+                Action::make('applyChartPreset')
+                    ->label('Применить пресет таблицы мерок')
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->modalHeading('Пресет таблицы мерок (см)')
+                    ->modalDescription('Копирует все строки с точными значениями в сантиметрах. Пресеты: Каталог → Таблицы мерок (см).')
+                    ->fillForm(fn (): array => [
+                        'size_chart_preset_id' => $this->getOwnerRecord()->size_chart_preset_id
+                            ? (string) $this->getOwnerRecord()->size_chart_preset_id
+                            : null,
+                    ])
+                    ->form([
+                        Select::make('size_chart_preset_id')
+                            ->label('Пресет')
+                            ->options(fn (): array => ProductSizeChartPresetOptions::presets(
+                                $this->getOwnerRecord()->size_chart_preset_id,
+                            ))
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                    ])
+                    ->action(function (array $data): void {
                         /** @var Product $product */
                         $product = $this->getOwnerRecord();
-                        $seeds = ProductSizeGridOptions::emptyChartRows($product->size_grid_id);
+                        $presetId = (int) $data['size_chart_preset_id'];
+                        $rows = ProductSizeChartPresetOptions::rowsForProductCopy($presetId);
 
-                        if ($seeds === []) {
+                        if ($rows === []) {
                             Notification::make()
                                 ->title('Пресет пуст')
-                                ->body('Назначьте пресет на вкладке «Пресет размеров» или добавьте размеры в справочнике.')
                                 ->warning()
                                 ->send();
 
                             return;
                         }
 
-                        $existing = $product->sizeChartRows()->pluck('size')->filter()->all();
-                        $created = 0;
-
-                        foreach ($seeds as $row) {
-                            if (in_array($row['size'], $existing, true)) {
-                                continue;
-                            }
-
+                        $product->sizeChartRows()->delete();
+                        foreach ($rows as $row) {
                             $product->sizeChartRows()->create($row);
-                            $created++;
                         }
 
+                        $product->update(['size_chart_preset_id' => $presetId]);
+
                         Notification::make()
-                            ->title($created > 0 ? 'Строки добавлены' : 'Без изменений')
-                            ->body($created > 0
-                                ? "Добавлено строк: {$created}. Заполните мерки в таблице."
-                                : 'Все размеры из пресета уже есть в таблице.')
+                            ->title('Таблица мерок применена')
+                            ->body('Скопировано строк: '.count($rows).'. При необходимости отредактируйте значения.')
                             ->success()
                             ->send();
                     }),
@@ -107,7 +116,7 @@ class SizeChartRowsRelationManager extends RelationManager
                 EditAction::make(),
                 DeleteAction::make(),
             ])
-            ->emptyStateHeading('Нет строк размерной сетки')
-            ->emptyStateDescription('Ручные мерки для таблицы на сайте. Размеры S/M/L для вариантов — пресет на вкладке «Пресет размеров» в «Основное».');
+            ->emptyStateHeading('Нет своих строк')
+            ->emptyStateDescription('Назначьте пресет на вкладке «Таблица мерок» в карточке товара или примените пресет кнопкой выше. Пустая таблица на сайте берётся из пресета автоматически.');
     }
 }

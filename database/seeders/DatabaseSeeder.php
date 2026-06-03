@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             PaymentMethodSeeder::class,
             AdminUserSeeder::class,
             SizeGridPresetsSeeder::class,
+            SizeChartPresetSeeder::class,
             ShopFoundationSeeder::class,
             CatalogSeeder::class,
             TrendingProductsSeeder::class,
