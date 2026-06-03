@@ -6,11 +6,12 @@ use App\Enums\ProductStatus;
 use App\Enums\ProductType;
 use App\Filament\Forms\TranslationTabs;
 use App\Filament\Support\FilamentMedia;
+use App\Filament\Support\ProductSizeGridOptions;
 use App\Models\Brand;
 use App\Models\Catalog;
 use App\Models\Category;
-use App\Models\SizeGrid;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -44,7 +45,7 @@ class ProductForm
                                 ]),
                             ]),
                         Tab::make('size_grid')
-                            ->label('Размерная сетка')
+                            ->label('Пресет размеров')
                             ->schema(static::sizeGridTabSchema()),
                         Tab::make('seo')
                             ->label('SEO')
@@ -217,18 +218,34 @@ class ProductForm
     protected static function sizeGridTabSchema(): array
     {
         return [
-            Select::make('size_grid_id')
-                ->label('Пресет размерной сетки')
-                ->options(fn () => SizeGrid::query()
-                    ->where('is_active', true)
-                    ->get()
-                    ->mapWithKeys(fn (SizeGrid $grid) => [
-                        $grid->id => $grid->translate('name', 'pl') ?? $grid->code,
-                    ]))
-                ->searchable()
-                ->preload()
-                ->nullable()
-                ->helperText('Пресет для вариантов. Таблица мерок — на вкладке «Размерная сетка» товара.'),
+            Section::make('Пресет из справочника')
+                ->description('Готовые сетки (S, M, L…) создаются в «Каталог → Размерные сетки». Здесь вы только выбираете пресет для этого товара.')
+                ->schema([
+                    Select::make('size_grid_id')
+                        ->label('Размерная сетка')
+                        ->options(fn (Get $get) => ProductSizeGridOptions::presets(
+                            $get('primary_category_id') ? (int) $get('primary_category_id') : null,
+                        ))
+                        ->searchable()
+                        ->preload()
+                        ->live()
+                        ->nullable()
+                        ->helperText('Сначала привяжите основную категорию на вкладке «Основное» — список пресетов можно сузить по категории.'),
+                    Placeholder::make('size_grid_sizes_preview')
+                        ->label('Размеры в пресете')
+                        ->content(function (Get $get): string {
+                            $labels = ProductSizeGridOptions::sizeLabels(
+                                $get('size_grid_id') ? (int) $get('size_grid_id') : null,
+                            );
+
+                            return $labels === [] ? '—' : implode(' · ', $labels);
+                        })
+                        ->visible(fn (Get $get): bool => filled($get('size_grid_id'))),
+                    Placeholder::make('size_grid_hint')
+                        ->hiddenLabel()
+                        ->content('Варианты с ценами добавляются на вкладке «Размеры» рядом. Таблица мерок (грудь, талия…) — вкладка «Таблица мерок».'),
+                ])
+                ->columnSpanFull(),
         ];
     }
 

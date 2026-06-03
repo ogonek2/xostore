@@ -3,13 +3,17 @@
 namespace App\Filament\Resources\Products\RelationManagers;
 
 use App\Filament\Support\ProductAdminOptions;
+use App\Filament\Support\ProductSizeGridOptions;
+use App\Models\Product;
 use App\Models\ProductVariant;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
@@ -42,10 +46,13 @@ class VariantsRelationManager extends RelationManager
             Select::make('size_grid_value_id')
                 ->label('Размер')
                 ->options(fn () => ProductAdminOptions::sizeGridValues(
-                    $this->getOwnerRecord()->size_grid_id
+                    $this->getOwnerRecord()->size_grid_id,
                 ))
                 ->searchable()
-                ->nullable(),
+                ->nullable()
+                ->helperText(fn () => $this->getOwnerRecord()->size_grid_id
+                    ? null
+                    : 'Сначала выберите пресет: кнопка «Пресет размерной сетки» выше или вкладка «Основное» → «Пресет размеров».'),
             TextInput::make('price')
                 ->label('Цена')
                 ->numeric()
@@ -86,6 +93,41 @@ class VariantsRelationManager extends RelationManager
             ])
             ->defaultSort('sort_order')
             ->headerActions([
+                Action::make('assignSizeGridPreset')
+                    ->label('Пресет размерной сетки')
+                    ->icon('heroicon-o-table-cells')
+                    ->modalHeading('Выбор пресета из справочника')
+                    ->modalDescription('Пресеты настраиваются в «Каталог → Размерные сетки». После выбора сохраните товар, если меняли пресет на вкладке «Основное».')
+                    ->fillForm(fn (): array => [
+                        'size_grid_id' => $this->getOwnerRecord()->size_grid_id,
+                    ])
+                    ->form([
+                        Select::make('size_grid_id')
+                            ->label('Пресет')
+                            ->options(fn () => ProductSizeGridOptions::presets(
+                                $this->getOwnerRecord()->primary_category_id,
+                            ))
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->nullable()
+                            ->helperText('Пусто — без пресета. Показаны сетки категории и универсальные (без привязки к категории).'),
+                    ])
+                    ->action(function (array $data): void {
+                        /** @var Product $product */
+                        $product = $this->getOwnerRecord();
+                        $product->update(['size_grid_id' => $data['size_grid_id'] ?? null]);
+
+                        $labels = ProductSizeGridOptions::sizeLabels($product->size_grid_id);
+
+                        Notification::make()
+                            ->title($product->size_grid_id ? 'Пресет назначен' : 'Пресет снят')
+                            ->body($labels === []
+                                ? 'Добавьте размеры в справочнике пресета, если список пуст.'
+                                : 'Размеры: '.implode(', ', $labels))
+                            ->success()
+                            ->send();
+                    }),
                 CreateAction::make()
                     ->label('Новый вариант')
                     ->mutateFormDataUsing(function (array $data): array {
@@ -113,7 +155,7 @@ class VariantsRelationManager extends RelationManager
                 DeleteAction::make(),
             ])
             ->emptyStateHeading('Нет вариантов')
-            ->emptyStateDescription('Создайте вариант с размером и ценой — без вариантов нельзя выбрать размер на сайте.');
+            ->emptyStateDescription('Выберите пресет кнопкой выше, затем создайте варианты с размером и ценой.');
     }
 
     protected function extractVariantColor(array &$data): void

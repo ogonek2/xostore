@@ -15,7 +15,7 @@ class SizeChartRowsRelationManager extends RelationManager
 {
     protected static string $relationship = 'sizeChartRows';
 
-    protected static ?string $title = 'Размерная сетка';
+    protected static ?string $title = 'Таблица мерок';
 
     public function form(Schema $schema): Schema
     {
@@ -63,6 +63,6 @@ class SizeChartRowsRelationManager extends RelationManager
                 DeleteAction::make(),
             ])
             ->emptyStateHeading('Нет строк размерной сетки')
-            ->emptyStateDescription('Добавьте мерки для таблицы размеров на странице товара.');
+            ->emptyStateDescription('Ручные мерки для таблицы на сайте. Размеры S/M/L для вариантов — пресет на вкладке «Пресет размеров» в «Основное».');
     }
 }
