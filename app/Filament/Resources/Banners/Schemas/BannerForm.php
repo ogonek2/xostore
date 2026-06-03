@@ -17,6 +17,7 @@ class BannerForm
             TranslationTabs::make('banner', 'Тексты баннера'),
             Section::make('Данные баннера')
                 ->schema([
+                    FilamentMedia::currentImagePreview('image_path'),
                     FilamentMedia::image('image_path', 'banners')
                         ->label('Изображение')
                         ->required()

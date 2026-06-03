@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\MediaPreviewController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CheckoutQuoteController;
 use App\Http\Controllers\Api\NewsletterSubscriptionController;
@@ -20,6 +21,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('/robots.txt', RobotsController::class)->name('robots');
+
+Route::middleware(['web', 'auth'])
+    ->prefix('admin')
+    ->group(function () {
+        Route::get('media/preview', MediaPreviewController::class)->name('admin.media.preview');
+    });
 
 Route::get('/', function () {
     return redirect()->route('home', ['locale' => config('shop.default_language')]);

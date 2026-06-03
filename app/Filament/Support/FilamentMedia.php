@@ -2,10 +2,12 @@
 
 namespace App\Filament\Support;
 
+use App\Support\Media\AdminMediaUpload;
 use App\Support\Media\Media;
-use App\Support\Media\MediaUrl;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
+use Filament\Schemas\Components\View;
+use Illuminate\Database\Eloquent\Model;
 
 final class FilamentMedia
 {
@@ -17,50 +19,51 @@ final class FilamentMedia
             ->visibility('public')
             ->image()
             ->maxFiles(1)
-            ->imagePreviewHeight('12rem')
+            ->imagePreviewHeight('11.25rem')
             ->panelLayout('integrated')
+            ->panelAspectRatio('16:9')
             ->deletable()
             ->openable()
-            ->removeUploadedFileButtonPosition('right bottom')
-            ->uploadButtonPosition('left bottom')
-            ->uploadProgressIndicatorPosition('center bottom')
+            ->downloadable(false)
             ->placeholder('Нажмите или перетащите изображение')
             ->helperText(
                 Media::usesBunny()
-                    ? 'Чтобы заменить картинку: нажмите «Удалить» (корзина на превью), затем загрузите новый файл.'
-                    : 'Чтобы заменить: удалите текущий файл и загрузите новый.'
+                    ? 'Текущее фото — блок выше. Замена: корзина слева от имени файла, затем новая загрузка.'
+                    : 'Чтобы заменить: удалите файл (корзина) и загрузите новый.'
             );
 
         if (Media::usesBunny()) {
             $upload
                 ->fetchFileInformation(false)
-                ->getUploadedFileUsing(static function (
-                    BaseFileUpload $component,
-                    string $file,
-                    string|array|null $storedFileNames,
-                ): ?array {
-                    $url = MediaUrl::fromPath($file, Media::disk());
-
-                    if ($url === null) {
-                        return null;
-                    }
-
-                    $name = $component->isMultiple()
-                        ? (($storedFileNames[$file] ?? null) ?? basename($file))
-                        : ($storedFileNames ?? basename($file));
-
-                    return [
-                        'name' => is_string($name) ? $name : basename($file),
-                        'size' => 0,
-                        'type' => 'image/*',
-                        'url' => $url,
-                    ];
+                ->saveUploadedFileUsing(
+                    fn (BaseFileUpload $component, $file): ?string => AdminMediaUpload::storeUpload($component, $file),
+                )
+                ->deleteUploadedFileUsing(function (BaseFileUpload $component, string $file): void {
+                    AdminMediaUpload::deleteUpload($file);
                 })
+                ->getUploadedFileUsing(
+                    fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => AdminMediaUpload::uploadedFilePayload(
+                        $component,
+                        $file,
+                        $storedFileNames,
+                    ),
+                )
                 ->getOpenableFileUrlUsing(
-                    fn (BaseFileUpload $component, string $file): ?string => MediaUrl::fromPath($file, Media::disk()),
+                    fn (BaseFileUpload $component, string $file): ?string => AdminMediaUpload::previewUrl($file),
                 );
         }
 
         return $upload;
+    }
+
+    public static function currentImagePreview(string $attribute = 'image_path'): View
+    {
+        return View::make('filament.forms.admin-media-preview')
+            ->visible(fn (?Model $record): bool => filled($record?->getAttribute($attribute)))
+            ->viewData(fn (?Model $record): array => [
+                'previewUrl' => AdminMediaUpload::previewUrl($record?->getAttribute($attribute)),
+                'fileName' => basename((string) $record?->getAttribute($attribute)),
+            ])
+            ->columnSpanFull();
     }
 }
