@@ -51,7 +51,9 @@ class ProductResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['translates', 'brand', 'primaryCategory']);
+        return parent::getEloquentQuery()
+            ->with(['translates', 'brand', 'primaryCategory'])
+            ->withTrashed();
     }
 
     public static function getRelations(): array

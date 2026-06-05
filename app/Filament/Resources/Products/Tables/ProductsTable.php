@@ -4,11 +4,13 @@ namespace App\Filament\Resources\Products\Tables;
 
 use App\Enums\ProductStatus;
 use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Resources\Products\Tables\ProductTableActions;
 use App\Models\Product;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
 class ProductsTable
@@ -92,13 +94,23 @@ class ProductsTable
             ])
             ->defaultSort('updated_at', 'desc')
             ->filters([
+                TrashedFilter::make()
+                    ->label('Удалённые'),
                 TernaryFilter::make('is_ready_to_ship')
                     ->label('Товары в наличии'),
+                TernaryFilter::make('is_featured')
+                    ->label('Рекомендованные'),
+                TernaryFilter::make('is_new')
+                    ->label('Новинки'),
                 SelectFilter::make('status')
                     ->label('Статус')
                     ->options(collect(ProductStatus::cases())->mapWithKeys(
                         fn (ProductStatus $status) => [$status->value => $status->label()]
                     )),
-            ]);
+            ])
+            ->recordActions(ProductTableActions::recordActions())
+            ->toolbarActions(ProductTableActions::toolbarActions())
+            ->selectable()
+            ->selectCurrentPageOnly(false);
     }
 }
