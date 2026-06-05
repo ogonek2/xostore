@@ -8,6 +8,7 @@ use App\Models\Language;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Support\Import\ImportReferenceResolver;
+use App\Support\Import\ProductImportModelSlugAnalyzer;
 use App\Support\Import\ProductExcelRowParser;
 use App\Support\Import\ProductImportSpreadsheetLoader;
 use App\Support\Import\ProductExcelVariantParser;
@@ -150,6 +151,11 @@ class ProductExcelImporter
         $result['errors'] = [...$result['errors'], ...$parsed['errors']];
         $result['warnings'] = [...$result['warnings'], ...$parsed['warnings']];
         $result['skipped'] += $parsed['skipped'];
+
+        $result['warnings'] = [
+            ...$result['warnings'],
+            ...ProductImportModelSlugAnalyzer::warnings($parsed['groups']),
+        ];
 
         if ($parsed['errors'] !== [] || $parsed['groups'] === []) {
             return $result;

@@ -4,6 +4,7 @@ namespace App\Services\Import;
 
 use App\Models\Product;
 use App\Support\Import\ImportReferenceResolver;
+use App\Support\Import\ProductImportModelSlugAnalyzer;
 use App\Support\Import\ProductExcelRowParser;
 use App\Support\Import\ProductExcelVariantParser;
 use App\Support\Shop\ProductUniqueSlug;
@@ -19,6 +20,7 @@ class ProductImportPreviewer
     /**
      * @return array{
      *     errors: list<string>,
+     *     warnings: list<string>,
      *     total_products: int,
      *     products: list<array<string, mixed>>
      * }
@@ -30,6 +32,7 @@ class ProductImportPreviewer
         if ($parsed['errors'] !== []) {
             return [
                 'errors' => $parsed['errors'],
+                'warnings' => [],
                 'total_products' => 0,
                 'products' => [],
             ];
@@ -46,6 +49,7 @@ class ProductImportPreviewer
 
         return [
             'errors' => [],
+            'warnings' => ProductImportModelSlugAnalyzer::warnings($parsed['groups']),
             'total_products' => count($parsed['groups']),
             'products' => $products,
         ];
@@ -116,6 +120,7 @@ class ProductImportPreviewer
                 : null,
             'color_label' => $data['color_label'] ?? null,
             'color_slug' => $product->color_slug,
+            'model_slug' => ProductImportModelSlugAnalyzer::modelSlugFromEntries($entries),
             'variants' => $variants,
             'errors' => $rowErrors,
         ];

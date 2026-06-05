@@ -30,7 +30,17 @@
                     <div>{{ $error }}</div>
                 @endforeach
             </div>
-        @else
+        @endif
+
+        @if (! empty($preview['warnings']))
+            <div class="pi-preview__err" style="border-color:#854d0e;background:#292419;color:#fcd34d;margin-bottom:1rem;">
+                @foreach ($preview['warnings'] as $warning)
+                    <div>{{ $warning }}</div>
+                @endforeach
+            </div>
+        @endif
+
+        @if (empty($preview['errors']))
             <p class="pi-preview__lead">
                 Показано {{ count($preview['products'] ?? []) }} из {{ $preview['total_products'] ?? 0 }} товаров.
                 Slug и связи рассчитаны так же, как при импорте.
@@ -66,6 +76,9 @@
                                     @endif
                                     @if (! empty($row['slug_en']))
                                         <div class="pi-preview__slug">EN: {{ $row['slug_en'] }}</div>
+                                    @endif
+                                    @if (! empty($row['model_slug']))
+                                        <div class="pi-preview__slug" style="margin-top:0.35rem;">model_slug: {{ $row['model_slug'] }}</div>
                                     @endif
                                     @if (! empty($row['color_label']))
                                         <div style="margin-top:0.35rem;">Цвет: {{ $row['color_label'] }}

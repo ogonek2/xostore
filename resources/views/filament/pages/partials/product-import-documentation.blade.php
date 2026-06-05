@@ -340,7 +340,7 @@
         <div class="pi-docs__box">
             <h4 class="pi-docs__box-title">Цвет и модель</h4>
             <ul class="pi-docs__list">
-                <li><span class="pi-docs__code">model_slug</span> — общий slug цветовых вариантов</li>
+                <li><span class="pi-docs__code">model_slug</span> — <strong>только</strong> для одной модели в разных цветах (одинаковый slug, разные SKU и <span class="pi-docs__code">color_label</span>). У разных товаров оставьте пустым — иначе на сайте появятся как «доступные цвета» друг у друга</li>
                 <li><span class="pi-docs__code">color_label</span>, <span class="pi-docs__code">color_hex</span></li>
                 <li><span class="pi-docs__code">is_new</span>, <span class="pi-docs__code">is_ready_to_ship</span> — 1/0</li>
             </ul>
