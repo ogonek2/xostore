@@ -41,8 +41,8 @@ class ImportProducts extends Page
     {
         return $schema
             ->components([
-                View::make('filament.pages.partials.product-import-documentation'),
                 Section::make('Загрузка файла')
+                    ->icon(Heroicon::OutlinedDocumentArrowUp)
                     ->description('Используйте шаблон Excel. Лист «Товары» — данные, лист «Справка» — краткая подсказка.')
                     ->schema([
                         FileUpload::make('file')
@@ -70,9 +70,20 @@ class ImportProducts extends Page
                         ->modalDescription('Существующие товары с тем же SKU будут обновлены. Новые — созданы.')
                         ->action(fn () => $this->runImport()),
                 ]),
-                View::make('filament.pages.partials.product-import-result')
-                    ->viewData(fn (): array => ['result' => $this->importResult])
+                Section::make('Результат импорта')
+                    ->icon(Heroicon::OutlinedClipboardDocumentCheck)
+                    ->schema([
+                        View::make('filament.pages.partials.product-import-result')
+                            ->viewData(fn (): array => ['result' => $this->importResult]),
+                    ])
                     ->visible(fn (): bool => $this->importResult !== null),
+                Section::make('Документация по импорту')
+                    ->icon(Heroicon::OutlinedBookOpen)
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        View::make('filament.pages.partials.product-import-documentation'),
+                    ]),
             ]);
     }
 

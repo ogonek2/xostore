@@ -3,32 +3,91 @@
 @endphp
 
 @if ($result)
-    <div class="fi-section rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-        <h2 class="text-lg font-semibold text-gray-950 dark:text-white">Результат импорта</h2>
+    <style>
+        .pi-result { margin-top: 0.5rem; }
+        .pi-result__stats {
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: repeat(2, 1fr);
+            margin: 0 0 1rem;
+        }
+        @media (min-width: 768px) {
+            .pi-result__stats { grid-template-columns: repeat(4, 1fr); }
+        }
+        .pi-result__stat {
+            padding: 0.875rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #3f3f46;
+            background: #27272a;
+        }
+        .pi-result__stat dt {
+            margin: 0;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #a1a1aa;
+        }
+        .pi-result__stat dd {
+            margin: 0.35rem 0 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fafafa;
+        }
+        .pi-result__msg {
+            margin-top: 0.75rem;
+            padding: 0.875rem 1rem;
+            border-radius: 0.5rem;
+            max-height: 11rem;
+            overflow-y: auto;
+        }
+        .pi-result__msg--warn {
+            border: 1px solid #854d0e;
+            background: #292419;
+        }
+        .pi-result__msg--err {
+            border: 1px solid #991b1b;
+            background: #2a1515;
+        }
+        .pi-result__msg h4 {
+            margin: 0 0 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 700;
+        }
+        .pi-result__msg--warn h4 { color: #fcd34d; }
+        .pi-result__msg--err h4 { color: #fca5a5; }
+        .pi-result__msg ul {
+            margin: 0;
+            padding-left: 1.125rem;
+            font-size: 0.8125rem;
+            color: #d4d4d8;
+        }
+    </style>
 
-        <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-                <dt class="text-xs uppercase text-gray-500">Создано</dt>
-                <dd class="text-xl font-semibold">{{ $result['created'] ?? 0 }}</dd>
+    <div class="pi-result">
+        <dl class="pi-result__stats">
+            <div class="pi-result__stat">
+                <dt>Создано</dt>
+                <dd>{{ $result['created'] ?? 0 }}</dd>
             </div>
-            <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-                <dt class="text-xs uppercase text-gray-500">Обновлено</dt>
-                <dd class="text-xl font-semibold">{{ $result['updated'] ?? 0 }}</dd>
+            <div class="pi-result__stat">
+                <dt>Обновлено</dt>
+                <dd>{{ $result['updated'] ?? 0 }}</dd>
             </div>
-            <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-                <dt class="text-xs uppercase text-gray-500">Вариантов</dt>
-                <dd class="text-xl font-semibold">+{{ $result['variants_created'] ?? 0 }} / ~{{ $result['variants_updated'] ?? 0 }}</dd>
+            <div class="pi-result__stat">
+                <dt>Вариантов</dt>
+                <dd>+{{ $result['variants_created'] ?? 0 }}</dd>
             </div>
-            <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-                <dt class="text-xs uppercase text-gray-500">Пропущено</dt>
-                <dd class="text-xl font-semibold">{{ $result['skipped'] ?? 0 }}</dd>
+            <div class="pi-result__stat">
+                <dt>Пропущено</dt>
+                <dd>{{ $result['skipped'] ?? 0 }}</dd>
             </div>
         </dl>
 
         @if (! empty($result['warnings']))
-            <div class="mt-4">
-                <h3 class="text-sm font-medium text-amber-700 dark:text-amber-300">Предупреждения</h3>
-                <ul class="mt-2 max-h-40 list-disc overflow-y-auto pl-5 text-sm text-gray-700 dark:text-gray-200">
+            <div class="pi-result__msg pi-result__msg--warn">
+                <h4>Предупреждения</h4>
+                <ul>
                     @foreach ($result['warnings'] as $warning)
                         <li>{{ $warning }}</li>
                     @endforeach
@@ -37,9 +96,9 @@
         @endif
 
         @if (! empty($result['errors']))
-            <div class="mt-4">
-                <h3 class="text-sm font-medium text-red-700 dark:text-red-300">Ошибки</h3>
-                <ul class="mt-2 max-h-48 list-disc overflow-y-auto pl-5 text-sm text-gray-700 dark:text-gray-200">
+            <div class="pi-result__msg pi-result__msg--err">
+                <h4>Ошибки</h4>
+                <ul>
                     @foreach ($result['errors'] as $error)
                         <li>{{ $error }}</li>
                     @endforeach
