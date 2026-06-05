@@ -172,7 +172,8 @@
 
 <div class="pi-docs">
     <p class="pi-docs__lead">
-        Загрузите Excel по шаблону. Импорт <strong>создаёт или обновляет</strong> товары по полю
+        Загрузите Excel (.xlsx) или CSV (.csv) по шаблону. CSV из Excel (разделитель <span class="pi-docs__code">;</span>) тоже поддерживается.
+        Импорт <strong>создаёт или обновляет</strong> товары по полю
         <span class="pi-docs__code">sku</span> (артикул). Обязательны только
         <span class="pi-docs__code">sku</span> и <span class="pi-docs__code">name_pl</span>.
     </p>

@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Support\Import\ImportReferenceResolver;
 use App\Support\Import\ProductExcelRowParser;
+use App\Support\Import\ProductImportSpreadsheetLoader;
 use App\Support\Import\ProductExcelVariantParser;
 use App\Support\Import\ProductImportColumns;
 use App\Support\Shop\ProductUniqueSlug;
@@ -16,8 +17,6 @@ use App\Support\Shop\ProductVariantColorSync;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-
 class ProductExcelImporter
 {
     protected ?ImportReferenceResolver $referenceResolver = null;
@@ -40,23 +39,25 @@ class ProductExcelImporter
      *     created_references: list<string>
      * }
      */
-    public function import(UploadedFile $file): array
+    /**
+     * @return array{
+     *     groups: array<string, list<array{line: int, data: array<string, string>}>>,
+     *     errors: list<string>,
+     *     warnings: list<string>,
+     *     skipped: int
+     * }
+     */
+    public function parseUploadedFile(UploadedFile $file): array
     {
         $result = [
-            'created' => 0,
-            'updated' => 0,
-            'variants_created' => 0,
-            'variants_updated' => 0,
-            'skipped' => 0,
+            'groups' => [],
             'errors' => [],
             'warnings' => [],
-            'created_references' => [],
+            'skipped' => 0,
         ];
 
-        $this->referenceResolver = new ImportReferenceResolver($result);
-
         try {
-            $spreadsheet = IOFactory::load($file->getRealPath());
+            $spreadsheet = ProductImportSpreadsheetLoader::load($file);
         } catch (\Throwable $exception) {
             $result['errors'][] = 'Не удалось прочитать файл: '.$exception->getMessage();
 
@@ -123,11 +124,38 @@ class ProductExcelImporter
 
         if ($groups === []) {
             $result['warnings'][] = 'Нет строк с данными для импорта.';
+        }
 
+        $result['groups'] = $groups;
+
+        return $result;
+    }
+
+    public function import(UploadedFile $file): array
+    {
+        $result = [
+            'created' => 0,
+            'updated' => 0,
+            'variants_created' => 0,
+            'variants_updated' => 0,
+            'skipped' => 0,
+            'errors' => [],
+            'warnings' => [],
+            'created_references' => [],
+        ];
+
+        $this->referenceResolver = new ImportReferenceResolver($result);
+
+        $parsed = $this->parseUploadedFile($file);
+        $result['errors'] = [...$result['errors'], ...$parsed['errors']];
+        $result['warnings'] = [...$result['warnings'], ...$parsed['warnings']];
+        $result['skipped'] += $parsed['skipped'];
+
+        if ($parsed['errors'] !== [] || $parsed['groups'] === []) {
             return $result;
         }
 
-        foreach ($groups as $sku => $entries) {
+        foreach ($parsed['groups'] as $sku => $entries) {
             try {
                 $this->importProductGroup($sku, $entries, $result);
             } catch (\Throwable $exception) {

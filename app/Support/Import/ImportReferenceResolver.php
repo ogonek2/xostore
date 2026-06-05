@@ -301,6 +301,93 @@ class ImportReferenceResolver
     }
 
     /**
+     * @return array{input: string, code: string, name: string, exists: bool, will_create?: bool}|null
+     */
+    public function previewCategory(string $input): ?array
+    {
+        return $this->previewEntity(Category::class, $input);
+    }
+
+    /**
+     * @return array{input: string, code: string, name: string, exists: bool, will_create?: bool}|null
+     */
+    public function previewCatalog(string $input): ?array
+    {
+        return $this->previewEntity(Catalog::class, $input);
+    }
+
+    /**
+     * @return array{input: string, code: string, name: string, exists: bool, will_create?: bool}|null
+     */
+    public function previewTag(string $input): ?array
+    {
+        return $this->previewEntity(Tag::class, $input);
+    }
+
+    /**
+     * @return array{input: string, code: string, name: string, exists: bool, will_create?: bool}|null
+     */
+    public function previewBrand(string $input): ?array
+    {
+        return $this->previewEntity(Brand::class, $input);
+    }
+
+    /**
+     * @return array{input: string, code: string, name: string, exists: bool, will_create?: bool}|null
+     */
+    public function previewSizeGrid(string $input): ?array
+    {
+        return $this->previewEntity(SizeGrid::class, $input);
+    }
+
+    /**
+     * @return array{input: string, code: string, name: string, exists: bool, will_create?: bool}|null
+     */
+    public function previewSizeChartPreset(string $input): ?array
+    {
+        return $this->previewEntity(SizeChartPreset::class, $input);
+    }
+
+    /**
+     * @param  class-string<Model>  $modelClass
+     * @return array{input: string, code: string, name: string, exists: bool, will_create?: bool}|null
+     */
+    protected function previewEntity(string $modelClass, string $input): ?array
+    {
+        $input = trim($input);
+
+        if ($input === '') {
+            return null;
+        }
+
+        $existing = $this->findByCodeOrName($modelClass, $input);
+
+        if ($existing) {
+            return [
+                'input' => $input,
+                'code' => (string) $existing->code,
+                'name' => method_exists($existing, 'translate')
+                    ? ($existing->translate('name', 'pl') ?? $existing->code)
+                    : (string) $existing->code,
+                'exists' => true,
+            ];
+        }
+
+        $code = ImportUniqueCode::fromLabel(
+            $input,
+            fn (string $candidate): bool => $modelClass::query()->where('code', $candidate)->exists(),
+        );
+
+        return [
+            'input' => $input,
+            'code' => $code,
+            'name' => $input,
+            'exists' => false,
+            'will_create' => true,
+        ];
+    }
+
+    /**
      * @template T of Model
      *
      * @param  class-string<T>  $modelClass

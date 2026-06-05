@@ -4,6 +4,9 @@ namespace App\Filament\Pages;
 
 use App\Services\Import\ProductExcelImporter;
 use App\Services\Import\ProductExcelTemplateBuilder;
+use App\Services\Import\ProductImportPreviewer;
+use App\Support\Import\ProductImportSpreadsheetLoader;
+use App\Support\Import\ProductImportUploadedFileResolver;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
@@ -14,7 +17,6 @@ use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ImportProducts extends Page
@@ -23,7 +25,7 @@ class ImportProducts extends Page
 
     protected static ?string $navigationLabel = 'Импорт товаров';
 
-    protected static ?string $title = 'Импорт товаров из Excel';
+    protected static ?string $title = 'Импорт товаров из Excel / CSV';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Каталог';
 
@@ -37,24 +39,26 @@ class ImportProducts extends Page
     /** @var array<string, mixed>|null */
     public ?array $importResult = null;
 
+    /** @var array<string, mixed>|null */
+    public ?array $importPreview = null;
+
     public function content(Schema $schema): Schema
     {
         return $schema
             ->components([
                 Section::make('Загрузка файла')
                     ->icon(Heroicon::OutlinedDocumentArrowUp)
-                    ->description('Используйте шаблон Excel. Лист «Товары» — данные, лист «Справка» — краткая подсказка.')
+                    ->description('Поддерживаются .xlsx и .csv. После загрузки ниже появится предпросмотр данных.')
                     ->schema([
                         FileUpload::make('file')
-                            ->label('Файл Excel (.xlsx)')
-                            ->acceptedFileTypes([
-                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                'application/vnd.ms-excel',
-                            ])
+                            ->label('Файл Excel (.xlsx) или CSV (.csv)')
+                            ->acceptedFileTypes(ProductImportSpreadsheetLoader::ACCEPTED_MIME_TYPES)
                             ->required()
                             ->disk('local')
                             ->directory('product-imports')
-                            ->maxSize(10240),
+                            ->maxSize(10240)
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->loadImportPreview()),
                     ])
                     ->statePath('data'),
                 Actions::make([
@@ -63,6 +67,11 @@ class ImportProducts extends Page
                         ->icon('heroicon-o-arrow-down-tray')
                         ->color('gray')
                         ->action(fn (): StreamedResponse => app(ProductExcelTemplateBuilder::class)->download()),
+                    Action::make('refreshPreview')
+                        ->label('Обновить предпросмотр')
+                        ->icon('heroicon-o-eye')
+                        ->color('gray')
+                        ->action(fn () => $this->loadImportPreview()),
                     Action::make('runImport')
                         ->label('Импортировать')
                         ->icon('heroicon-o-arrow-up-tray')
@@ -70,6 +79,14 @@ class ImportProducts extends Page
                         ->modalDescription('Существующие товары с тем же SKU будут обновлены. Новые — созданы.')
                         ->action(fn () => $this->runImport()),
                 ]),
+                Section::make('Предпросмотр данных')
+                    ->icon(Heroicon::OutlinedTableCells)
+                    ->description('Как будут импортированы товары: slug, категории, каталоги и другие связи.')
+                    ->schema([
+                        View::make('filament.pages.partials.product-import-preview')
+                            ->viewData(fn (): array => ['preview' => $this->importPreview]),
+                    ])
+                    ->visible(fn (): bool => $this->importPreview !== null),
                 Section::make('Результат импорта')
                     ->icon(Heroicon::OutlinedClipboardDocumentCheck)
                     ->schema([
@@ -87,19 +104,29 @@ class ImportProducts extends Page
             ]);
     }
 
+    public function loadImportPreview(): void
+    {
+        $file = $this->resolveUploadedFile();
+
+        if (! $file) {
+            $this->importPreview = null;
+
+            return;
+        }
+
+        $this->importPreview = app(ProductImportPreviewer::class)->build($file);
+    }
+
     public function runImport(): void
     {
         $this->importResult = null;
 
-        $this->validate([
-            'data.file' => ['required'],
-        ]);
-
-        $file = $this->resolveUploadedFile($this->data['file'] ?? null);
+        $file = $this->resolveUploadedFile();
 
         if (! $file) {
             Notification::make()
                 ->title('Файл не выбран')
+                ->body('Дождитесь окончания загрузки файла или выберите его снова.')
                 ->danger()
                 ->send();
 
@@ -108,6 +135,7 @@ class ImportProducts extends Page
 
         $result = app(ProductExcelImporter::class)->import($file);
         $this->importResult = $result;
+        $this->loadImportPreview();
 
         Notification::make()
             ->title('Импорт завершён')
@@ -137,22 +165,21 @@ class ImportProducts extends Page
                 ->danger()
                 ->send();
         }
-
-        $this->data = [];
     }
 
-    protected function resolveUploadedFile(mixed $uploaded): ?UploadedFile
+    protected function resolveUploadedFile(): ?UploadedFile
     {
-        if ($uploaded instanceof UploadedFile) {
-            return $uploaded;
+        $uploaded = $this->data['file'] ?? null;
+
+        if (blank($uploaded)) {
+            try {
+                $snapshot = $this->getSchema('content')->getStateSnapshot();
+                $uploaded = data_get($snapshot, 'data.file');
+            } catch (\Throwable) {
+                // ignore
+            }
         }
 
-        if (is_string($uploaded) && Storage::disk('local')->exists($uploaded)) {
-            $path = Storage::disk('local')->path($uploaded);
-
-            return new UploadedFile($path, basename($path), null, null, true);
-        }
-
-        return null;
+        return ProductImportUploadedFileResolver::from($uploaded);
     }
 }
