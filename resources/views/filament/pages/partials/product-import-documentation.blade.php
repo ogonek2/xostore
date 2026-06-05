@@ -188,11 +188,11 @@
         </div>
 
         <div class="pi-docs__box">
-            <h4 class="pi-docs__box-title">Группировка строк</h4>
+            <h4 class="pi-docs__box-title">Значения через запятую</h4>
             <p>
-                Одинаковый <span class="pi-docs__code">sku</span> в нескольких строках = один товар,
-                несколько размеров. Поля товара — из первой непустой строки группы.
-                Варианты — колонки <span class="pi-docs__code">variant_*</span>.
+                Категории, каталоги, теги, размеры и цены можно перечислять в <strong>одной ячейке</strong>
+                через запятую — не обязательно разбивать на много строк.
+                Параллельные списки: одинаковый порядок элементов (1-й размер → 1-я цена → 1-й остаток).
             </p>
         </div>
     </div>
@@ -232,7 +232,12 @@
                     <tr>
                         <td class="cell-key">catalog_codes</td>
                         <td>Каталоги, через запятую</td>
-                        <td class="cell-ex">main</td>
+                        <td class="cell-ex">main, sale</td>
+                    </tr>
+                    <tr>
+                        <td class="cell-key">tag_codes</td>
+                        <td>Теги, через запятую</td>
+                        <td class="cell-ex">chanel, new</td>
                     </tr>
                     <tr>
                         <td class="cell-key">size_grid_code</td>
@@ -260,7 +265,7 @@
     </div>
 
     <div class="pi-docs__table-block">
-        <h4 class="pi-docs__box-title">Варианты (размеры) — колонки variant_*</h4>
+        <h4 class="pi-docs__box-title">Варианты и размеры (через запятую или несколько строк)</h4>
         <div class="pi-docs__table-scroll">
             <table class="pi-docs__table">
                 <colgroup>
@@ -277,33 +282,44 @@
                 </thead>
                 <tbody>
                     <tr>
+                        <td class="cell-key">variant_sizes</td>
+                        <td>Размеры из пресета, через запятую</td>
+                        <td class="cell-ex">s, m, l</td>
+                    </tr>
+                    <tr>
+                        <td class="cell-key">variant_prices</td>
+                        <td>Цены (порядок как у размеров)</td>
+                        <td class="cell-ex">1290, 1290, 1390</td>
+                    </tr>
+                    <tr>
+                        <td class="cell-key">variant_stocks</td>
+                        <td>Остатки (порядок как у размеров)</td>
+                        <td class="cell-ex">5, 3, 2</td>
+                    </tr>
+                    <tr>
+                        <td class="cell-key">variant_skus</td>
+                        <td>SKU вариантов через запятую</td>
+                        <td class="cell-ex">SKU-S, SKU-M, SKU-L</td>
+                    </tr>
+                    <tr>
+                        <td class="cell-key">variants</td>
+                        <td>Компактно: размер:цена:остаток,…</td>
+                        <td class="cell-ex">s:990:4, m:990:6, l:1090:2</td>
+                    </tr>
+                    <tr>
                         <td class="cell-key">variant_size</td>
-                        <td>Код размера из пресета size_grid_code</td>
+                        <td>Один размер или несколько: s,m,l</td>
                         <td class="cell-ex">m</td>
                     </tr>
                     <tr>
-                        <td class="cell-key">variant_sku</td>
-                        <td>SKU варианта (если пусто — SKU-РАЗМЕР)</td>
-                        <td class="cell-ex">DRESS-001-M</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">variant_price</td>
-                        <td>Цена варианта</td>
-                        <td class="cell-ex">1290</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">variant_stock</td>
-                        <td>Остаток на складе</td>
-                        <td class="cell-ex">5</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">variant_is_default</td>
-                        <td>Размер по умолчанию (1 / 0)</td>
-                        <td class="cell-ex">1</td>
+                        <td class="cell-key">variant_price / variant_stock</td>
+                        <td>Один вариант в строке или списки через запятую</td>
+                        <td class="cell-ex">1290 / 5</td>
                     </tr>
                 </tbody>
             </table>
         </div>
+        <p class="pi-docs__note">Альтернатива: несколько строк с одним <span class="pi-docs__code">sku</span> — по одному размеру в каждой строке.</p>
     </div>
 
     <div class="pi-docs__grid pi-docs__grid--2">
@@ -331,7 +347,8 @@
     <aside class="pi-docs__callout">
         <p class="pi-docs__callout-title">Перед импортом</p>
         <ul class="pi-docs__list">
-            <li>Скачайте шаблон — лист «Товары»: строка 1 = имена колонок, строки 3+ = данные.</li>
+            <li>Скачайте шаблон — в примерах: размеры через запятую и формат <span class="pi-docs__code">variants</span>.</li>
+            <li>Строка 1 = имена колонок, строки 3+ = данные.</li>
             <li>Строка 2 с подсказками импорт пропускает.</li>
             <li>Фото и галерея добавляются вручную после импорта.</li>
         </ul>

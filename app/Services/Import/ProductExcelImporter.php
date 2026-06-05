@@ -13,7 +13,9 @@ use App\Models\ProductVariant;
 use App\Models\SizeChartPreset;
 use App\Models\SizeGrid;
 use App\Models\SizeGridValue;
+use App\Models\Tag;
 use App\Support\Import\ProductExcelRowParser;
+use App\Support\Import\ProductExcelVariantParser;
 use App\Support\Import\ProductImportColumns;
 use App\Support\Shop\ProductVariantColorSync;
 use Illuminate\Http\UploadedFile;
@@ -389,6 +391,28 @@ class ProductExcelImporter
                 $product->catalogs()->sync($catalogIds);
             }
         }
+
+        $tagCodes = ProductExcelRowParser::parseCodeList($data['tag_codes'] ?? null);
+
+        if ($tagCodes !== []) {
+            $tagIds = [];
+
+            foreach ($tagCodes as $code) {
+                $tag = Tag::query()->where('code', $code)->first();
+
+                if (! $tag) {
+                    $result['warnings'][] = "Товар {$product->sku}: тег «{$code}» не найден.";
+
+                    continue;
+                }
+
+                $tagIds[] = $tag->id;
+            }
+
+            if ($tagIds !== []) {
+                $product->tags()->sync($tagIds);
+            }
+        }
     }
 
     /**
@@ -398,60 +422,26 @@ class ProductExcelImporter
     protected function importVariants(Product $product, array $entries, array &$result): void
     {
         $hasVariantRows = false;
+        $basePrice = $product->base_price ? (float) $product->base_price : null;
 
         foreach ($entries as $entry) {
             $row = $entry['data'];
             $line = $entry['line'];
 
-            if (! $this->rowHasVariantData($row)) {
+            if (! ProductExcelVariantParser::hasVariantInput($row)) {
+                continue;
+            }
+
+            $definitions = ProductExcelVariantParser::definitions($row, $product->sku, $basePrice);
+
+            if ($definitions === []) {
                 continue;
             }
 
             $hasVariantRows = true;
 
-            $variantSku = Str::upper(trim((string) ($row['variant_sku'] ?? '')));
-
-            if ($variantSku === '') {
-                $sizePart = Str::upper(trim((string) ($row['variant_size'] ?? 'ONE')));
-                $variantSku = "{$product->sku}-{$sizePart}";
-            }
-
-            $price = ProductExcelRowParser::parseFloat($row['variant_price'] ?? null)
-                ?? $product->base_price
-                ?? 0;
-
-            $sizeGridValueId = $this->resolveSizeGridValueId(
-                $product->size_grid_id,
-                $row['variant_size'] ?? null,
-            );
-
-            if (filled($row['variant_size'] ?? null) && ! $sizeGridValueId) {
-                $result['warnings'][] = "Строка {$line}: размер «{$row['variant_size']}» не найден в пресете товара.";
-            }
-
-            $variant = ProductVariant::query()
-                ->where('product_id', $product->id)
-                ->where('sku', $variantSku)
-                ->first();
-
-            $payload = array_filter([
-                'product_id' => $product->id,
-                'sku' => $variantSku,
-                'price' => $price,
-                'compare_at_price' => ProductExcelRowParser::parseFloat($row['variant_compare_at_price'] ?? null),
-                'stock_qty' => ProductExcelRowParser::parseInt($row['variant_stock'] ?? null) ?? 0,
-                'size_grid_value_id' => $sizeGridValueId,
-                'barcode' => $row['variant_barcode'] ?? null,
-                'is_default' => ProductExcelRowParser::parseBool($row['variant_is_default'] ?? null) ?? false,
-                'is_active' => true,
-            ], fn ($value) => $value !== null);
-
-            if ($variant) {
-                $variant->update($payload);
-                $result['variants_updated']++;
-            } else {
-                ProductVariant::query()->create($payload);
-                $result['variants_created']++;
+            foreach ($definitions as $index => $definition) {
+                $this->upsertVariantDefinition($product, $definition, $line, $index, $result);
             }
         }
 
@@ -475,14 +465,64 @@ class ProductExcelImporter
     }
 
     /**
-     * @param  array<string, string>  $row
+     * @param  array{
+     *     size: ?string,
+     *     sku: ?string,
+     *     price: ?float,
+     *     compare_at_price: ?float,
+     *     stock: ?int,
+     *     barcode: ?string,
+     *     is_default: ?bool
+     * }  $definition
+     * @param  array{variants_created: int, variants_updated: int, warnings: list<string>}  $result
      */
-    protected function rowHasVariantData(array $row): bool
-    {
-        return filled($row['variant_size'] ?? null)
-            || filled($row['variant_sku'] ?? null)
-            || filled($row['variant_price'] ?? null)
-            || filled($row['variant_stock'] ?? null);
+    protected function upsertVariantDefinition(
+        Product $product,
+        array $definition,
+        int $line,
+        int $index,
+        array &$result,
+    ): void {
+        $variantSku = $definition['sku'] ?? null;
+
+        if (blank($variantSku)) {
+            $sizePart = Str::upper(trim((string) ($definition['size'] ?? 'ONE')));
+            $variantSku = "{$product->sku}-{$sizePart}";
+        }
+
+        $sizeGridValueId = $this->resolveSizeGridValueId(
+            $product->size_grid_id,
+            $definition['size'] ?? null,
+        );
+
+        if (filled($definition['size'] ?? null) && ! $sizeGridValueId) {
+            $result['warnings'][] = "Строка {$line}".($index > 0 ? " (вариант ".($index + 1).')' : '').": размер «{$definition['size']}» не найден в пресете товара.";
+        }
+
+        $variant = ProductVariant::query()
+            ->where('product_id', $product->id)
+            ->where('sku', $variantSku)
+            ->first();
+
+        $payload = [
+            'product_id' => $product->id,
+            'sku' => $variantSku,
+            'price' => $definition['price'] ?? $product->base_price ?? 0,
+            'compare_at_price' => $definition['compare_at_price'],
+            'stock_qty' => $definition['stock'] ?? 0,
+            'size_grid_value_id' => $sizeGridValueId,
+            'barcode' => $definition['barcode'],
+            'is_default' => $definition['is_default'] ?? ($index === 0),
+            'is_active' => true,
+        ];
+
+        if ($variant) {
+            $variant->update($payload);
+            $result['variants_updated']++;
+        } else {
+            ProductVariant::query()->create($payload);
+            $result['variants_created']++;
+        }
     }
 
     /**

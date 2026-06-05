@@ -116,19 +116,48 @@ final class ProductExcelRowParser
     }
 
     /**
-     * @param  list<string>  $codes
      * @return list<string>
      */
-    public static function parseCodeList(?string $value): array
+    public static function parseList(?string $value): array
     {
         if ($value === null || $value === '') {
             return [];
         }
 
-        return collect(explode(',', $value))
-            ->map(fn (string $code) => trim($code))
-            ->filter()
+        return collect(preg_split('/\s*,\s*/', $value) ?: [])
+            ->map(fn (string $item) => trim($item))
+            ->filter(fn (string $item) => $item !== '')
+            ->values()
+            ->all();
+    }
+
+    /** @return list<string> */
+    public static function parseCodeList(?string $value): array
+    {
+        return collect(self::parseList($value))
             ->unique()
+            ->values()
+            ->all();
+    }
+
+    /** @return list<float> */
+    public static function parseNumericList(?string $value): array
+    {
+        return collect(self::parseList($value))
+            ->map(fn (string $item) => self::parseFloat($item))
+            ->filter(fn (?float $n) => $n !== null)
+            ->map(fn (float $n) => $n)
+            ->values()
+            ->all();
+    }
+
+    /** @return list<int> */
+    public static function parseIntList(?string $value): array
+    {
+        return collect(self::parseList($value))
+            ->map(fn (string $item) => self::parseInt($item))
+            ->filter(fn (?int $n) => $n !== null)
+            ->map(fn (int $n) => $n)
             ->values()
             ->all();
     }

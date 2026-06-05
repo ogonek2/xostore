@@ -57,11 +57,10 @@ class ProductExcelTemplateBuilder
             'color_label' => 'Czarny',
             'color_hex' => '#1a1a1a',
             'is_new' => '1',
-            'variant_size' => 'm',
-            'variant_sku' => 'DRESS-001-BLACK-M',
-            'variant_price' => '1290',
-            'variant_stock' => '5',
-            'variant_is_default' => '1',
+            'variant_sizes' => 's,m,l',
+            'variant_prices' => '1290,1290,1390',
+            'variant_stocks' => '5,3,2',
+            'variant_defaults' => '0,1,0',
         ];
 
         foreach ($keys as $index => $key) {
@@ -70,17 +69,18 @@ class ProductExcelTemplateBuilder
             }
         }
 
-        $exampleVariant = [
-            'sku' => 'DRESS-001-BLACK',
-            'variant_size' => 'l',
-            'variant_sku' => 'DRESS-001-BLACK-L',
-            'variant_price' => '1290',
-            'variant_stock' => '3',
+        $exampleCompact = [
+            'sku' => 'SHIRT-002-WHITE',
+            'name_pl' => 'Koszula biała',
+            'category_codes' => 'women, accessories',
+            'tag_codes' => 'chanel',
+            'size_grid_code' => 'clothing_letter_women',
+            'variants' => 's:990:4,m:990:6,l:1090:2',
         ];
 
         foreach ($keys as $index => $key) {
-            if (isset($exampleVariant[$key])) {
-                $products->setCellValue([$index + 1, 4], $exampleVariant[$key]);
+            if (isset($exampleCompact[$key])) {
+                $products->setCellValue([$index + 1, 4], $exampleCompact[$key]);
             }
         }
 
@@ -107,14 +107,16 @@ class ProductExcelTemplateBuilder
             'Коды справочников (должны существовать в админке):',
             '  brand_code — код бренда',
             '  primary_category_code / category_codes — коды категорий',
-            '  catalog_codes — коды каталогов через запятую',
-            '  size_grid_code — пресет кнопок S/M/L (Каталог → Размеры кнопки)',
+            '  catalog_codes, tag_codes, category_codes — через запятую',
+            '  size_grid_code — пресет кнопок S/M/L',
             '  size_chart_preset_code — пресет таблицы мерок в см',
             '',
-            'Варианты (колонки variant_*):',
-            '  variant_size — код размера из пресета (s, m, l, 38…)',
-            '  variant_sku — уникальный SKU варианта (если пусто: SKU-РАЗМЕР)',
-            '  variant_price — цена; variant_stock — остаток',
+            'Варианты в ОДНОЙ ячейке (через запятую):',
+            '  variant_sizes=s,m,l + variant_prices=1290,1290,1390 + variant_stocks=5,3,2',
+            '  variants=s:1290:5,m:1290:3 (размер:цена:остаток)',
+            '  variant_size=s,m,l — то же, что variant_sizes',
+            '',
+            'Или несколько строк с одним sku — по одному размеру в строке.',
             '',
             'Статус: draft | published | archived',
             'Тип: simple | variable',
