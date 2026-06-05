@@ -55,7 +55,12 @@
             font-weight: 700;
         }
         .pi-result__msg--warn h4 { color: #fcd34d; }
+        .pi-result__msg--info h4 { color: #86efac; }
         .pi-result__msg--err h4 { color: #fca5a5; }
+        .pi-result__msg--info {
+            border: 1px solid #166534;
+            background: #14251a;
+        }
         .pi-result__msg ul {
             margin: 0;
             padding-left: 1.125rem;
@@ -83,6 +88,17 @@
                 <dd>{{ $result['skipped'] ?? 0 }}</dd>
             </div>
         </dl>
+
+        @if (! empty($result['created_references']))
+            <div class="pi-result__msg pi-result__msg--info">
+                <h4>Автосоздано при импорте</h4>
+                <ul>
+                    @foreach ($result['created_references'] as $item)
+                        <li>{{ $item }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         @if (! empty($result['warnings']))
             <div class="pi-result__msg pi-result__msg--warn">

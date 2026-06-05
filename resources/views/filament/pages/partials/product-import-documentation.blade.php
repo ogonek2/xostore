@@ -184,7 +184,7 @@
                 <li><span class="pi-docs__code">sku</span> — уникальный артикул</li>
                 <li><span class="pi-docs__code">name_pl</span> — название (польский)</li>
             </ul>
-            <p class="pi-docs__note">Остальные колонки — по желанию.</p>
+            <p class="pi-docs__note">Остальные колонки — по желанию. Справочники (категории, бренды, теги…) можно указывать названием — при отсутствии создаются автоматически.</p>
         </div>
 
         <div class="pi-docs__box">
@@ -198,7 +198,7 @@
     </div>
 
     <div class="pi-docs__table-block">
-        <h4 class="pi-docs__box-title">Справочники — коды из админки</h4>
+        <h4 class="pi-docs__box-title">Справочники — код или название</h4>
         <div class="pi-docs__table-scroll">
             <table class="pi-docs__table">
                 <colgroup>
@@ -216,38 +216,38 @@
                 <tbody>
                     <tr>
                         <td class="cell-key">brand_code</td>
-                        <td>Бренд (Каталог → Бренды)</td>
-                        <td class="cell-ex">chanel</td>
+                        <td>Бренд: код или название. Нет в базе — создаётся автоматически</td>
+                        <td class="cell-ex">Chanel</td>
                     </tr>
                     <tr>
                         <td class="cell-key">primary_category_code</td>
-                        <td>Основная категория</td>
-                        <td class="cell-ex">women</td>
+                        <td>Основная категория (код/название, автосоздание)</td>
+                        <td class="cell-ex">Damskie</td>
                     </tr>
                     <tr>
                         <td class="cell-key">category_codes</td>
-                        <td>Все категории, через запятую</td>
-                        <td class="cell-ex">women, accessories</td>
+                        <td>Категории через запятую (код/название)</td>
+                        <td class="cell-ex">Damskie, Akcesoria</td>
                     </tr>
                     <tr>
                         <td class="cell-key">catalog_codes</td>
-                        <td>Каталоги, через запятую</td>
-                        <td class="cell-ex">main, sale</td>
+                        <td>Каталоги через запятую (код/название)</td>
+                        <td class="cell-ex">Wyprzedaż</td>
                     </tr>
                     <tr>
                         <td class="cell-key">tag_codes</td>
-                        <td>Теги, через запятую</td>
-                        <td class="cell-ex">chanel, new</td>
+                        <td>Теги через запятую (код/название)</td>
+                        <td class="cell-ex">nowość</td>
                     </tr>
                     <tr>
                         <td class="cell-key">size_grid_code</td>
-                        <td>Пресет кнопок размера (S/M/L)</td>
-                        <td class="cell-ex">clothing_letter_women</td>
+                        <td>Пресет кнопок S/M/L (код/название)</td>
+                        <td class="cell-ex">Odzież damska</td>
                     </tr>
                     <tr>
                         <td class="cell-key">size_chart_preset_code</td>
-                        <td>Пресет таблицы мерок (см)</td>
-                        <td class="cell-ex">women_dresses_cm</td>
+                        <td>Пресет таблицы мерок (код/название)</td>
+                        <td class="cell-ex">Sukienki damskie</td>
                     </tr>
                     <tr>
                         <td class="cell-key">status</td>
@@ -330,7 +330,9 @@
                 <span class="pi-docs__code">name_pl</span>,
                 <span class="pi-docs__code">description_en</span>,
                 <span class="pi-docs__code">meta_title_pl</span> и др.
-                Slug PL — из названия, если не указан.
+                <span class="pi-docs__code">slug_pl</span> и <span class="pi-docs__code">slug_en</span> можно не заполнять:
+                slug создаётся из полного названия и проверяется на уникальность.
+                При совпадении добавляется артикул, цвет или суффикс <span class="pi-docs__code">-2</span>, <span class="pi-docs__code">-3</span>…
             </p>
         </div>
 

@@ -4,19 +4,14 @@ namespace App\Services\Import;
 
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
-use App\Models\Brand;
-use App\Models\Catalog;
-use App\Models\Category;
 use App\Models\Language;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\SizeChartPreset;
-use App\Models\SizeGrid;
-use App\Models\SizeGridValue;
-use App\Models\Tag;
+use App\Support\Import\ImportReferenceResolver;
 use App\Support\Import\ProductExcelRowParser;
 use App\Support\Import\ProductExcelVariantParser;
 use App\Support\Import\ProductImportColumns;
+use App\Support\Shop\ProductUniqueSlug;
 use App\Support\Shop\ProductVariantColorSync;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +20,14 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ProductExcelImporter
 {
+    protected ?ImportReferenceResolver $referenceResolver = null;
+
+    /** @var array{warnings: list<string>, created_references: list<string>} */
+    protected array $fallbackReferenceResult = [
+        'warnings' => [],
+        'created_references' => [],
+    ];
+
     /**
      * @return array{
      *     created: int,
@@ -33,7 +36,8 @@ class ProductExcelImporter
      *     variants_updated: int,
      *     skipped: int,
      *     errors: list<string>,
-     *     warnings: list<string>
+     *     warnings: list<string>,
+     *     created_references: list<string>
      * }
      */
     public function import(UploadedFile $file): array
@@ -46,7 +50,10 @@ class ProductExcelImporter
             'skipped' => 0,
             'errors' => [],
             'warnings' => [],
+            'created_references' => [],
         ];
+
+        $this->referenceResolver = new ImportReferenceResolver($result);
 
         try {
             $spreadsheet = IOFactory::load($file->getRealPath());
@@ -220,15 +227,21 @@ class ProductExcelImporter
         }
 
         if (array_key_exists('brand_code', $data)) {
-            $attributes['brand_id'] = $this->resolveBrandId($data['brand_code']);
+            $attributes['brand_id'] = $this->referenceResolver()
+                ->findOrCreateBrand($data['brand_code'])
+                ?->id;
         }
 
         if (array_key_exists('size_grid_code', $data)) {
-            $attributes['size_grid_id'] = $this->resolveSizeGridId($data['size_grid_code']);
+            $attributes['size_grid_id'] = $this->referenceResolver()
+                ->findOrCreateSizeGrid($data['size_grid_code'])
+                ?->id;
         }
 
         if (array_key_exists('size_chart_preset_code', $data)) {
-            $attributes['size_chart_preset_id'] = $this->resolveSizeChartPresetId($data['size_chart_preset_code']);
+            $attributes['size_chart_preset_id'] = $this->referenceResolver()
+                ->findOrCreateSizeChartPreset($data['size_chart_preset_code'])
+                ?->id;
         }
 
         if (array_key_exists('base_price', $data)) {
@@ -278,7 +291,9 @@ class ProductExcelImporter
         }
 
         if (array_key_exists('primary_category_code', $data)) {
-            $attributes['primary_category_id'] = $this->resolveCategoryId($data['primary_category_code']);
+            $attributes['primary_category_id'] = $this->referenceResolver()
+                ->findOrCreateCategory($data['primary_category_code'])
+                ?->id;
         }
 
         return $attributes;
@@ -298,29 +313,30 @@ class ProductExcelImporter
         ];
 
         foreach ($fields as $field) {
+            if ($field === 'slug') {
+                continue;
+            }
+
             if ($pl && filled($data["{$field}_pl"] ?? null)) {
-                $value = $data["{$field}_pl"];
-
-                if ($field === 'slug') {
-                    $value = Str::slug($value);
-                }
-
-                $product->setTranslation($field, $value, $pl);
+                $product->setTranslation($field, $data["{$field}_pl"], $pl);
             }
 
             if ($en && filled($data["{$field}_en"] ?? null)) {
-                $value = $data["{$field}_en"];
-
-                if ($field === 'slug') {
-                    $value = Str::slug($value);
-                }
-
-                $product->setTranslation($field, $value, $en);
+                $product->setTranslation($field, $data["{$field}_en"], $en);
             }
         }
 
-        if ($pl && filled($data['name_pl']) && blank($data['slug_pl'] ?? null)) {
-            $product->setTranslation('slug', Str::slug($data['name_pl']), $pl);
+        if ($pl && filled($data['name_pl'] ?? null)) {
+            $slug = ProductUniqueSlug::forImport($product, 'pl', $data['name_pl'], $data);
+            $product->setTranslation('slug', $slug, $pl);
+        }
+
+        if ($en && filled($data['name_en'] ?? null)) {
+            $slug = ProductUniqueSlug::forImport($product, 'en', $data['name_en'], $data);
+            $product->setTranslation('slug', $slug, $en);
+        } elseif ($en && filled($data['name_pl'] ?? null) && blank($data['slug_en'] ?? null)) {
+            $slug = ProductUniqueSlug::forImport($product, 'en', $data['name_pl'], $data);
+            $product->setTranslation('slug', $slug, $en);
         }
     }
 
@@ -342,19 +358,19 @@ class ProductExcelImporter
             $primaryId = null;
 
             foreach ($categoryCodes as $code) {
-                $category = Category::query()->where('code', $code)->first();
+                $category = $this->referenceResolver()->findOrCreateCategory($code);
 
                 if (! $category) {
-                    $result['warnings'][] = "Товар {$product->sku}: категория «{$code}» не найдена.";
-
                     continue;
                 }
 
                 $isPrimary = $primaryCode !== ''
-                    ? $code === $primaryCode
+                    ? strcasecmp($code, $primaryCode) === 0
                     : $category->id === ($product->primary_category_id ?? $category->id);
 
-                $sync[$category->id] = ['is_primary' => $isPrimary];
+                $sync[$category->id] = [
+                    'is_primary' => ($sync[$category->id]['is_primary'] ?? false) || $isPrimary,
+                ];
 
                 if ($isPrimary) {
                     $primaryId = $category->id;
@@ -376,11 +392,9 @@ class ProductExcelImporter
             $catalogIds = [];
 
             foreach ($catalogCodes as $code) {
-                $catalog = Catalog::query()->where('code', $code)->first();
+                $catalog = $this->referenceResolver()->findOrCreateCatalog($code);
 
                 if (! $catalog) {
-                    $result['warnings'][] = "Товар {$product->sku}: каталог «{$code}» не найден.";
-
                     continue;
                 }
 
@@ -398,11 +412,9 @@ class ProductExcelImporter
             $tagIds = [];
 
             foreach ($tagCodes as $code) {
-                $tag = Tag::query()->where('code', $code)->first();
+                $tag = $this->referenceResolver()->findOrCreateTag($code);
 
                 if (! $tag) {
-                    $result['warnings'][] = "Товар {$product->sku}: тег «{$code}» не найден.";
-
                     continue;
                 }
 
@@ -490,13 +502,18 @@ class ProductExcelImporter
             $variantSku = "{$product->sku}-{$sizePart}";
         }
 
-        $sizeGridValueId = $this->resolveSizeGridValueId(
+        $sizeGridValueId = $this->referenceResolver()->findOrCreateSizeGridValue(
             $product->size_grid_id,
             $definition['size'] ?? null,
         );
 
-        if (filled($definition['size'] ?? null) && ! $sizeGridValueId) {
-            $result['warnings'][] = "Строка {$line}".($index > 0 ? " (вариант ".($index + 1).')' : '').": размер «{$definition['size']}» не найден в пресете товара.";
+        if (filled($definition['size'] ?? null) && ! $sizeGridValueId && ! $product->size_grid_id) {
+            $grid = $this->referenceResolver()->findOrCreateSizeGrid("import-{$product->sku}");
+            $product->update(['size_grid_id' => $grid->id]);
+            $sizeGridValueId = $this->referenceResolver()->findOrCreateSizeGridValue(
+                $grid->id,
+                $definition['size'] ?? null,
+            );
         }
 
         $variant = ProductVariant::query()
@@ -546,57 +563,9 @@ class ProductExcelImporter
         return null;
     }
 
-    protected function resolveBrandId(?string $code): ?int
+    protected function referenceResolver(): ImportReferenceResolver
     {
-        if (blank($code)) {
-            return null;
-        }
-
-        return Brand::query()->where('code', trim($code))->value('id');
-    }
-
-    protected function resolveCategoryId(?string $code): ?int
-    {
-        if (blank($code)) {
-            return null;
-        }
-
-        return Category::query()->where('code', trim($code))->value('id');
-    }
-
-    protected function resolveSizeGridId(?string $code): ?int
-    {
-        if (blank($code)) {
-            return null;
-        }
-
-        return SizeGrid::query()->where('code', trim($code))->where('is_active', true)->value('id');
-    }
-
-    protected function resolveSizeChartPresetId(?string $code): ?int
-    {
-        if (blank($code)) {
-            return null;
-        }
-
-        return SizeChartPreset::query()->where('code', trim($code))->where('is_active', true)->value('id');
-    }
-
-    protected function resolveSizeGridValueId(?int $sizeGridId, ?string $sizeCode): ?int
-    {
-        if (! $sizeGridId || blank($sizeCode)) {
-            return null;
-        }
-
-        $code = Str::lower(trim($sizeCode));
-
-        return SizeGridValue::query()
-            ->where('size_grid_id', $sizeGridId)
-            ->where(function ($query) use ($code): void {
-                $query->where('value', $code)
-                    ->orWhereRaw('LOWER(display_value) = ?', [$code]);
-            })
-            ->value('id');
+        return $this->referenceResolver ??= new ImportReferenceResolver($this->fallbackReferenceResult);
     }
 
     protected function normalizeHex(?string $hex): ?string
