@@ -126,12 +126,55 @@
         @apply text-text-inverse/90;
     }
 
-    .landing-section--theme-dark .landing-prose :where(h2, h3) {
+    .landing-section--theme-dark .landing-prose :where(
+        .landing-prose__heading,
+        h1, h2, h3, h4, h5, h6
+    ) {
         @apply text-text-inverse;
     }
 
-    .landing-section--theme-dark .landing-prose :where(a) {
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__link, a) {
         @apply text-text-inverse underline;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__quote) {
+        @apply border-text-inverse/30 text-text-inverse/90;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__table) {
+        @apply border-white/20;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__table-cell) {
+        @apply border-white/20;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__table-row:nth-child(even) .landing-prose__table-cell) {
+        @apply bg-white/5;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__code, .landing-prose__code-block) {
+        @apply bg-white/10 text-text-inverse;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__pre) {
+        @apply border-white/15 bg-white/5;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__mark) {
+        @apply bg-white/20 text-text-inverse;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__hr) {
+        @apply border-white/20;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__task-marker) {
+        @apply border-white/40;
+    }
+
+    .landing-section--theme-dark .landing-prose :where(.landing-prose__task-item.is-checked .landing-prose__task-marker) {
+        @apply border-text-inverse bg-text-inverse;
     }
 
     .landing-section--theme-dark .landing-heading__eyebrow {
@@ -193,16 +236,160 @@
         @apply text-base leading-relaxed text-text-muted;
     }
 
-    .landing-prose :where(p, ul, ol) {
+    .landing-prose :where(.landing-prose__p, p, ul, ol, blockquote, pre, .landing-prose__figure, .landing-prose__table-wrap) {
         @apply mb-4 last:mb-0;
     }
 
-    .landing-prose :where(h2, h3) {
-        @apply mb-3 mt-6 font-semibold text-primary-DEFAULT;
+    .landing-prose :where(.landing-prose__align-is-center) {
+        @apply text-center;
     }
 
-    .landing-prose :where(a) {
-        @apply text-primary-DEFAULT underline underline-offset-2;
+    .landing-prose :where(.landing-prose__align-is-right) {
+        @apply text-right;
+    }
+
+    .landing-prose :where(.landing-prose__align-is-justify) {
+        @apply text-justify;
+    }
+
+    .landing-prose :where(.landing-prose__heading--h1, h1) {
+        @apply mb-4 mt-8 text-3xl font-semibold tracking-tight text-primary-DEFAULT lg:text-4xl;
+    }
+
+    .landing-prose :where(.landing-prose__heading--h2, h2) {
+        @apply mb-3 mt-8 text-2xl font-semibold tracking-tight text-primary-DEFAULT lg:text-3xl;
+    }
+
+    .landing-prose :where(.landing-prose__heading--h3, h3) {
+        @apply mb-3 mt-6 text-xl font-semibold text-primary-DEFAULT lg:text-2xl;
+    }
+
+    .landing-prose :where(.landing-prose__heading--h4, h4) {
+        @apply mb-2 mt-5 text-lg font-semibold text-primary-DEFAULT;
+    }
+
+    .landing-prose :where(.landing-prose__heading--h5, h5) {
+        @apply mb-2 mt-4 text-base font-semibold uppercase tracking-[0.12em] text-primary-DEFAULT;
+    }
+
+    .landing-prose :where(.landing-prose__heading--h6, h6) {
+        @apply mb-2 mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-text-muted;
+    }
+
+    .landing-prose :where(.landing-prose__link, a) {
+        @apply text-primary-DEFAULT underline underline-offset-2 transition-colors hover:text-text-link-hover;
+    }
+
+    .landing-prose :where(.landing-prose__bold, strong) {
+        @apply font-semibold text-primary-DEFAULT;
+    }
+
+    .landing-prose :where(.landing-prose__italic, em) {
+        @apply italic;
+    }
+
+    .landing-prose :where(.landing-prose__underline, u) {
+        @apply underline underline-offset-2;
+    }
+
+    .landing-prose :where(.landing-prose__strike, s) {
+        @apply line-through opacity-80;
+    }
+
+    .landing-prose :where(.landing-prose__code) {
+        @apply rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[0.9em] text-primary-DEFAULT;
+    }
+
+    .landing-prose :where(.landing-prose__pre) {
+        @apply overflow-x-auto rounded-xl border border-border-DEFAULT bg-surface-muted p-4;
+    }
+
+    .landing-prose :where(.landing-prose__code-block) {
+        @apply block font-mono text-sm leading-relaxed text-primary-DEFAULT;
+    }
+
+    .landing-prose :where(.landing-prose__mark) {
+        @apply rounded-sm bg-secondary-muted px-1 text-primary-DEFAULT;
+    }
+
+    .landing-prose :where(.landing-prose__quote, blockquote) {
+        @apply border-l-4 border-primary-DEFAULT/30 py-1 pl-5 italic text-primary-DEFAULT/90;
+    }
+
+    .landing-prose :where(.landing-prose__quote > :last-child, blockquote > :last-child) {
+        @apply mb-0;
+    }
+
+    .landing-prose :where(.landing-prose__list, ul:not(.landing-prose__task-list)) {
+        @apply list-disc space-y-2 pl-6;
+    }
+
+    .landing-prose :where(.landing-prose__list--ordered, ol) {
+        @apply list-decimal;
+    }
+
+    .landing-prose :where(.landing-prose__list-item, li) {
+        @apply pl-1;
+    }
+
+    .landing-prose :where(.landing-prose__list .landing-prose__list, ul ul, ol ol, ul ol, ol ul) {
+        @apply mt-2 mb-0;
+    }
+
+    .landing-prose :where(.landing-prose__task-list) {
+        @apply list-none space-y-2 pl-0;
+    }
+
+    .landing-prose :where(.landing-prose__task-item) {
+        @apply flex items-start gap-3;
+    }
+
+    .landing-prose :where(.landing-prose__task-marker) {
+        @apply mt-1 inline-flex size-4 shrink-0 rounded border border-border-strong bg-surface-DEFAULT;
+    }
+
+    .landing-prose :where(.landing-prose__task-item.is-checked .landing-prose__task-marker) {
+        @apply border-primary-DEFAULT bg-primary-DEFAULT;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M12.2 4.2 6.8 10.2 3.8 7.2l-1.2 1.2 4.2 4.2 6.6-7.2z'/%3E%3C/svg%3E");
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 10px 10px;
+    }
+
+    .landing-prose :where(.landing-prose__task-item.is-checked .landing-prose__task-content) {
+        @apply line-through opacity-70;
+    }
+
+    .landing-prose :where(.landing-prose__hr, hr) {
+        @apply my-8 border-0 border-t border-border-DEFAULT;
+    }
+
+    .landing-prose :where(.landing-prose__figure) {
+        @apply my-6;
+    }
+
+    .landing-prose :where(.landing-prose__image, img) {
+        @apply h-auto max-w-full rounded-xl;
+    }
+
+    .landing-prose :where(.landing-prose__table-wrap) {
+        @apply overflow-x-auto;
+    }
+
+    .landing-prose :where(.landing-prose__table, table) {
+        @apply w-full min-w-[32rem] border-collapse overflow-hidden rounded-xl border border-border-DEFAULT text-sm;
+    }
+
+    .landing-prose :where(.landing-prose__table-cell, th, td) {
+        @apply border border-border-DEFAULT px-4 py-3 text-left align-top;
+    }
+
+    .landing-prose :where(th) {
+        @apply bg-surface-muted font-semibold text-primary-DEFAULT;
+    }
+
+    .landing-prose :where(.landing-prose__table-row:nth-child(even) .landing-prose__table-cell) {
+        @apply bg-surface-muted/60;
     }
 
     .landing-btn {
