@@ -48,11 +48,11 @@ class TranslationTabs
         }
 
         return match ($field) {
-            'description' => RichEditor::make($name)
+            'description', 'content' => RichEditor::make($name)
                 ->label($label)
                 ->columnSpanFull()
                 ->extraInputAttributes(['autocomplete' => 'off']),
-            'short_description', 'meta_description', 'tailoring_description', 'fit_description', 'fabric_description' => Textarea::make($name)
+            'short_description', 'meta_description', 'tailoring_description', 'fit_description', 'fabric_description', 'caption' => Textarea::make($name)
                 ->label($label)
                 ->rows(3)
                 ->columnSpanFull()

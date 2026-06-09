@@ -74,7 +74,9 @@ final class AdminMediaUpload
         try {
             Storage::disk(Media::disk())->writeStream($path, $stream);
         } finally {
-            fclose($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
         }
 
         return $path;

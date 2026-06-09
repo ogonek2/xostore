@@ -22,6 +22,7 @@ trait ManagesTranslationsOnActions
                 $this->pendingRelationTranslations = TranslationFormHelper::extract(
                     $data,
                     static::translationConfigKey(),
+                    method_exists($this, 'translationFields') ? $this->translationFields() : null,
                 );
 
                 return $data;
@@ -35,6 +36,7 @@ trait ManagesTranslationsOnActions
                     $record,
                     $this->pendingRelationTranslations,
                     static::translationConfigKey(),
+                    method_exists($this, 'translationFields') ? $this->translationFields() : null,
                 );
 
                 $this->pendingRelationTranslations = [];
@@ -44,22 +46,25 @@ trait ManagesTranslationsOnActions
 
     protected function makeTranslationEditAction(): EditAction
     {
+        $onlyFields = method_exists($this, 'translationFields') ? $this->translationFields() : null;
+
         return EditAction::make()
             ->mutateRecordDataUsing(
                 fn (array $data, Model $record): array => array_merge(
                     $data,
-                    TranslationFormHelper::defaults($record, static::translationConfigKey()),
+                    TranslationFormHelper::defaults($record, static::translationConfigKey(), $onlyFields),
                 )
             )
-            ->mutateFormDataUsing(function (array $data): array {
+            ->mutateFormDataUsing(function (array $data) use ($onlyFields): array {
                 $this->pendingRelationTranslations = TranslationFormHelper::extract(
                     $data,
                     static::translationConfigKey(),
+                    $onlyFields,
                 );
 
                 return $data;
             })
-            ->after(function (Model $record): void {
+            ->after(function (Model $record) use ($onlyFields): void {
                 if ($this->pendingRelationTranslations === []) {
                     return;
                 }
@@ -68,6 +73,7 @@ trait ManagesTranslationsOnActions
                     $record,
                     $this->pendingRelationTranslations,
                     static::translationConfigKey(),
+                    $onlyFields,
                 );
 
                 $this->pendingRelationTranslations = [];

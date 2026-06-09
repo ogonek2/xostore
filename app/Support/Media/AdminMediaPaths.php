@@ -12,6 +12,7 @@ final class AdminMediaPaths
         'catalogs/',
         'categories/',
         'promotions/',
+        'landing-pages/',
     ];
 
     public static function isAllowed(string $path): bool

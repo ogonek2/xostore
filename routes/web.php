@@ -13,6 +13,7 @@ use App\Http\Controllers\CategoryShowController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\ProductIndexController;
 use App\Http\Controllers\ProductShowController;
 use App\Http\Controllers\RobotsController;
@@ -59,6 +60,8 @@ Route::prefix('{locale}')
         Route::get('/c/{category}', CategoryShowController::class)->name('category.show');
 
         Route::get('/p/{product}', ProductShowController::class)->name('product.show');
+
+        Route::get('/l/{landing}', LandingPageController::class)->name('landing.show');
 
         Route::get('/koszyk', fn (string $locale) => redirect()->route('checkout.show', ['locale' => $locale]))
             ->name('cart.show');

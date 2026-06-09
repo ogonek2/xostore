@@ -156,6 +156,26 @@ return [
         'translatable_fields' => ['name', 'description'],
     ],
 
+    'landing_page' => [
+        'translatable_fields' => [
+            'name',
+            'slug',
+            'meta_title',
+            'meta_description',
+        ],
+    ],
+
+    'landing_page_block' => [
+        'translatable_fields' => [
+            'title',
+            'subtitle',
+            'content',
+            'button_label',
+            'link_url',
+            'caption',
+        ],
+    ],
+
     /*
     | Homepage category showcase (horizontal cards block).
     | label / sublabel keys → lang/shop.php categories.labels|sublabels

@@ -23,7 +23,9 @@
         @yield('content')
     </div>
 
-    <x-shop.footer :footer="$footer" :languages="$languages" />
+    @if ($showFooter ?? true)
+        <x-shop.footer :footer="$footer" :languages="$languages" />
+    @endif
 
     @php
         $locale = app()->getLocale();
