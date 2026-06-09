@@ -1,6 +1,4 @@
-<a href="{{ route('home', ['locale' => app()->getLocale()]) }}" class="inline-flex shrink-0 leading-none text-primary-DEFAULT" aria-label="{{ config('shop.name') }}">
-    <span class="flex flex-col text-[1.35rem] font-semibold tracking-[0.2em] uppercase">
-        <span>XO</span>
-        <span>STORE</span>
-    </span>
+<a href="{{ route('home', ['locale' => app()->getLocale()]) }}" class="flex flex-col items-center py-2" aria-label="{{ config('shop.name') }}">
+    <img style="width: 40px; height: auto" src="{{ asset('storage/xostore_logo.png') }}">
+    <span class="font-bold" style="font-size: 8px;">TOREBKI | ODZIEŻ | BUTY</span>
 </a>

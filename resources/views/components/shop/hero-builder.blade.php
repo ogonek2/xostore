@@ -43,7 +43,7 @@
                 </div>
                 </div>
 
-                <div class="mt-3 flex items-center justify-between gap-4 px-1">
+                <div class="mt-3 flex items-center justify-between gap-4 px-5">
                     <div class="flex items-center gap-2">
                         @foreach ($slides as $index => $unused)
                             <button

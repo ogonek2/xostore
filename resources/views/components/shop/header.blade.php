@@ -1,6 +1,6 @@
 <div data-shop-nav class="sticky top-0 z-50">
     <header class="border-b border-border-DEFAULT/60 bg-surface-DEFAULT/95 backdrop-blur-sm">
-        <div class="mx-auto flex h-[4.5rem] max-w-[90rem] items-center gap-4 px-5 lg:gap-6 lg:px-8">
+        <div class="mx-auto flex max-w-[90rem] items-center gap-4 px-5 lg:gap-6 lg:px-8">
             <x-shop.logo />
 
             @if (! empty($navigation))
@@ -11,21 +11,7 @@
                 </nav>
             @endif
 
-            <div class="ml-auto flex items-center gap-2 lg:gap-4">
-                @if (! empty($navigation))
-                    <button
-                        type="button"
-                        class="inline-flex size-10 items-center justify-center text-text-DEFAULT lg:hidden"
-                        data-mobile-nav-toggle
-                        aria-expanded="false"
-                        aria-label="{{ __('shop.nav.open_menu') }}"
-                    >
-                        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                            <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" />
-                        </svg>
-                    </button>
-                @endif
-
+            <div class="ml-auto flex items-center gap-1 lg:gap-4">
                 <div
                     class="relative"
                     data-header-search
@@ -81,7 +67,7 @@
                                             value="{{ request('q') }}"
                                             placeholder="{{ __('shop.listing.search_placeholder') }}"
                                             autocomplete="off"
-                                            class="h-11 w-full border border-border-DEFAULT px-3 text-sm outline-none transition focus:border-primary-DEFAULT"
+                                            class="h-11 w-full border border-border-DEFAULT px-3 text-base outline-none transition focus:border-primary-DEFAULT"
                                             data-search-mobile-input
                                         >
                                     </form>
@@ -123,6 +109,20 @@
                 </button>
 
                 <x-shop.language-switcher :languages="$languages" />
+                
+                @if (! empty($navigation))
+                    <button
+                        type="button"
+                        class="inline-flex size-9 items-center justify-center text-white lg:hidden bg-primary-muted hover:bg-primary-hover rounded-full"
+                        data-mobile-nav-toggle
+                        aria-expanded="false"
+                        aria-label="{{ __('shop.nav.open_menu') }}"
+                    >
+                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+                            <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" />
+                        </svg>
+                    </button>
+                @endif
             </div>
         </div>
     </header>
@@ -172,6 +172,26 @@
                 </div>
 
                 <div class="flex-1 overflow-y-auto px-5 py-4">
+                    @if ($catalogMegaItems !== [])
+                        <div class="mt-2 border-b border-border-DEFAULT pt-2">
+                            <button
+                                type="button"
+                                data-mobile-catalog-toggle
+                                aria-expanded="false"
+                                class="flex w-full items-center justify-between py-3.5 text-left text-sm font-medium text-text-DEFAULT"
+                            >
+                                <span>{{ __('shop.nav.catalog') }}</span>
+                                <svg class="size-4 shrink-0 text-text-muted transition-transform" data-mobile-catalog-icon viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+
+                            <div data-mobile-catalog-panel class="hidden border-t border-border-DEFAULT/60 pb-4 pt-3">
+                                <x-shop.nav-mega-mobile :mega-items="$catalogMegaItems" />
+                            </div>
+                        </div>
+                    @endif
+                    
                     @if ($mobileUtilityLinks !== [])
                         <ul class="divide-y divide-border-DEFAULT/80">
                             @foreach ($mobileUtilityLinks as $link)
@@ -202,26 +222,6 @@
                                 </li>
                             @endforeach
                         </ul>
-                    @endif
-
-                    @if ($catalogMegaItems !== [])
-                        <div class="mt-2 border-t border-border-DEFAULT pt-2">
-                            <button
-                                type="button"
-                                data-mobile-catalog-toggle
-                                aria-expanded="false"
-                                class="flex w-full items-center justify-between py-3.5 text-left text-sm font-medium text-text-DEFAULT"
-                            >
-                                <span>{{ __('shop.nav.catalog') }}</span>
-                                <svg class="size-4 shrink-0 text-text-muted transition-transform" data-mobile-catalog-icon viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-
-                            <div data-mobile-catalog-panel class="hidden border-t border-border-DEFAULT/60 pb-4 pt-3">
-                                <x-shop.nav-mega-mobile :mega-items="$catalogMegaItems" />
-                            </div>
-                        </div>
                     @endif
 
                     @foreach ($simpleNavItems->filter(fn ($item) => ! empty($item['children'])) as $item)
