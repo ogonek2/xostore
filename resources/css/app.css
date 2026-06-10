@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 @import './theme-generated.css';
+@import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
+@import '@fortawesome/fontawesome-free/css/brands.min.css';
+@import '@fortawesome/fontawesome-free/css/solid.min.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -10,6 +13,12 @@
 @theme {
     --font-sans: var(--font-sans);
     --font-display: var(--font-display);
+}
+
+@layer components {
+    .shop-social-icon {
+        @apply inline-flex w-4 justify-center text-base leading-none;
+    }
 }
 
 @layer base {

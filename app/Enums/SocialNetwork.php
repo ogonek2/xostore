@@ -58,6 +58,37 @@ enum SocialNetwork: string
         };
     }
 
+    public function iconClass(): string
+    {
+        return match ($this) {
+            self::Instagram => 'fa-brands fa-instagram',
+            self::Facebook => 'fa-brands fa-facebook-f',
+            self::Pinterest => 'fa-brands fa-pinterest-p',
+            self::Youtube => 'fa-brands fa-youtube',
+            self::Tiktok => 'fa-brands fa-tiktok',
+            self::Linkedin => 'fa-brands fa-linkedin-in',
+            self::X => 'fa-brands fa-x-twitter',
+            self::Threads => 'fa-brands fa-threads',
+            self::Snapchat => 'fa-brands fa-snapchat',
+            self::Whatsapp => 'fa-brands fa-whatsapp',
+            self::Telegram => 'fa-brands fa-telegram',
+            self::Viber => 'fa-brands fa-viber',
+            self::Messenger => 'fa-brands fa-facebook-messenger',
+            self::Signal => 'fa-brands fa-signal-messenger',
+            self::Discord => 'fa-brands fa-discord',
+            self::Skype => 'fa-brands fa-skype',
+            self::Line => 'fa-brands fa-line',
+            self::Wechat => 'fa-brands fa-weixin',
+            self::Link => 'fa-solid fa-arrow-up-right-from-square',
+        };
+    }
+
+    public static function iconClassFor(?string $network): string
+    {
+        return self::tryFrom((string) $network)?->iconClass()
+            ?? self::Link->iconClass();
+    }
+
     /**
      * @return array<string, string>
      */
