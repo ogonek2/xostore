@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Footer\Schemas;
 
+use App\Enums\SocialNetwork;
 use App\Filament\Forms\LocalizedGroupFields;
 use App\Filament\Forms\NavItemLabelFields;
 use Filament\Forms\Components\Repeater;
@@ -50,7 +51,7 @@ class FooterSettingsForm
                                 ->columnSpanFull(),
                         ]),
                     Tab::make('social')
-                        ->label('Соцсети')
+                        ->label('Соцсети и мессенджеры')
                         ->schema([
                             Toggle::make('social_enabled')->label('Показывать блок')->live(),
                             ...LocalizedGroupFields::sections('social', [
@@ -60,16 +61,10 @@ class FooterSettingsForm
                                 ->label('Ссылки')
                                 ->schema([
                                     Select::make('network')
-                                        ->label('Сеть')
-                                        ->options([
-                                            'instagram' => 'Instagram',
-                                            'facebook' => 'Facebook',
-                                            'pinterest' => 'Pinterest',
-                                            'youtube' => 'YouTube',
-                                            'tiktok' => 'TikTok',
-                                            'link' => 'Другая',
-                                        ])
+                                        ->label('Сеть / мессенджер')
+                                        ->options(SocialNetwork::options())
                                         ->required()
+                                        ->searchable()
                                         ->native(false),
                                     TextInput::make('url')
                                         ->label('URL')

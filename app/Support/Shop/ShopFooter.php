@@ -2,6 +2,7 @@
 
 namespace App\Support\Shop;
 
+use App\Enums\SocialNetwork;
 use App\Models\FooterSettings;
 use Illuminate\Support\Facades\Schema;
 
@@ -84,10 +85,14 @@ final class ShopFooter
             ->map(function (array $link) use ($locale) {
                 $labels = $link['labels'] ?? [];
                 $default = (string) config('shop.default_language', 'pl');
-                $label = $labels[$locale] ?? $labels[$default] ?? $link['network'] ?? 'Social';
+                $network = SocialNetwork::tryFrom((string) ($link['network'] ?? 'link'));
+                $label = $labels[$locale]
+                    ?? $labels[$default]
+                    ?? $network?->label()
+                    ?? 'Social';
 
                 return [
-                    'network' => (string) ($link['network'] ?? 'link'),
+                    'network' => $network?->value ?? (string) ($link['network'] ?? 'link'),
                     'label' => (string) $label,
                     'url' => (string) $link['url'],
                 ];
