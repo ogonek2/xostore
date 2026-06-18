@@ -7,12 +7,14 @@ use App\Enums\ProductType;
 use App\Models\Language;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Color;
 use App\Support\Import\ImportReferenceResolver;
 use App\Support\Import\ProductImportModelSlugAnalyzer;
 use App\Support\Import\ProductExcelRowParser;
 use App\Support\Import\ProductImportSpreadsheetLoader;
 use App\Support\Import\ProductExcelVariantParser;
 use App\Support\Import\ProductImportColumns;
+use App\Support\Shop\ProductSkuGenerator;
 use App\Support\Shop\ProductUniqueSlug;
 use App\Support\Shop\ProductVariantColorSync;
 use Illuminate\Http\UploadedFile;
@@ -77,15 +79,18 @@ class ProductExcelImporter
         $headerRowIndex = $this->findHeaderRowIndex($rows);
 
         if ($headerRowIndex === null) {
-            $result['errors'][] = 'Не найдена строка заголовков (нужна колонка sku).';
+            $result['errors'][] = 'Не найдена строка заголовков (нужна колонка sku или name_pl).';
 
             return $result;
         }
 
         $headerMap = ProductExcelRowParser::mapHeader($rows[$headerRowIndex]);
 
-        if (! in_array('sku', $headerMap, true)) {
-            $result['errors'][] = 'Обязательная колонка sku отсутствует в заголовке.';
+        if (
+            ! in_array('sku', $headerMap, true)
+            && ! in_array('name_pl', $headerMap, true)
+        ) {
+            $result['errors'][] = 'В заголовке нужна колонка sku или name_pl (название PL).';
 
             return $result;
         }
@@ -102,25 +107,23 @@ class ProductExcelImporter
 
             $data = ProductExcelRowParser::mapRow($headerMap, $row);
 
-            if ($line === $headerRowIndex + 1) {
-                $hint = Str::lower((string) ($data['sku'] ?? ''));
-
-                if (str_contains($hint, '*') || str_contains($hint, 'артикул') || str_contains($hint, 'sku')) {
-                    continue;
-                }
+            if ($this->isTemplateMetaRow($line, $headerRowIndex, $data)) {
+                continue;
             }
 
             $sku = Str::upper(trim((string) ($data['sku'] ?? '')));
+            $namePl = trim((string) ($data['name_pl'] ?? ''));
 
-            if ($sku === '') {
-                $result['errors'][] = 'Строка '.($line + 1).': пустой артикул (sku).';
+            if ($sku === '' && $namePl === '') {
+                $result['errors'][] = 'Строка '.($line + 1).': укажите sku или name_pl (название).';
                 $result['skipped']++;
 
                 continue;
             }
 
+            $groupKey = $sku !== '' ? "sku:{$sku}" : 'name:'.Str::lower($namePl);
             $data['sku'] = $sku;
-            $groups[$sku][] = ['line' => $line + 1, 'data' => $data];
+            $groups[$groupKey][] = ['line' => $line + 1, 'data' => $data];
         }
 
         if ($groups === []) {
@@ -161,16 +164,34 @@ class ProductExcelImporter
             return $result;
         }
 
-        foreach ($parsed['groups'] as $sku => $entries) {
+        foreach ($parsed['groups'] as $groupKey => $entries) {
             try {
+                $sku = $this->resolveGroupSku($groupKey, $entries);
                 $this->importProductGroup($sku, $entries, $result);
             } catch (\Throwable $exception) {
-                $result['errors'][] = "Товар {$sku}: ".$exception->getMessage();
+                $label = str_starts_with($groupKey, 'sku:')
+                    ? substr($groupKey, 4)
+                    : ($entries[0]['data']['name_pl'] ?? $groupKey);
+                $result['errors'][] = "Товар {$label}: ".$exception->getMessage();
                 $result['skipped']++;
             }
         }
 
         return $result;
+    }
+
+    /**
+     * @param  list<array{line: int, data: array<string, string>}>  $entries
+     */
+    public function resolveGroupSku(string $groupKey, array $entries): string
+    {
+        if (str_starts_with($groupKey, 'sku:')) {
+            return substr($groupKey, 4);
+        }
+
+        $namePl = trim((string) ($entries[0]['data']['name_pl'] ?? ''));
+
+        return ProductSkuGenerator::generate($namePl !== '' ? $namePl : null);
     }
 
     /**
@@ -290,18 +311,14 @@ class ProductExcelImporter
             $attributes['model_slug'] = filled($data['model_slug']) ? Str::slug($data['model_slug']) : null;
         }
 
-        if (array_key_exists('color_label', $data)) {
-            $attributes['color_label'] = $data['color_label'];
-        }
+        $color = $this->resolveImportColor($data);
 
-        if (array_key_exists('color_slug', $data)) {
-            $attributes['color_slug'] = filled($data['color_slug']) ? Str::slug($data['color_slug']) : null;
-        } elseif (array_key_exists('color_label', $data) && filled($data['color_label'])) {
-            $attributes['color_slug'] = Str::slug($data['color_label']);
-        }
-
-        if (array_key_exists('color_hex', $data)) {
-            $attributes['color_hex'] = $this->normalizeHex($data['color_hex']);
+        if ($color) {
+            $defaultLocale = (string) config('shop.default_language', 'pl');
+            $attributes['color_id'] = $color->id;
+            $attributes['color_label'] = $color->translate('name', $defaultLocale) ?? $color->code;
+            $attributes['color_slug'] = $color->code;
+            $attributes['color_hex'] = $color->hex;
         }
 
         foreach (['is_featured', 'is_new', 'is_ready_to_ship', 'custom_tailoring_enabled'] as $flag) {
@@ -592,6 +609,10 @@ class ProductExcelImporter
             if (in_array('sku', $normalized, true) || in_array('артикул', $normalized, true)) {
                 return $i;
             }
+
+            if (in_array('name_pl', $normalized, true) || in_array('nazwa', $normalized, true) || in_array('название', $normalized, true)) {
+                return $i;
+            }
         }
 
         return null;
@@ -600,6 +621,26 @@ class ProductExcelImporter
     protected function referenceResolver(): ImportReferenceResolver
     {
         return $this->referenceResolver ??= new ImportReferenceResolver($this->fallbackReferenceResult);
+    }
+
+    /**
+     * @param  array<string, string>  $data
+     */
+    protected function resolveImportColor(array $data): ?Color
+    {
+        $resolver = $this->referenceResolver();
+        $hex = array_key_exists('color_hex', $data) ? $data['color_hex'] : null;
+
+        if (array_key_exists('color_code', $data) && filled($data['color_code'])) {
+            return $resolver->findColor($data['color_code'])
+                ?? $resolver->findOrCreateColor($data['color_code'], $hex);
+        }
+
+        if (array_key_exists('color_label', $data) && filled($data['color_label'])) {
+            return $resolver->findOrCreateColor($data['color_label'], $hex);
+        }
+
+        return null;
     }
 
     protected function normalizeHex(?string $hex): ?string
@@ -615,5 +656,38 @@ class ProductExcelImporter
         }
 
         return '#'.Str::lower($hex);
+    }
+
+    /**
+     * @param  array<string, string>  $data
+     */
+    protected function isTemplateMetaRow(int $line, int $headerRowIndex, array $data): bool
+    {
+        $status = Str::lower(trim((string) ($data['status'] ?? '')));
+
+        if ($status === 'example') {
+            return true;
+        }
+
+        $offset = $line - $headerRowIndex;
+
+        if ($offset < 1 || $offset > 2) {
+            return false;
+        }
+
+        $hintSku = Str::lower((string) ($data['sku'] ?? ''));
+        $hintName = Str::lower((string) ($data['name_pl'] ?? ''));
+
+        if (
+            str_contains($hintSku, 'артикул')
+            || str_contains($hintSku, '*')
+            || str_contains($hintName, 'название')
+            || str_contains($hintName, 'name_pl')
+            || str_contains($hintName, 'nazwa')
+        ) {
+            return true;
+        }
+
+        return $offset === 2 && mb_strlen($hintName) > 60;
     }
 }

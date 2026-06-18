@@ -68,28 +68,52 @@
         </fieldset>
     @endif
 
-    @if (! empty($facets['sizes']))
+    @if (! empty($facets['size_groups']))
         <fieldset>
             <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
                 {{ __('shop.product.select_variant') }}
             </legend>
-            <ul class="max-h-48 space-y-2 overflow-y-auto">
-                @foreach ($facets['sizes'] as $size)
-                    <li>
-                        <label class="flex cursor-pointer items-center gap-2 text-sm">
-                            <input
-                                type="checkbox"
-                                name="sizes[]"
-                                value="{{ $size['id'] }}"
-                                @checked(in_array($size['id'], $filters['sizes'] ?? [], true))
-                                class="size-4 border-border-DEFAULT"
-                                onchange="this.form.requestSubmit()"
-                            >
-                            <span>{{ $size['label'] }}</span>
-                        </label>
-                    </li>
+
+            @if (count($facets['size_groups']) > 1)
+                <p class="mb-3 text-xs leading-relaxed text-text-muted">
+                    {{ __('shop.listing.size_hint') }}
+                </p>
+            @endif
+
+            <div class="space-y-4">
+                @foreach ($facets['size_groups'] as $group)
+                    <div>
+                        @if (count($facets['size_groups']) > 1)
+                            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+                                {{ $group['label'] }}
+                            </p>
+                        @endif
+
+                        <div class="flex flex-wrap gap-1.5">
+                            @foreach ($group['sizes'] as $size)
+                                @php
+                                    $selected = in_array($size['key'], $filters['sizes'] ?? [], true);
+                                @endphp
+                                <label @class([
+                                    'inline-flex cursor-pointer items-center justify-center border px-2.5 py-1.5 text-xs transition-colors',
+                                    'border-primary-DEFAULT bg-primary-DEFAULT/5 font-semibold text-primary-DEFAULT' => $selected,
+                                    'border-border-DEFAULT text-text-DEFAULT hover:border-primary-DEFAULT/40' => ! $selected,
+                                ])>
+                                    <input
+                                        type="checkbox"
+                                        name="sizes[]"
+                                        value="{{ $size['key'] }}"
+                                        @checked($selected)
+                                        class="sr-only"
+                                        onchange="this.form.requestSubmit()"
+                                    >
+                                    <span>{{ $size['label'] }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
                 @endforeach
-            </ul>
+            </div>
         </fieldset>
     @endif
 

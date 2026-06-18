@@ -1,3 +1,9 @@
+@php
+    use App\Support\Import\ProductImportColumns;
+
+    $sections = ProductImportColumns::documentationSections();
+@endphp
+
 <style>
     .pi-docs {
         font-size: 0.875rem;
@@ -40,6 +46,13 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: #a1a1aa;
+    }
+
+    .pi-docs__section-title {
+        margin: 0 0 0.75rem;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: #e4e4e7;
     }
 
     .pi-docs__box p {
@@ -88,7 +101,7 @@
     }
 
     .pi-docs__table-block {
-        margin-bottom: 1.25rem;
+        margin-bottom: 1.5rem;
     }
 
     .pi-docs__table-scroll {
@@ -100,14 +113,15 @@
 
     .pi-docs__table {
         width: 100%;
-        min-width: 36rem;
+        min-width: 52rem;
         border-collapse: collapse;
         table-layout: fixed;
     }
 
-    .pi-docs__table col.col-key { width: 28%; }
-    .pi-docs__table col.col-desc { width: 44%; }
-    .pi-docs__table col.col-ex { width: 28%; }
+    .pi-docs__table col.col-key { width: 14%; }
+    .pi-docs__table col.col-title { width: 16%; }
+    .pi-docs__table col.col-desc { width: 50%; }
+    .pi-docs__table col.col-ex { width: 20%; }
 
     .pi-docs__table thead th {
         padding: 0.625rem 0.875rem;
@@ -122,7 +136,7 @@
     }
 
     .pi-docs__table tbody td {
-        padding: 0.625rem 0.875rem;
+        padding: 0.75rem 0.875rem;
         vertical-align: top;
         border-bottom: 1px solid #3f3f46;
         color: #e4e4e7;
@@ -142,15 +156,28 @@
 
     .pi-docs__table .cell-key {
         font-family: ui-monospace, Consolas, monospace;
-        font-size: 0.8125rem;
+        font-size: 0.75rem;
         color: #fde68a;
         word-break: break-all;
     }
 
+    .pi-docs__table .cell-title {
+        font-weight: 600;
+        font-size: 0.8125rem;
+        color: #f4f4f5;
+    }
+
+    .pi-docs__table .cell-desc {
+        font-size: 0.8125rem;
+        color: #d4d4d8;
+        line-height: 1.55;
+    }
+
     .pi-docs__table .cell-ex {
         font-family: ui-monospace, Consolas, monospace;
-        font-size: 0.8125rem;
-        color: #a1a1aa;
+        font-size: 0.75rem;
+        color: #86efac;
+        word-break: break-word;
     }
 
     .pi-docs__callout {
@@ -168,192 +195,99 @@
         font-weight: 700;
         color: #fcd34d;
     }
+
+    .pi-docs__required {
+        display: inline-block;
+        margin-left: 0.25rem;
+        padding: 0.0625rem 0.375rem;
+        border-radius: 0.25rem;
+        font-size: 0.625rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #fecaca;
+        background: #450a0a;
+        border: 1px solid #991b1b;
+        vertical-align: middle;
+    }
 </style>
 
 <div class="pi-docs">
     <p class="pi-docs__lead">
-        Загрузите Excel (.xlsx) или CSV (.csv) по шаблону. CSV из Excel (разделитель <span class="pi-docs__code">;</span>) тоже поддерживается.
-        Импорт <strong>создаёт или обновляет</strong> товары по полю
-        <span class="pi-docs__code">sku</span> (артикул). Обязательны только
-        <span class="pi-docs__code">sku</span> и <span class="pi-docs__code">name_pl</span>.
+        Справочник по <strong>всем переменным</strong> (колонкам) файла импорта. В Excel-шаблоне в первой строке — техническое имя переменной (как в таблице ниже),
+        во второй — краткая подпись, в третьей — краткая подсказка. Поддерживаются файлы <strong>.xlsx</strong> и <strong>.csv</strong>.
+        Импорт создаёт новые товары или обновляет существующие. Обязательна только колонка
+        <span class="pi-docs__code">name_pl</span>.
+        <span class="pi-docs__code">sku</span> можно не заполнять — артикул сгенерируется из названия.
     </p>
 
     <div class="pi-docs__grid pi-docs__grid--2">
         <div class="pi-docs__box">
-            <h4 class="pi-docs__box-title">Обязательные поля</h4>
+            <h4 class="pi-docs__box-title">Общие правила</h4>
             <ul class="pi-docs__list">
-                <li><span class="pi-docs__code">sku</span> — уникальный артикул</li>
-                <li><span class="pi-docs__code">name_pl</span> — название (польский)</li>
+                <li>Одна строка = один размер товара <em>или</em> все размеры в одной строке (через запятую / колонку <span class="pi-docs__code">variants</span>).</li>
+                <li>Несколько строк с одним <span class="pi-docs__code">sku</span> (или одним <span class="pi-docs__code">name_pl</span> без sku) = один товар, разные размеры.</li>
+                <li>Справочники (бренд, категории, теги…) — код <strong>или</strong> название; если записи нет, она создаётся при импорте.</li>
+                <li>Флаги (<span class="pi-docs__code">is_new</span>, <span class="pi-docs__code">is_featured</span>…) — <span class="pi-docs__code">1</span> = да, <span class="pi-docs__code">0</span> или пусто = нет.</li>
             </ul>
-            <p class="pi-docs__note">Остальные колонки — по желанию. Справочники (категории, бренды, теги…) можно указывать названием — при отсутствии создаются автоматически.</p>
         </div>
 
         <div class="pi-docs__box">
-            <h4 class="pi-docs__box-title">Значения через запятую</h4>
+            <h4 class="pi-docs__box-title">Суффиксы _pl и _en</h4>
             <p>
-                Категории, каталоги, теги, размеры и цены можно перечислять в <strong>одной ячейке</strong>
-                через запятую — не обязательно разбивать на много строк.
-                Параллельные списки: одинаковый порядок элементов (1-й размер → 1-я цена → 1-й остаток).
+                <span class="pi-docs__code">_pl</span> — польская версия сайта (основной язык магазина).
+                <span class="pi-docs__code">_en</span> — английская. Поля с <span class="pi-docs__code">_pl</span> важнее:
+                без польского названия строка не импортируется. Английские поля можно добавить позже в админке.
             </p>
         </div>
     </div>
 
-    <div class="pi-docs__table-block">
-        <h4 class="pi-docs__box-title">Справочники — код или название</h4>
-        <div class="pi-docs__table-scroll">
-            <table class="pi-docs__table">
-                <colgroup>
-                    <col class="col-key">
-                    <col class="col-desc">
-                    <col class="col-ex">
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th scope="col">Колонка</th>
-                        <th scope="col">Описание</th>
-                        <th scope="col">Пример</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="cell-key">brand_code</td>
-                        <td>Бренд: код или название. Нет в базе — создаётся автоматически</td>
-                        <td class="cell-ex">Chanel</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">primary_category_code</td>
-                        <td>Основная категория (код/название, автосоздание)</td>
-                        <td class="cell-ex">Damskie</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">category_codes</td>
-                        <td>Категории через запятую (код/название)</td>
-                        <td class="cell-ex">Damskie, Akcesoria</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">catalog_codes</td>
-                        <td>Каталоги через запятую (код/название)</td>
-                        <td class="cell-ex">Wyprzedaż</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">tag_codes</td>
-                        <td>Теги через запятую (код/название)</td>
-                        <td class="cell-ex">nowość</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">size_grid_code</td>
-                        <td>Пресет кнопок S/M/L (код/название)</td>
-                        <td class="cell-ex">Odzież damska</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">size_chart_preset_code</td>
-                        <td>Пресет таблицы мерок (код/название)</td>
-                        <td class="cell-ex">Sukienki damskie</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">status</td>
-                        <td>draft / published / archived</td>
-                        <td class="cell-ex">draft</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">type</td>
-                        <td>simple / variable</td>
-                        <td class="cell-ex">variable</td>
-                    </tr>
-                </tbody>
-            </table>
+    @foreach ($sections as $section)
+        <div class="pi-docs__table-block">
+            <h4 class="pi-docs__section-title">{{ $section['label'] }}</h4>
+            <div class="pi-docs__table-scroll">
+                <table class="pi-docs__table">
+                    <colgroup>
+                        <col class="col-key">
+                        <col class="col-title">
+                        <col class="col-desc">
+                        <col class="col-ex">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th scope="col">Переменная</th>
+                            <th scope="col">Название</th>
+                            <th scope="col">Что это и как работает</th>
+                            <th scope="col">Пример</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($section['rows'] as $row)
+                            <tr>
+                                <td class="cell-key">
+                                    {{ $row['key'] }}
+                                    @if ($row['key'] === 'name_pl')
+                                        <span class="pi-docs__required">обяз.</span>
+                                    @endif
+                                </td>
+                                <td class="cell-title">{{ $row['title'] }}</td>
+                                <td class="cell-desc">{{ $row['description'] }}</td>
+                                <td class="cell-ex">{{ $row['example'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-
-    <div class="pi-docs__table-block">
-        <h4 class="pi-docs__box-title">Варианты и размеры (через запятую или несколько строк)</h4>
-        <div class="pi-docs__table-scroll">
-            <table class="pi-docs__table">
-                <colgroup>
-                    <col class="col-key">
-                    <col class="col-desc">
-                    <col class="col-ex">
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th scope="col">Колонка</th>
-                        <th scope="col">Описание</th>
-                        <th scope="col">Пример</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="cell-key">variant_sizes</td>
-                        <td>Размеры из пресета, через запятую</td>
-                        <td class="cell-ex">s, m, l</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">variant_prices</td>
-                        <td>Цены (порядок как у размеров)</td>
-                        <td class="cell-ex">1290, 1290, 1390</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">variant_stocks</td>
-                        <td>Остатки (порядок как у размеров)</td>
-                        <td class="cell-ex">5, 3, 2</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">variant_skus</td>
-                        <td>SKU вариантов через запятую</td>
-                        <td class="cell-ex">SKU-S, SKU-M, SKU-L</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">variants</td>
-                        <td>Компактно: размер:цена:остаток,…</td>
-                        <td class="cell-ex">s:990:4, m:990:6, l:1090:2</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">variant_size</td>
-                        <td>Один размер или несколько: s,m,l</td>
-                        <td class="cell-ex">m</td>
-                    </tr>
-                    <tr>
-                        <td class="cell-key">variant_price / variant_stock</td>
-                        <td>Один вариант в строке или списки через запятую</td>
-                        <td class="cell-ex">1290 / 5</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <p class="pi-docs__note">Альтернатива: несколько строк с одним <span class="pi-docs__code">sku</span> — по одному размеру в каждой строке.</p>
-    </div>
-
-    <div class="pi-docs__grid pi-docs__grid--2">
-        <div class="pi-docs__box">
-            <h4 class="pi-docs__box-title">Тексты и SEO</h4>
-            <p>
-                Суффиксы <span class="pi-docs__code">_pl</span> и <span class="pi-docs__code">_en</span>:
-                <span class="pi-docs__code">name_pl</span>,
-                <span class="pi-docs__code">description_en</span>,
-                <span class="pi-docs__code">meta_title_pl</span> и др.
-                <span class="pi-docs__code">slug_pl</span> и <span class="pi-docs__code">slug_en</span> можно не заполнять:
-                slug создаётся из полного названия и проверяется на уникальность.
-                При совпадении добавляется артикул, цвет или суффикс <span class="pi-docs__code">-2</span>, <span class="pi-docs__code">-3</span>…
-            </p>
-        </div>
-
-        <div class="pi-docs__box">
-            <h4 class="pi-docs__box-title">Цвет и модель</h4>
-            <ul class="pi-docs__list">
-                <li><span class="pi-docs__code">model_slug</span> — <strong>только</strong> для одной модели в разных цветах (одинаковый slug, разные SKU и <span class="pi-docs__code">color_label</span>). У разных товаров оставьте пустым — иначе на сайте появятся как «доступные цвета» друг у друга</li>
-                <li><span class="pi-docs__code">color_label</span>, <span class="pi-docs__code">color_hex</span></li>
-                <li><span class="pi-docs__code">is_new</span>, <span class="pi-docs__code">is_ready_to_ship</span> — 1/0</li>
-            </ul>
-        </div>
-    </div>
+    @endforeach
 
     <aside class="pi-docs__callout">
         <p class="pi-docs__callout-title">Перед импортом</p>
         <ul class="pi-docs__list">
-            <li>Скачайте шаблон — в примерах: размеры через запятую и формат <span class="pi-docs__code">variants</span>.</li>
-            <li>Строка 1 = имена колонок, строки 3+ = данные.</li>
-            <li>Строка 2 с подсказками импорт пропускает.</li>
-            <li>Фото и галерея добавляются вручную после импорта.</li>
+            <li>Нажмите «Скачать шаблон Excel» — выберите нужные колонки. В файле есть лист «Справка» с краткими подсказками.</li>
+            <li>Строка 1 = имена переменных, строка 2 = подписи, строка 3 = подсказки, с 4-й — ваши данные (примеры в шаблоне помечены <span class="pi-docs__code">status=example</span> и не импортируются).</li>
+            <li>Для размеров выберите <strong>один</strong> способ: колонка <span class="pi-docs__code">variants</span> <em>или</em> связка <span class="pi-docs__code">variant_sizes</span> + <span class="pi-docs__code">variant_prices</span> + <span class="pi-docs__code">variant_stocks</span> <em>или</em> несколько строк с одним товаром.</li>
+            <li>Фотографии и галерея в Excel не импортируются — добавьте их в карточке товара после импорта.</li>
         </ul>
     </aside>
 </div>

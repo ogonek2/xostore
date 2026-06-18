@@ -19,6 +19,20 @@
     .shop-social-icon {
         @apply inline-flex w-4 justify-center text-base leading-none;
     }
+
+    .catalog-filters-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--color-border-DEFAULT) 80%, transparent) transparent;
+    }
+
+    .catalog-filters-scroll::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .catalog-filters-scroll::-webkit-scrollbar-thumb {
+        border-radius: 9999px;
+        background-color: color-mix(in srgb, var(--color-border-DEFAULT) 75%, transparent);
+    }
 }
 
 @layer base {

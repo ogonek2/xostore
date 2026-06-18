@@ -10,9 +10,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductExcelTemplateBuilder
 {
-    public function download(): StreamedResponse
+    /**
+     * @param  list<string>|null  $keys
+     */
+    public function download(?array $keys = null): StreamedResponse
     {
-        $spreadsheet = $this->build();
+        $spreadsheet = $this->build($keys);
         $filename = 'product-import-template-'.now()->format('Y-m-d').'.xlsx';
 
         return response()->streamDownload(function () use ($spreadsheet): void {
@@ -23,72 +26,77 @@ class ProductExcelTemplateBuilder
         ]);
     }
 
-    public function build(): Spreadsheet
+    /**
+     * @param  list<string>|null  $keys
+     */
+    public function build(?array $keys = null): Spreadsheet
     {
+        $keys = $this->normalizeKeys($keys);
         $spreadsheet = new Spreadsheet;
         $products = $spreadsheet->getActiveSheet();
         $products->setTitle('Товары');
 
-        $keys = ProductImportColumns::keys();
         $labels = ProductImportColumns::labelsPl();
+        $descriptions = ProductImportColumns::descriptions();
 
         foreach ($keys as $index => $key) {
             $column = $index + 1;
             $products->setCellValue([$column, 1], $key);
             $products->setCellValue([$column, 2], $labels[$key] ?? $key);
+            $products->setCellValue([$column, 3], $descriptions[$key] ?? '');
         }
 
-        $exampleProduct = [
+        $exampleDress = [
             'sku' => 'DRESS-001-BLACK',
             'name_pl' => 'Sukienka wieczorowa',
             'name_en' => 'Evening dress',
             'short_description_pl' => 'Elegancka sukienka na wieczór.',
-            'status' => 'draft',
+            'status' => 'example',
             'type' => 'variable',
             'brand_code' => 'chanel',
             'primary_category_code' => 'women',
             'category_codes' => 'women',
             'catalog_codes' => 'main',
             'size_grid_code' => 'clothing_letter_women',
-            'size_chart_preset_code' => 'women_dresses_cm',
             'base_price' => '1290',
-            'model_slug' => 'evening-dress',
             'color_label' => 'Czarny',
             'color_hex' => '#1a1a1a',
             'is_new' => '1',
             'variant_sizes' => 's,m,l',
             'variant_prices' => '1290,1290,1390',
             'variant_stocks' => '5,3,2',
-            'variant_defaults' => '0,1,0',
+        ];
+
+        $exampleBag = [
+            'name_pl' => 'Torebka skórzana beżowa',
+            'name_en' => 'Beige leather bag',
+            'status' => 'example',
+            'type' => 'simple',
+            'primary_category_code' => 'accessories',
+            'size_grid_code' => 'bags_sml',
+            'base_price' => '2490',
+            'variant_sizes' => 'm',
+            'variant_prices' => '2490',
+            'variant_stocks' => '3',
         ];
 
         foreach ($keys as $index => $key) {
-            if (isset($exampleProduct[$key])) {
-                $products->setCellValue([$index + 1, 3], $exampleProduct[$key]);
+            if (isset($exampleDress[$key])) {
+                $products->setCellValue([$index + 1, 4], $exampleDress[$key]);
+            }
+            if (isset($exampleBag[$key])) {
+                $products->setCellValue([$index + 1, 5], $exampleBag[$key]);
             }
         }
 
-        $exampleCompact = [
-            'sku' => 'SHIRT-002-WHITE',
-            'name_pl' => 'Koszula biała',
-            'category_codes' => 'women, accessories',
-            'tag_codes' => 'chanel',
-            'size_grid_code' => 'clothing_letter_women',
-            'variants' => 's:990:4,m:990:6,l:1090:2',
-        ];
-
-        foreach ($keys as $index => $key) {
-            if (isset($exampleCompact[$key])) {
-                $products->setCellValue([$index + 1, 4], $exampleCompact[$key]);
-            }
-        }
-
-        $products->getStyle('A1:AZ1')->getFont()->setBold(true);
-        $products->getStyle('A1:AZ1')->getFill()
+        $lastColumn = $this->columnLetter(count($keys));
+        $products->getStyle("A1:{$lastColumn}1")->getFont()->setBold(true);
+        $products->getStyle("A1:{$lastColumn}1")->getFill()
             ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setARGB('FFE8F4EA');
-        $products->getStyle('A2:AZ2')->getFont()->setItalic(true);
-        $products->freezePane('A3');
+        $products->getStyle("A2:{$lastColumn}2")->getFont()->setBold(true);
+        $products->getStyle("A3:{$lastColumn}3")->getFont()->setItalic(true);
+        $products->freezePane('A4');
 
         $help = $spreadsheet->createSheet();
         $help->setTitle('Справка');
@@ -97,43 +105,80 @@ class ProductExcelTemplateBuilder
 
         $lines = [
             '',
-            'ОБЯЗАТЕЛЬНО: sku (артикул) и name_pl (название на польском).',
-            'Все остальные поля — по желанию.',
-            'slug_pl / slug_en — необязательны: создаются из названия, с проверкой уникальности (sku, цвет, -2, -3…).',
+            'ОБЯЗАТЕЛЬНО: name_pl (название на польском).',
+            'SKU — необязателен: если пустой, артикул создастся автоматически из названия.',
+            'Несколько строк с одним SKU (или одним name_pl без SKU) = варианты размеров одного товара.',
             '',
-            'Несколько строк с одним sku = варианты одного товара (размеры).',
-            'Поля товара берутся из первой непустой строки группы.',
+            'Размеры — выберите ОДИН способ:',
+            '  • variants = s:1290:5,m:1290:3  (размер:цена:остаток)',
+            '  • variant_sizes + variant_prices + variant_stocks через запятую',
             '',
-            'Справочники — код или название (если нет в базе, создаётся автоматически):',
-            '  brand_code — код бренда',
-            '  primary_category_code / category_codes — коды категорий',
-            '  catalog_codes, tag_codes, category_codes — через запятую',
-            '  size_grid_code — пресет кнопок S/M/L',
-            '  size_chart_preset_code — пресет таблицы мерок в см',
+            'size_grid_code — кнопки на сайте (не таблица мерок!):',
+            '  clothing_letter_women — одежда S/M/L',
+            '  footwear_eu — обувь',
+            '  bags_sml — сумки S/M/L',
+            '  accessories_one_size — без размера',
             '',
-            'Варианты в ОДНОЙ ячейке (через запятую):',
-            '  variant_sizes=s,m,l + variant_prices=1290,1290,1390 + variant_stocks=5,3,2',
-            '  variants=s:1290:5,m:1290:3 (размер:цена:остаток)',
-            '  variant_size=s,m,l — то же, что variant_sizes',
+            'model_slug — ТОЛЬКО для цветовых вариантов одной модели. Иначе пусто!',
             '',
-            'Или несколько строк с одним sku — по одному размеру в строке.',
+            'Справочники (код или название, создаются автоматически): brand_code, category_codes, catalog_codes',
             '',
-            'Статус: draft | published | archived',
-            'Тип: simple | variable',
-            'Флаги is_*: 1/0, yes/no, tak',
-            'Дата published_at: 2026-06-01 10:00:00',
-            '',
-            'После импорта проверьте товар в админке: фото, связи, таблицу мерок.',
+            'Статус: draft | published | archived.  Тип: simple | variable',
         ];
 
         foreach ($lines as $index => $line) {
             $help->setCellValue([1, $index + 2], $line);
         }
 
-        $help->getColumnDimension('A')->setWidth(90);
+        $help->setCellValue('A20', 'Описание колонок в шаблоне');
+        $help->getStyle('A20')->getFont()->setBold(true);
+        $row = 21;
 
+        foreach ($keys as $key) {
+            $help->setCellValue([1, $row], ($labels[$key] ?? $key).': '.($descriptions[$key] ?? '—'));
+            $row++;
+        }
+
+        $help->getColumnDimension('A')->setWidth(100);
         $spreadsheet->setActiveSheetIndex(0);
 
         return $spreadsheet;
+    }
+
+    /**
+     * @param  list<string>|null  $keys
+     * @return list<string>
+     */
+    protected function normalizeKeys(?array $keys): array
+    {
+        $allowed = ProductImportColumns::keys();
+        $selected = array_values(array_filter(
+            $keys ?? ProductImportColumns::defaultTemplateKeys(),
+            fn (string $key): bool => in_array($key, $allowed, true),
+        ));
+
+        if ($selected === []) {
+            return ProductImportColumns::defaultTemplateKeys();
+        }
+
+        if (! in_array('name_pl', $selected, true)) {
+            array_unshift($selected, 'name_pl');
+        }
+
+        return $selected;
+    }
+
+    protected function columnLetter(int $index): string
+    {
+        $letter = '';
+        $n = max(1, $index);
+
+        while ($n > 0) {
+            $n--;
+            $letter = chr(65 + ($n % 26)).$letter;
+            $n = intdiv($n, 26);
+        }
+
+        return $letter;
     }
 }

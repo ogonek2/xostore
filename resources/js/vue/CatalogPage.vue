@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { refreshCartProductBadges } from '../shop/cart-badges';
+import CatalogFilterForm from './CatalogFilterForm.vue';
 
 const props = defineProps({
     endpoint: { type: String, required: true },
@@ -58,6 +59,9 @@ const hasActiveFilters = computed(() => {
         || filters.sort !== 'newest'
     );
 });
+
+const sizeGroups = computed(() => facetsState.value.size_groups ?? []);
+const hasMultipleSizeGroups = computed(() => sizeGroups.value.length > 1);
 
 const productsCountLabel = computed(() => formatCount(total.value));
 
@@ -200,8 +204,8 @@ function toggleBrand(id) {
     applyFilters();
 }
 
-function toggleSize(id) {
-    toggleInArray(filters.sizes, id);
+function toggleSize(key) {
+    toggleInArray(filters.sizes, key);
     applyFilters();
 }
 
@@ -381,287 +385,46 @@ onUnmounted(() => {
                     </ul>
                 </div>
 
-                <form class="space-y-8" @submit.prevent>
-                    <div>
-                        <label class="mb-3 block text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                            {{ labels.sort }}
-                        </label>
-                        <select
-                            v-model="filters.sort"
-                            class="w-full border border-border-DEFAULT bg-surface-DEFAULT px-3 py-2.5 text-sm outline-none focus:border-primary-DEFAULT"
-                            @change="applyFilters"
-                        >
-                            <option value="newest">{{ labels.sort_newest }}</option>
-                            <option value="featured">{{ labels.sort_featured }}</option>
-                            <option value="price_asc">{{ labels.sort_price_asc }}</option>
-                            <option value="price_desc">{{ labels.sort_price_desc }}</option>
-                        </select>
-                    </div>
-
-                    <fieldset>
-                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                            {{ labels.filters }}
-                        </legend>
-                        <div class="space-y-2">
-                            <label class="flex cursor-pointer items-center gap-2 text-sm">
-                                <input v-model="filters.new" type="checkbox" class="size-4 border-border-DEFAULT" @change="applyFilters">
-                                <span>{{ labels.only_new }}</span>
-                            </label>
-                            <label class="flex cursor-pointer items-center gap-2 text-sm">
-                                <input v-model="filters.sale" type="checkbox" class="size-4 border-border-DEFAULT" @change="applyFilters">
-                                <span>{{ labels.only_sale }}</span>
-                            </label>
-                        </div>
-                    </fieldset>
-
-                    <fieldset v-if="facetsState.brands?.length">
-                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                            {{ labels.brand }}
-                        </legend>
-                        <ul class="max-h-48 space-y-2 overflow-y-auto">
-                            <li v-for="brand in facetsState.brands" :key="brand.id">
-                                <label class="flex cursor-pointer items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        :checked="filters.brands.includes(brand.id)"
-                                        class="size-4 border-border-DEFAULT"
-                                        @change="toggleBrand(brand.id)"
-                                    >
-                                    <span>{{ brand.label }}</span>
-                                </label>
-                            </li>
-                        </ul>
-                    </fieldset>
-
-                    <fieldset v-if="facetsState.sizes?.length">
-                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                            {{ labels.size }}
-                        </legend>
-                        <ul class="max-h-48 space-y-2 overflow-y-auto">
-                            <li v-for="size in facetsState.sizes" :key="size.id">
-                                <label class="flex cursor-pointer items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        :checked="filters.sizes.includes(size.id)"
-                                        class="size-4 border-border-DEFAULT"
-                                        @change="toggleSize(size.id)"
-                                    >
-                                    <span>{{ size.label }}</span>
-                                </label>
-                            </li>
-                        </ul>
-                    </fieldset>
-
-                    <fieldset v-if="facetsState.colors?.length">
-                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                            {{ labels.color }}
-                        </legend>
-                        <ul class="max-h-48 space-y-2 overflow-y-auto">
-                            <li v-for="color in facetsState.colors" :key="color.id">
-                                <label class="flex cursor-pointer items-center gap-2.5 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        :checked="filters.colors.includes(color.id)"
-                                        class="size-4 border-border-DEFAULT"
-                                        @change="toggleColor(color.id)"
-                                    >
-                                    <span
-                                        class="size-5 shrink-0 rounded-full border border-border-DEFAULT ring-1 ring-inset ring-black/5"
-                                        :class="{ 'ring-2 ring-primary-DEFAULT': filters.colors.includes(color.id) }"
-                                        :style="{ backgroundColor: color.hex || '#e8e6e2' }"
-                                        :title="color.label"
-                                    />
-                                    <span :class="filters.colors.includes(color.id) ? 'font-semibold text-primary-DEFAULT' : 'text-text-DEFAULT'">
-                                        {{ color.label }}
-                                    </span>
-                                </label>
-                            </li>
-                        </ul>
-                    </fieldset>
-
-                    <fieldset>
-                        <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                            {{ labels.price }}
-                        </legend>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input
-                                v-model="filters.price_min"
-                                type="number"
-                                min="0"
-                                step="1"
-                                :placeholder="facetsState.price_min ? String(Math.round(facetsState.price_min)) : labels.from"
-                                class="border border-border-DEFAULT px-3 py-2 text-sm outline-none focus:border-primary-DEFAULT"
-                            >
-                            <input
-                                v-model="filters.price_max"
-                                type="number"
-                                min="0"
-                                step="1"
-                                :placeholder="facetsState.price_max ? String(Math.round(facetsState.price_max)) : labels.to"
-                                class="border border-border-DEFAULT px-3 py-2 text-sm outline-none focus:border-primary-DEFAULT"
-                            >
-                        </div>
-                        <button
-                            type="button"
-                            class="mt-3 w-full border border-primary-DEFAULT py-2 text-sm font-medium transition-colors hover:bg-primary-DEFAULT hover:text-text-inverse"
-                            @click="applyFilters"
-                        >
-                            {{ labels.apply_price }}
-                        </button>
-                    </fieldset>
-
-                    <button
-                        v-if="hasActiveFilters"
-                        type="button"
-                        class="text-sm text-text-muted underline underline-offset-4 hover:text-primary-DEFAULT"
-                        @click="clearFilters"
-                    >
-                        {{ labels.clear_filters }}
-                    </button>
-                </form>
+                <CatalogFilterForm
+                    :filters="filters"
+                    :facets-state="facetsState"
+                    :labels="labels"
+                    :size-groups="sizeGroups"
+                    :has-multiple-size-groups="hasMultipleSizeGroups"
+                    :has-active-filters="hasActiveFilters"
+                    @apply="applyFilters"
+                    @clear="clearFilters"
+                    @toggle-brand="toggleBrand"
+                    @toggle-size="toggleSize"
+                    @toggle-color="toggleColor"
+                />
             </aside>
         </div>
 
-        <div class="grid gap-10 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
-            <aside class="hidden lg:sticky lg:top-24 lg:block lg:self-start">
-                <form class="space-y-8" @submit.prevent>
-                <div>
-                    <label class="mb-3 block text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                        {{ labels.sort }}
-                    </label>
-                    <select
-                        v-model="filters.sort"
-                        class="w-full border border-border-DEFAULT bg-surface-DEFAULT px-3 py-2.5 text-sm outline-none focus:border-primary-DEFAULT"
-                        @change="applyFilters"
-                    >
-                        <option value="newest">{{ labels.sort_newest }}</option>
-                        <option value="featured">{{ labels.sort_featured }}</option>
-                        <option value="price_asc">{{ labels.sort_price_asc }}</option>
-                        <option value="price_desc">{{ labels.sort_price_desc }}</option>
-                    </select>
+        <div class="grid gap-10 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6">
+            <aside class="hidden lg:sticky lg:top-24 lg:z-20 lg:block lg:self-start">
+                <div class="flex max-h-[calc(100dvh-14rem)] flex-col overflow-hidden">
+                    <div class="shrink-0 border-b border-border-DEFAULT/60 py-3">
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary-DEFAULT">
+                            {{ labels.filters }}
+                        </p>
+                    </div>
+                    <div class="catalog-filters-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain py-4 pr-6">
+                        <CatalogFilterForm
+                            :filters="filters"
+                            :facets-state="facetsState"
+                            :labels="labels"
+                            :size-groups="sizeGroups"
+                            :has-multiple-size-groups="hasMultipleSizeGroups"
+                            :has-active-filters="hasActiveFilters"
+                            @apply="applyFilters"
+                            @clear="clearFilters"
+                            @toggle-brand="toggleBrand"
+                            @toggle-size="toggleSize"
+                            @toggle-color="toggleColor"
+                        />
+                    </div>
                 </div>
-
-                <fieldset>
-                    <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                        {{ labels.filters }}
-                    </legend>
-                    <div class="space-y-2">
-                        <label class="flex cursor-pointer items-center gap-2 text-sm">
-                            <input v-model="filters.new" type="checkbox" class="size-4 border-border-DEFAULT" @change="applyFilters">
-                            <span>{{ labels.only_new }}</span>
-                        </label>
-                        <label class="flex cursor-pointer items-center gap-2 text-sm">
-                            <input v-model="filters.sale" type="checkbox" class="size-4 border-border-DEFAULT" @change="applyFilters">
-                            <span>{{ labels.only_sale }}</span>
-                        </label>
-                    </div>
-                </fieldset>
-
-                <fieldset v-if="facetsState.brands?.length">
-                    <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                        {{ labels.brand }}
-                    </legend>
-                    <ul class="max-h-48 space-y-2 overflow-y-auto">
-                        <li v-for="brand in facetsState.brands" :key="brand.id">
-                            <label class="flex cursor-pointer items-center gap-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    :checked="filters.brands.includes(brand.id)"
-                                    class="size-4 border-border-DEFAULT"
-                                    @change="toggleBrand(brand.id)"
-                                >
-                                <span>{{ brand.label }}</span>
-                            </label>
-                        </li>
-                    </ul>
-                </fieldset>
-
-                <fieldset v-if="facetsState.sizes?.length">
-                    <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                        {{ labels.size }}
-                    </legend>
-                    <ul class="max-h-48 space-y-2 overflow-y-auto">
-                        <li v-for="size in facetsState.sizes" :key="size.id">
-                            <label class="flex cursor-pointer items-center gap-2 text-sm">
-                                <input
-                                    type="checkbox"
-                                    :checked="filters.sizes.includes(size.id)"
-                                    class="size-4 border-border-DEFAULT"
-                                    @change="toggleSize(size.id)"
-                                >
-                                <span>{{ size.label }}</span>
-                            </label>
-                        </li>
-                    </ul>
-                </fieldset>
-
-                <fieldset v-if="facetsState.colors?.length">
-                    <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                        {{ labels.color }}
-                    </legend>
-                    <ul class="max-h-48 space-y-2 overflow-y-auto">
-                        <li v-for="color in facetsState.colors" :key="color.id">
-                            <label class="flex cursor-pointer items-center gap-2.5 text-sm">
-                                <input
-                                    type="checkbox"
-                                    :checked="filters.colors.includes(color.id)"
-                                    class="size-4 border-border-DEFAULT"
-                                    @change="toggleColor(color.id)"
-                                >
-                                <span
-                                    class="size-5 shrink-0 rounded-full border border-border-DEFAULT ring-1 ring-inset ring-black/5"
-                                    :class="{ 'ring-2 ring-primary-DEFAULT': filters.colors.includes(color.id) }"
-                                    :style="{ backgroundColor: color.hex || '#e8e6e2' }"
-                                    :title="color.label"
-                                />
-                                <span :class="filters.colors.includes(color.id) ? 'font-semibold text-primary-DEFAULT' : 'text-text-DEFAULT'">
-                                    {{ color.label }}
-                                </span>
-                            </label>
-                        </li>
-                    </ul>
-                </fieldset>
-
-                <fieldset>
-                    <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                        {{ labels.price }}
-                    </legend>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input
-                            v-model="filters.price_min"
-                            type="number"
-                            min="0"
-                            step="1"
-                            :placeholder="facetsState.price_min ? String(Math.round(facetsState.price_min)) : labels.from"
-                            class="border border-border-DEFAULT px-3 py-2 text-sm outline-none focus:border-primary-DEFAULT"
-                        >
-                        <input
-                            v-model="filters.price_max"
-                            type="number"
-                            min="0"
-                            step="1"
-                            :placeholder="facetsState.price_max ? String(Math.round(facetsState.price_max)) : labels.to"
-                            class="border border-border-DEFAULT px-3 py-2 text-sm outline-none focus:border-primary-DEFAULT"
-                        >
-                    </div>
-                    <button
-                        type="button"
-                        class="mt-3 w-full border border-primary-DEFAULT py-2 text-sm font-medium transition-colors hover:bg-primary-DEFAULT hover:text-text-inverse"
-                        @click="applyFilters"
-                    >
-                        {{ labels.apply_price }}
-                    </button>
-                </fieldset>
-
-                <button
-                    v-if="hasActiveFilters"
-                    type="button"
-                    class="text-sm text-text-muted underline underline-offset-4 hover:text-primary-DEFAULT"
-                    @click="clearFilters"
-                >
-                    {{ labels.clear_filters }}
-                </button>
-                </form>
             </aside>
 
             <div class="relative min-h-[200px]">

@@ -5,10 +5,12 @@ namespace App\Filament\Pages;
 use App\Services\Import\ProductExcelImporter;
 use App\Services\Import\ProductExcelTemplateBuilder;
 use App\Services\Import\ProductImportPreviewer;
+use App\Support\Import\ProductImportColumns;
 use App\Support\Import\ProductImportSpreadsheetLoader;
 use App\Support\Import\ProductImportUploadedFileResolver;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
@@ -50,7 +52,7 @@ class ImportProducts extends Page
                     ->icon(Heroicon::OutlinedDocumentArrowUp)
                     ->description('Поддерживаются .xlsx и .csv. После загрузки ниже появится предпросмотр данных.')
                     ->schema([
-                        FileUpload::make('file')
+                        \Filament\Forms\Components\FileUpload::make('file')
                             ->label('Файл Excel (.xlsx) или CSV (.csv)')
                             ->acceptedFileTypes(ProductImportSpreadsheetLoader::ACCEPTED_MIME_TYPES)
                             ->required()
@@ -66,7 +68,28 @@ class ImportProducts extends Page
                         ->label('Скачать шаблон Excel')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->color('gray')
-                        ->action(fn (): StreamedResponse => app(ProductExcelTemplateBuilder::class)->download()),
+                        ->modalHeading('Настройка шаблона Excel')
+                        ->modalDescription('Выберите колонки, которые будут в файле. В листе «Справка» — подробное описание каждой колонки и примеры.')
+                        ->modalSubmitActionLabel('Скачать')
+                        ->form([
+                            Placeholder::make('template_hint')
+                                ->hiddenLabel()
+                                ->content('Обязательно только название (name_pl). SKU можно не заполнять — артикул создастся автоматически при импорте. Для размеров удобнее колонки variant_sizes + variant_prices + variant_stocks или одна колонка variants.'),
+                            Select::make('columns')
+                                ->label('Колонки в шаблоне')
+                                ->multiple()
+                                ->options(ProductImportColumns::checkboxOptions())
+                                ->default(ProductImportColumns::defaultTemplateKeys())
+                                ->searchable()
+                                ->required()
+                                ->helperText('Группа «Варианты (устаревшие…)» — только если вы привыкли к старому формату (variant_size в каждой строке).'),
+                        ])
+                        ->action(function (array $data): StreamedResponse {
+                            /** @var list<string>|null $columns */
+                            $columns = $data['columns'] ?? null;
+
+                            return app(ProductExcelTemplateBuilder::class)->download($columns);
+                        }),
                     Action::make('refreshPreview')
                         ->label('Обновить предпросмотр')
                         ->icon('heroicon-o-eye')
@@ -76,7 +99,7 @@ class ImportProducts extends Page
                         ->label('Импортировать')
                         ->icon('heroicon-o-arrow-up-tray')
                         ->requiresConfirmation()
-                        ->modalDescription('Существующие товары с тем же SKU будут обновлены. Новые — созданы.')
+                        ->modalDescription('Существующие товары с тем же SKU будут обновлены. Если SKU пустой — он создаётся из названия (name_pl). Несколько строк с одним SKU или одним названием без SKU = варианты размеров.')
                         ->action(fn () => $this->runImport()),
                 ]),
                 Section::make('Предпросмотр данных')
@@ -96,6 +119,7 @@ class ImportProducts extends Page
                     ->visible(fn (): bool => $this->importResult !== null),
                 Section::make('Документация по импорту')
                     ->icon(Heroicon::OutlinedBookOpen)
+                    ->description('Полный справочник по всем переменным (колонкам) файла: название, описание и примеры.')
                     ->collapsible()
                     ->collapsed()
                     ->schema([

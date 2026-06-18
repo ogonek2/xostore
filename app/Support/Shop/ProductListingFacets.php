@@ -5,7 +5,6 @@ namespace App\Support\Shop;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
 use App\Models\Brand;
-use App\Models\SizeGridValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -30,16 +29,7 @@ class ProductListingFacets
                 'label' => $brand->translate('name', $locale) ?? $brand->code,
             ]);
 
-        $sizes = SizeGridValue::query()
-            ->whereHas('variants', fn (Builder $q) => $q
-                ->where('is_active', true)
-                ->whereIn('product_id', $sizeScope))
-            ->orderBy('sort_order')
-            ->get()
-            ->map(fn (SizeGridValue $size) => [
-                'id' => $size->id,
-                'label' => $size->display_value ?: $size->value,
-            ]);
+        $sizeGroups = ProductListingSizeFacets::build($sizeScope, $locale);
 
         $colors = static::buildColorFacets($colorScope, $locale);
 
@@ -54,7 +44,7 @@ class ProductListingFacets
 
         return [
             'brands' => $brands->values()->all(),
-            'sizes' => $sizes->values()->all(),
+            'size_groups' => $sizeGroups,
             'colors' => $colors,
             'price_min' => $priceBounds?->min_price ? (float) $priceBounds->min_price : null,
             'price_max' => $priceBounds?->max_price ? (float) $priceBounds->max_price : null,

@@ -145,7 +145,7 @@ final class MobileNavUtilities
 
     protected static function panelHasMobileContent(array $panel): bool
     {
-        if (! empty($panel['links'])) {
+        if (! empty($panel['links']) || ! empty($panel['brands'])) {
             return true;
         }
 

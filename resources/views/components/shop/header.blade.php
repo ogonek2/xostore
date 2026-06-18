@@ -1,4 +1,4 @@
-<div data-shop-nav class="sticky top-0 z-50">
+<div data-shop-nav class="relative sticky top-0 z-50">
     <header class="border-b border-border-DEFAULT/60 bg-surface-DEFAULT/95 backdrop-blur-sm">
         <div class="mx-auto flex max-w-[90rem] items-center gap-4 px-5 lg:gap-6 lg:px-8">
             <x-shop.logo />
@@ -133,7 +133,7 @@
             data-open="false"
             class="absolute inset-x-0 top-full hidden border-b border-border-DEFAULT bg-surface-DEFAULT shadow-lg"
         >
-            <div class="mx-auto max-w-[90rem] px-5 py-8 lg:px-8">
+            <div class="mx-auto max-w-[90rem] px-5 py-6 lg:px-8">
                 @foreach ($megaItems as $index => $megaItem)
                     <div
                         data-mega-panel="{{ $index }}"

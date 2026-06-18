@@ -36,6 +36,7 @@
         'sort_price_desc' => __('shop.listing.sort_price_desc'),
         'brand' => __('shop.listing.brand'),
         'size' => __('shop.product.select_variant'),
+        'size_hint' => __('shop.listing.size_hint'),
         'color' => __('shop.listing.color'),
         'price' => __('shop.listing.price'),
         'from' => __('shop.listing.from'),

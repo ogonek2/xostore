@@ -44,6 +44,10 @@ return [
         'infinite_scroll' => true,
     ],
 
+    'mega_menu' => [
+        'product_limit' => (int) env('SHOP_MEGA_MENU_PRODUCT_LIMIT', 4),
+    ],
+
     'homepage_banners' => [
         'enabled' => (bool) env('SHOP_HOMEPAGE_BANNERS_ENABLED', true),
     ],
@@ -114,6 +118,10 @@ return [
 
     'brand' => [
         'translatable_fields' => ['name', 'slug', 'description'],
+    ],
+
+    'color' => [
+        'translatable_fields' => ['name'],
     ],
 
     'tag' => [

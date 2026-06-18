@@ -18,6 +18,22 @@
                             </p>
                         @endif
 
+                        @if (! empty($panel['brands']))
+                            <div @class(['mt-3', 'mt-0' => empty($panel['title'])])>
+                                <x-shop.nav-mega-brands-grid :brands="$panel['brands']" :compact="true" />
+                            </div>
+
+                            @if (! empty($panel['view_all_url']))
+                                <a
+                                    href="{{ $panel['view_all_url'] }}"
+                                    class="mt-3 block py-2 text-sm font-medium text-primary-DEFAULT"
+                                    data-mobile-nav-link
+                                >
+                                    {{ $panel['view_all_label'] ?? __('shop.nav.all_brands') }}
+                                </a>
+                            @endif
+                        @endif
+
                         @if (! empty($panel['links']))
                             <ul @class(['mt-2 space-y-0.5', 'mt-0' => empty($panel['title'])])>
                                 @foreach ($panel['links'] as $link)

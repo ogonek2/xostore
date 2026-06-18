@@ -103,9 +103,10 @@ class ProductListingQuery
         }
 
         if (! empty($this->filters['sizes'])) {
-            $query->whereHas('variants', fn (Builder $q) => $q
-                ->where('is_active', true)
-                ->whereIn('size_grid_value_id', $this->filters['sizes']));
+            $query->whereHas('variants', function (Builder $q): void {
+                $q->where('is_active', true);
+                ProductListingSizeFacets::applyToVariantsQuery($q, $this->filters['sizes']);
+            });
         }
 
         if (($this->filters['price_min'] ?? null) !== null) {

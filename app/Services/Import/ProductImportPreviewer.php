@@ -43,8 +43,10 @@ class ProductImportPreviewer
 
         $products = [];
 
-        foreach (array_slice($parsed['groups'], 0, $limit, true) as $sku => $entries) {
-            $products[] = $this->previewProduct($sku, $entries, $resolver);
+        foreach (array_slice($parsed['groups'], 0, $limit, true) as $groupKey => $entries) {
+            $sku = $this->importer->resolveGroupSku($groupKey, $entries);
+            $autoSku = ! str_starts_with($groupKey, 'sku:');
+            $products[] = $this->previewProduct($sku, $entries, $resolver, $autoSku);
         }
 
         return [
@@ -59,7 +61,7 @@ class ProductImportPreviewer
      * @param  list<array{line: int, data: array<string, string>}>  $entries
      * @return array<string, mixed>
      */
-    protected function previewProduct(string $sku, array $entries, ImportReferenceResolver $resolver): array
+    protected function previewProduct(string $sku, array $entries, ImportReferenceResolver $resolver, bool $autoSku = false): array
     {
         $data = $this->mergeProductData($entries);
         $lines = implode(', ', array_map(fn (array $entry): string => (string) $entry['line'], $entries));
@@ -98,6 +100,7 @@ class ProductImportPreviewer
         return [
             'lines' => $lines,
             'sku' => $sku,
+            'auto_sku' => $autoSku,
             'action' => $existing ? ($existing->trashed() ? 'restore' : 'update') : 'create',
             'name_pl' => $data['name_pl'] ?? null,
             'name_en' => $data['name_en'] ?? null,
@@ -118,7 +121,13 @@ class ProductImportPreviewer
             'size_chart_preset' => filled($data['size_chart_preset_code'] ?? null)
                 ? $resolver->previewSizeChartPreset($data['size_chart_preset_code'])
                 : null,
+            'color' => filled($data['color_code'] ?? null)
+                ? $resolver->previewColor($data['color_code'], $data['color_hex'] ?? null)
+                : (filled($data['color_label'] ?? null)
+                    ? $resolver->previewColor($data['color_label'], $data['color_hex'] ?? null)
+                    : null),
             'color_label' => $data['color_label'] ?? null,
+            'color_code' => $data['color_code'] ?? null,
             'color_slug' => $product->color_slug,
             'model_slug' => ProductImportModelSlugAnalyzer::modelSlugFromEntries($entries),
             'variants' => $variants,

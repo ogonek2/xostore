@@ -9,10 +9,32 @@ use App\Models\Category;
 use App\Models\NavPanel;
 use App\Models\Product;
 use App\Services\Promotion\PromotionDiscountService;
+use App\Support\Media\MediaUrl;
 use Illuminate\Support\Collection;
 
 class NavPanelPresenter
 {
+    protected static function megaProductLimit(NavPanel $panel): int
+    {
+        $cap = max(1, (int) config('shop.mega_menu.product_limit', 4));
+
+        return min($cap, max(1, (int) $panel->item_limit));
+    }
+
+    /**
+     * @param  Collection<int, Product>  $products
+     * @return Collection<int, Product>
+     */
+    protected static function uniqueProductsForMega(Collection $products, NavPanel $panel): Collection
+    {
+        return $products
+            ->unique(fn (Product $product) => filled($product->model_slug)
+                ? 'model:'.$product->model_slug
+                : 'id:'.$product->id)
+            ->take(static::megaProductLimit($panel))
+            ->values();
+    }
+
     /**
      * @return array<string, mixed>|null
      */
@@ -48,6 +70,7 @@ class NavPanelPresenter
             'title' => static::resolveTitle($panel, $locale),
             'columns' => max(1, min(2, (int) $panel->columns)),
             'links' => $payload['links'] ?? [],
+            'brands' => $payload['brands'] ?? [],
             'products' => $payload['products'] ?? [],
             'view_all_url' => $payload['view_all_url'] ?? null,
             'view_all_label' => $payload['view_all_label'] ?? null,
@@ -182,7 +205,11 @@ class NavPanelPresenter
         }
 
         if ($panel->show_products && $categories->count() === 1) {
-            $products = static::categoryProducts((int) $categories->first()->id, $panel);
+            $category = $categories->first();
+            $products = static::uniqueProductsForMega(
+                static::categoryProducts((int) $category->id, $panel),
+                $panel,
+            );
 
             if ($products->isNotEmpty()) {
                 $cards = static::presentProductCards($products, $locale);
@@ -191,6 +218,11 @@ class NavPanelPresenter
                     $result['products'] = $cards['products'];
                 }
             }
+
+            $slug = $category->translate('slug', $locale) ?? $category->code;
+            $name = $category->translate('name', $locale) ?? $category->code;
+            $result['view_all_url'] = route('category.show', ['locale' => $locale, 'category' => $slug]);
+            $result['view_all_label'] = __('shop.nav.all_in_category', ['name' => $name]);
         }
 
         return $result === [] ? null : $result;
@@ -282,7 +314,7 @@ class NavPanelPresenter
                     ->orWhereHas('categories', fn ($q) => $q->whereIn('categories.id', $categoryIds));
             })
             ->orderByDesc('published_at')
-            ->limit($panel->item_limit)
+            ->limit(max(static::megaProductLimit($panel) * 3, 12))
             ->get();
     }
 
@@ -306,7 +338,9 @@ class NavPanelPresenter
             return null;
         }
 
-        return static::presentProductCards($panel->products, $locale);
+        $products = static::uniqueProductsForMega($panel->products, $panel);
+
+        return static::presentProductCards($products, $locale);
     }
 
     /**
@@ -339,7 +373,7 @@ class NavPanelPresenter
     }
 
     /**
-     * @return array{links: list<array{label: string, url: string, open_in_new_tab: bool}>}|null
+     * @return array{brands: list<array{name: string, url: string, logo: ?string}>, view_all_url: string, view_all_label: string}|null
      */
     protected static function presentBrands(NavPanel $panel, string $locale): ?array
     {
@@ -347,26 +381,34 @@ class NavPanelPresenter
             ->where('is_active', true)
             ->with('translates')
             ->orderBy('sort_order')
-            ->limit($panel->item_limit)
+            ->limit(max(1, (int) $panel->item_limit))
             ->get();
 
-        $links = $brands
+        $items = $brands
             ->map(function (Brand $brand) use ($locale) {
                 $name = $brand->translate('name', $locale) ?? $brand->code;
 
                 return [
-                    'label' => '#'.$name,
+                    'name' => $name,
                     'url' => route('products.index', [
                         'locale' => $locale,
                         'brands' => [$brand->id],
                     ]),
-                    'open_in_new_tab' => false,
+                    'logo' => MediaUrl::fromPath($brand->logo_path),
                 ];
             })
             ->values()
             ->all();
 
-        return $links === [] ? null : ['links' => $links];
+        if ($items === []) {
+            return null;
+        }
+
+        return [
+            'brands' => $items,
+            'view_all_url' => route('products.index', ['locale' => $locale]),
+            'view_all_label' => __('shop.nav.all_brands'),
+        ];
     }
 
     /**
@@ -392,8 +434,10 @@ class NavPanelPresenter
 
         $products = (new ProductListingQuery(catalog: $catalog))
             ->baseQuery()
-            ->limit($panel->item_limit)
+            ->limit(max(static::megaProductLimit($panel) * 3, 12))
             ->get();
+
+        $products = static::uniqueProductsForMega($products, $panel);
 
         $cards = static::presentProductCards($products, $locale);
 
@@ -453,8 +497,9 @@ class NavPanelPresenter
                 'variants' => fn ($q) => $q->where('is_active', true),
             ])
             ->whereIn('id', $ids)
-            ->limit($panel->item_limit)
             ->get();
+
+        $products = static::uniqueProductsForMega($products, $panel);
 
         return static::presentProductCards($products, $locale);
     }

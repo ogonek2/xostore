@@ -16,7 +16,7 @@ enum NavPanelType: string
         return match ($this) {
             self::Category => 'Категории (одна или несколько ссылок)',
             self::SelectedProducts => 'Выбранные товары',
-            self::Brands => 'Бренды (#теги)',
+            self::Brands => 'Бренды (плитки)',
             self::CatalogProducts => 'Каталоги (ссылки или превью товаров)',
             self::PromotionProducts => 'Товары по акциям',
             self::Links => 'Произвольные ссылки',

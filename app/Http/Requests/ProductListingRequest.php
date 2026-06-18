@@ -22,7 +22,7 @@ class ProductListingRequest extends FormRequest
             'brands' => ['sometimes', 'array'],
             'brands.*' => ['integer', 'exists:brands,id'],
             'sizes' => ['sometimes', 'array'],
-            'sizes.*' => ['integer', 'exists:size_grid_values,id'],
+            'sizes.*' => ['string', 'max:64'],
             'colors' => ['sometimes', 'array'],
             'colors.*' => ['integer', 'exists:attribute_values,id'],
             'price_min' => ['sometimes', 'nullable', 'numeric', 'min:0'],
@@ -38,7 +38,11 @@ class ProductListingRequest extends FormRequest
             'sort' => $this->input('sort', 'newest'),
             'q' => $this->filled('q') ? trim($this->input('q')) : null,
             'brands' => array_map('intval', $this->input('brands', [])),
-            'sizes' => array_map('intval', $this->input('sizes', [])),
+            'sizes' => collect($this->input('sizes', []))
+                ->map(fn (mixed $value) => is_numeric($value) ? (int) $value : trim((string) $value))
+                ->filter(fn (mixed $value) => $value !== '' && $value !== 0)
+                ->values()
+                ->all(),
             'colors' => array_map('intval', $this->input('colors', [])),
             'price_min' => $this->filled('price_min') ? (float) $this->input('price_min') : null,
             'price_max' => $this->filled('price_max') ? (float) $this->input('price_max') : null,

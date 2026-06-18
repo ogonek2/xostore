@@ -4,18 +4,17 @@ namespace App\Models;
 
 use App\Models\Concerns\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class SizeGrid extends Model
+class Color extends Model
 {
     use HasTranslations;
 
     protected $fillable = [
         'code',
-        'preset_kind',
-        'unit',
+        'hex',
         'is_active',
+        'sort_order',
     ];
 
     protected function casts(): array
@@ -25,13 +24,15 @@ class SizeGrid extends Model
         ];
     }
 
-    public function values(): HasMany
+    public function products(): HasMany
     {
-        return $this->hasMany(SizeGridValue::class)->orderBy('sort_order');
+        return $this->hasMany(Product::class);
     }
 
-    public function categories(): BelongsToMany
+    public function label(?string $locale = null): ?string
     {
-        return $this->belongsToMany(Category::class, 'category_size_grid');
+        $locale ??= (string) config('shop.default_language', 'pl');
+
+        return $this->translate('name', $locale) ?? $this->code;
     }
 }

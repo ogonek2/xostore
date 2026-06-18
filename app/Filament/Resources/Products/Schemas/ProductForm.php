@@ -11,6 +11,8 @@ use App\Filament\Support\ProductSizeGridOptions;
 use App\Models\Brand;
 use App\Models\Catalog;
 use App\Models\Category;
+use App\Models\Color;
+use App\Models\Product;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\DateTimePicker;
@@ -24,6 +26,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use App\Support\Shop\ProductSkuGenerator;
 
 class ProductForm
 {
@@ -71,10 +74,30 @@ class ProductForm
     protected static function generalTabSchema(): array
     {
         return [
+            Section::make('Как заполнять товар')
+                ->description('Краткая инструкция — подробности в подсказках под каждым полем.')
+                ->schema([
+                    Placeholder::make('product_guide')
+                        ->hiddenLabel()
+                        ->content(implode("\n", [
+                            '1. Название (PL) — обязательно. Остальные языки можно добавить позже.',
+                            '2. SKU — артикул товара. Можно включить «Сгенерировать автоматически».',
+                            '3. Категория и бренд — чтобы товар попал в нужный раздел каталога.',
+                            '4. Цена — базовая цена; для размеров уточните на вкладке «Размеры».',
+                            '5. model_slug — только если это тот же товар в другом цвете. Иначе оставьте пустым!',
+                            '6. Пресет размеров (вкладка) — кнопки S/M/L. Для сумок: bags_sml или accessories_one_size.',
+                            '7. Фото — главное здесь; галерея на вкладке «Изображения».',
+                        ]))
+                        ->columnSpanFull(),
+                ])
+                ->collapsible()
+                ->collapsed()
+                ->columnSpanFull(),
             Section::make('Каталог и модель')
                 ->schema([
                     Select::make('catalogs')
                         ->label('Каталоги')
+                        ->helperText('Витрины на сайте (главная, trendy, новинки…). Можно выбрать несколько.')
                         ->relationship('catalogs', 'code')
                         ->getOptionLabelFromRecordUsing(
                             fn (Catalog $record) => $record->translate('name', 'pl') ?? $record->code
@@ -85,6 +108,7 @@ class ProductForm
                         ->columnSpanFull(),
                     Select::make('primary_category_id')
                         ->label('Основная категория')
+                        ->helperText('Главный раздел: женское, мужское, аксессуары… От него зависит навигация.')
                         ->relationship('primaryCategory', 'code')
                         ->getOptionLabelFromRecordUsing(
                             fn (Category $record) => $record->translate('name', 'pl') ?? $record->code
@@ -97,40 +121,54 @@ class ProductForm
                         ->label('Модель (slug)')
                         ->maxLength(128)
                         ->live(onBlur: true)
-                        ->helperText('Один slug для всех цветов одной модели (напр. celestia)'),
-                    TextInput::make('color_label')
-                        ->label('Цвет')
-                        ->live(onBlur: true)
-                        ->afterStateUpdated(function (?string $state, Get $get, Set $set): void {
-                            $existing = $get('color_slug');
-
-                            if (is_string($existing) && trim($existing) !== '') {
-                                return;
-                            }
-
-                            if (! is_string($state) || trim($state) === '') {
-                                return;
-                            }
-
-                            $set('color_slug', Str::slug($state));
-                        })
-                        ->maxLength(64),
-                    TextInput::make('color_slug')
-                        ->label('Slug цвета')
-                        ->maxLength(64),
-                    ColorPicker::make('color_hex')
-                        ->label('HEX цвета')
-                        ->helperText('Значение сохраняется как HEX'),
+                        ->helperText('Только для цветовых вариантов ОДНОЙ модели (платье в чёрном и бежевом). Для разных товаров — не заполняйте!'),
+                    Toggle::make('create_new_color')
+                        ->label('Создать новый цвет')
+                        ->helperText('Или выберите существующий цвет из справочника «Цвета».')
+                        ->default(false)
+                        ->live()
+                        ->columnSpanFull(),
+                    Select::make('color_id')
+                        ->label('Цвет из справочника')
+                        ->relationship(
+                            name: 'color',
+                            titleAttribute: 'code',
+                            modifyQueryUsing: fn ($query) => $query->where('is_active', true)->orderBy('sort_order'),
+                        )
+                        ->getOptionLabelFromRecordUsing(
+                            fn (Color $record) => ($record->translate('name', 'pl') ?? $record->code).' ('.$record->code.')'
+                        )
+                        ->searchable()
+                        ->preload()
+                        ->nullable()
+                        ->visible(fn (Get $get): bool => ! (bool) $get('create_new_color')),
+                    TextInput::make('new_color_name_pl')
+                        ->label('Название цвета (PL)')
+                        ->helperText('Будет добавлен в справочник с автопереводом на английский.')
+                        ->maxLength(64)
+                        ->visible(fn (Get $get): bool => (bool) $get('create_new_color')),
+                    ColorPicker::make('new_color_hex')
+                        ->label('HEX нового цвета')
+                        ->visible(fn (Get $get): bool => (bool) $get('create_new_color')),
                 ])
                 ->columns(2)
                 ->columnSpanFull(),
-            Section::make('Цены и склад')
+            Section::make('Цены и идентификация')
                 ->schema([
+                    Toggle::make('auto_generate_sku')
+                        ->label('Сгенерировать SKU автоматически')
+                        ->helperText('Уникальный артикул из названия товара (PL). Можно оставить включённым для новых товаров.')
+                        ->default(fn (?Product $record): bool => $record === null || ProductSkuGenerator::isDraftSku($record->sku))
+                        ->live()
+                        ->dehydrated(false)
+                        ->columnSpanFull(),
                     TextInput::make('sku')
-                        ->label('SKU')
-                        ->required()
+                        ->label('SKU (артикул)')
+                        ->required(fn (Get $get): bool => ! $get('auto_generate_sku'))
+                        ->disabled(fn (Get $get): bool => (bool) $get('auto_generate_sku'))
                         ->unique(ignoreRecord: true)
-                        ->maxLength(64),
+                        ->maxLength(64)
+                        ->helperText('Уникальный код товара для склада и импорта. Пример: DRESS-001-BLACK'),
                     Select::make('status')
                         ->label('Статус')
                         ->options(collect(ProductStatus::cases())->mapWithKeys(
@@ -140,6 +178,7 @@ class ProductForm
                         ->native(false),
                     Select::make('type')
                         ->label('Тип товара')
+                        ->helperText('С размерами (одежда, обувь) — variable. Один размер (сумка, аксессуар) — simple.')
                         ->options(collect(ProductType::cases())->mapWithKeys(
                             fn (ProductType $type) => [$type->value => $type->label()]
                         ))
@@ -156,6 +195,7 @@ class ProductForm
                         ->nullable(),
                     TextInput::make('base_price')
                         ->label('Цена')
+                        ->helperText('Цена в PLN. Для товаров с размерами можно задать отдельно на вкладке «Размеры».')
                         ->numeric()
                         ->prefix('PLN')
                         ->minValue(0)
@@ -223,7 +263,7 @@ class ProductForm
     {
         return [
             Section::make('Пресет размеров для кнопок на сайте')
-                ->description('Это НЕ таблица мерок. Пресет задаёт кнопки rozmiaru (S, M, L, 38…) в карточке товара. Справочник: Каталог → Размерные сетки.')
+                ->description('Кнопки размера на карточке товара (S, M, L, 25 см…). Это НЕ таблица мерок в сантиметрах — она на соседней вкладке. Справочник: Каталог → Размеры (кнопки).')
                 ->schema([
                     Select::make('size_grid_id')
                         ->label('Пресет')
@@ -236,7 +276,7 @@ class ProductForm
                         ->native(false)
                         ->live()
                         ->nullable()
-                        ->helperText('Все активные пресеты (одежда, обувь, аксессуары). После выбора сохраните товар — размеры появятся на вкладке «Размеры».'),
+                        ->helperText('Одежда: clothing_letter_women. Обувь: footwear_eu. Сумки: bags_sml или accessories_one_size. После выбора — вкладка «Размеры».'),
                     Placeholder::make('size_grid_sizes_preview')
                         ->label('Размеры в пресете')
                         ->content(function (Get $get): string {
@@ -260,7 +300,7 @@ class ProductForm
     {
         return [
             Section::make('Пресет таблицы мерок (визуальная сетка)')
-                ->description('Точные мерки в сантиметрах для блока на странице товара. Справочник: Каталог → Таблицы мерок (см). Кнопки S/M/L — отдельный пресет «Пресет размеров».')
+                ->description('Точные мерки в сантиметрах (грудь, талия…) — для одежды. Для сумок обычно не нужно. Кнопки S/M/L — вкладка «Пресет размеров».')
                 ->schema([
                     Select::make('size_chart_preset_id')
                         ->label('Пресет таблицы')

@@ -13,6 +13,10 @@ return [
         'promo_badge' => 'Promocja',
         'all_in_category' => 'Wszystkie :name',
         'catalog' => 'Katalog',
+        'featured_products' => 'Polecane produkty',
+        'view_all' => 'Zobacz wszystkie',
+        'all_brands' => 'Wszystkie marki',
+        'explore_brand' => 'Odkryj',
         'open_menu' => 'Otwórz menu',
         'close_menu' => 'Zamknij menu',
     ],
@@ -196,6 +200,17 @@ return [
         'continue_shopping' => 'Kontynuuj zakupy',
         'empty' => 'Brak produktów dla wybranych filtrów.',
         'loading' => 'Ładowanie…',
+        'size_hint' => 'Rozmiary są pogrupowane według typu produktu — wybierz rozmiar z właściwej sekcji.',
+    ],
+
+    'size_grid_labels' => [
+        'clothing_letters' => 'Odzież (S, M, L…)',
+        'clothing_numeric' => 'Odzież (rozmiary EU)',
+        'footwear' => 'Obuwie',
+        'bags' => 'Torby i akcesoria',
+        'belts' => 'Paski',
+        'one_size' => 'Jeden rozmiar',
+        'custom' => 'Inne rozmiary',
     ],
 
     'footer' => [

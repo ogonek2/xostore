@@ -6,6 +6,8 @@ use App\Filament\Concerns\HandlesTranslations;
 use App\Filament\Resources\Products\Concerns\ManagesProductRecord;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Product;
+use App\Support\Shop\ProductColorService;
+use App\Support\Shop\ProductSkuGenerator;
 use App\Support\Shop\ProductVariantColorSync;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
@@ -71,11 +73,30 @@ class EditProduct extends EditRecord
 
         $data['primary_image'] = $primary?->path;
 
+        $data['auto_generate_sku'] = ProductSkuGenerator::isDraftSku($this->getRecord()->sku);
+
+        $product = $this->getRecord();
+        $data['create_new_color'] = ! $product->color_id && filled($product->color_label);
+
+        if ($data['create_new_color']) {
+            $data['new_color_name_pl'] = $product->color_label;
+            $data['new_color_hex'] = $product->color_hex;
+        }
+
         return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        if (! empty($data['auto_generate_sku'])) {
+            $defaultLocale = (string) config('shop.default_language', 'pl');
+            $name = $data["trans_{$defaultLocale}_name"] ?? null;
+            $data['sku'] = ProductSkuGenerator::generate(is_string($name) ? $name : null);
+        }
+
+        unset($data['auto_generate_sku']);
+
+        $data = ProductColorService::resolveProductColorFields($data);
         $data = $this->normalizeProductSlugs($data);
 
         $this->pendingPrimaryImage = $data['primary_image'] ?? null;

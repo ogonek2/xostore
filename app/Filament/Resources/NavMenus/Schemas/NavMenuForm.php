@@ -214,9 +214,10 @@ class NavMenuForm
                 ->helperText(fn (Get $get) => match ($get('type')) {
                     NavPanelType::SelectedProducts->value => 'Не используется — показываются все выбранные товары.',
                     NavPanelType::Category->value => $get('show_products')
-                        ? 'Макс. подкатегорий и товаров (одна категория).'
+                        ? 'Подкатегории (ссылки). На сайте в мегаменю показывается до '.config('shop.mega_menu.product_limit', 4).' товаров без дублей по модели.'
                         : 'Макс. ссылок в колонке (категории, подкатегории или каталоги).',
-                    NavPanelType::CatalogProducts->value => 'Макс. ссылок при нескольких каталогах; при одном — число товаров в превью.',
+                    NavPanelType::CatalogProducts->value => 'Макс. ссылок при нескольких каталогах; при одном — до '.config('shop.mega_menu.product_limit', 4).' товаров в превью на сайте.',
+                    NavPanelType::Brands->value => 'На сайте — плитки брендов в сетке (до лимита). Логотип — в карточке бренда (logo_path).',
                     default => 'Макс. элементов в колонке.',
                 }),
             Toggle::make('is_active')

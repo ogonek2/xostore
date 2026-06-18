@@ -7,11 +7,13 @@ use App\Enums\CategoryType;
 use App\Models\Brand;
 use App\Models\Catalog;
 use App\Models\Category;
+use App\Models\Color;
 use App\Models\Language;
 use App\Models\SizeChartPreset;
 use App\Models\SizeGrid;
 use App\Models\SizeGridValue;
 use App\Models\Tag;
+use App\Support\Shop\ProductColorService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -165,6 +167,47 @@ class ImportReferenceResolver
             $this->logCreated('Бренд', $input, $code);
 
             return $brand;
+        });
+    }
+
+    public function findColor(string $input): ?Color
+    {
+        $input = trim($input);
+
+        if ($input === '') {
+            return null;
+        }
+
+        return ProductColorService::findByCodeOrName($input);
+    }
+
+    public function findOrCreateColor(string $input, ?string $hex = null): ?Color
+    {
+        $input = trim($input);
+
+        if ($input === '') {
+            return null;
+        }
+
+        $cacheKey = 'color:'.Str::lower($input).':'.Str::lower((string) $hex);
+
+        return $this->remember('color', $cacheKey, function () use ($input, $hex): Color {
+            $existing = ProductColorService::findByCodeOrName($input);
+
+            if ($existing) {
+                $normalizedHex = ProductColorService::normalizeHex($hex);
+
+                if ($normalizedHex && $existing->hex !== $normalizedHex) {
+                    $existing->update(['hex' => $normalizedHex]);
+                }
+
+                return $existing;
+            }
+
+            $color = ProductColorService::createFromPlName($input, $hex);
+            $this->logCreated('Цвет', $input, $color->code);
+
+            return $color;
         });
     }
 
@@ -330,6 +373,43 @@ class ImportReferenceResolver
     public function previewBrand(string $input): ?array
     {
         return $this->previewEntity(Brand::class, $input);
+    }
+
+    /**
+     * @return array{input: string, code: string, name: string, exists: bool, will_create?: bool}|null
+     */
+    public function previewColor(string $input, ?string $hex = null): ?array
+    {
+        $input = trim($input);
+
+        if ($input === '') {
+            return null;
+        }
+
+        $existing = ProductColorService::findByCodeOrName($input);
+
+        if ($existing) {
+            return [
+                'input' => $input,
+                'code' => (string) $existing->code,
+                'name' => $existing->translate('name', 'pl') ?? $existing->code,
+                'exists' => true,
+            ];
+        }
+
+        $code = ImportUniqueCode::fromLabel(
+            $input,
+            fn (string $candidate): bool => Color::query()->where('code', $candidate)->exists(),
+        );
+
+        return [
+            'input' => $input,
+            'code' => $code,
+            'name' => $input,
+            'exists' => false,
+            'will_create' => true,
+            'hex' => ProductColorService::normalizeHex($hex),
+        ];
     }
 
     /**

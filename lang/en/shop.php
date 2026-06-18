@@ -13,6 +13,10 @@ return [
         'promo_badge' => 'Sale',
         'all_in_category' => 'All :name',
         'catalog' => 'Catalog',
+        'featured_products' => 'Featured products',
+        'view_all' => 'View all',
+        'all_brands' => 'All brands',
+        'explore_brand' => 'Explore',
         'open_menu' => 'Open menu',
         'close_menu' => 'Close menu',
     ],
@@ -196,6 +200,17 @@ return [
         'continue_shopping' => 'Continue shopping',
         'empty' => 'No products match your filters.',
         'loading' => 'Loading…',
+        'size_hint' => 'Sizes are grouped by product type — pick a size from the relevant section.',
+    ],
+
+    'size_grid_labels' => [
+        'clothing_letters' => 'Clothing (S, M, L…)',
+        'clothing_numeric' => 'Clothing (EU sizes)',
+        'footwear' => 'Footwear',
+        'bags' => 'Bags & accessories',
+        'belts' => 'Belts',
+        'one_size' => 'One size',
+        'custom' => 'Other sizes',
     ],
 
     'footer' => [

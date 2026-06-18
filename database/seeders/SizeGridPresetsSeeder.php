@@ -40,6 +40,7 @@ class SizeGridPresetsSeeder extends Seeder
             enName: 'Women\'s clothing (XXS–XXL)',
             sizes: $letter(['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL']),
             categoryCodes: ['women'],
+            presetKind: 'clothing_letters',
         );
 
         $this->preset(
@@ -112,6 +113,7 @@ class SizeGridPresetsSeeder extends Seeder
             enName: 'Footwear (EU 35–42)',
             sizes: $numeric(35, 42),
             categoryCodes: ['women-shoes', 'women', 'men'],
+            presetKind: 'footwear',
         );
 
         $this->preset(
@@ -123,6 +125,27 @@ class SizeGridPresetsSeeder extends Seeder
                 ['value' => 'one_size', 'display' => 'One size'],
             ],
             categoryCodes: ['accessories'],
+            presetKind: 'one_size',
+        );
+
+        $this->preset(
+            code: 'bags_sml',
+            unit: null,
+            plName: 'Torebki S / M / L',
+            enName: 'Bags S / M / L',
+            sizes: $letter(['S', 'M', 'L']),
+            categoryCodes: ['accessories', 'women'],
+            presetKind: 'bags',
+        );
+
+        $this->preset(
+            code: 'bags_cm',
+            unit: 'cm',
+            plName: 'Torebki (szerokość cm 25–35)',
+            enName: 'Bags (width cm 25–35)',
+            sizes: $numeric(25, 35, 5),
+            categoryCodes: ['accessories', 'women'],
+            presetKind: 'bags',
         );
 
         $this->preset(
@@ -167,10 +190,11 @@ class SizeGridPresetsSeeder extends Seeder
         string $enName,
         array $sizes,
         array $categoryCodes = [],
+        ?string $presetKind = null,
     ): void {
         $grid = SizeGrid::query()->updateOrCreate(
             ['code' => $code],
-            ['unit' => $unit, 'is_active' => true],
+            ['unit' => $unit, 'is_active' => true, 'preset_kind' => $presetKind],
         );
 
         $plLang = Language::query()->where('code', 'pl')->first();

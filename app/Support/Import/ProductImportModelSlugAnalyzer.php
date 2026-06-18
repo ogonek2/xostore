@@ -15,14 +15,15 @@ final class ProductImportModelSlugAnalyzer
         /** @var array<string, list<string>> $skusByModelSlug */
         $skusByModelSlug = [];
 
-        foreach ($groups as $sku => $entries) {
+        foreach ($groups as $groupKey => $entries) {
             $modelSlug = static::modelSlugFromEntries($entries);
 
             if ($modelSlug === null) {
                 continue;
             }
 
-            $skusByModelSlug[$modelSlug][] = (string) $sku;
+            $label = static::groupLabel($groupKey, $entries);
+            $skusByModelSlug[$modelSlug][] = $label;
         }
 
         $warnings = [];
@@ -63,5 +64,19 @@ final class ProductImportModelSlugAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * @param  list<array{line: int, data: array<string, string>}>  $entries
+     */
+    protected static function groupLabel(string $groupKey, array $entries): string
+    {
+        if (str_starts_with($groupKey, 'sku:')) {
+            return substr($groupKey, 4);
+        }
+
+        $name = trim((string) ($entries[0]['data']['name_pl'] ?? ''));
+
+        return $name !== '' ? "{$name} (SKU авто)" : $groupKey;
     }
 }

@@ -61,6 +61,9 @@
                             <tr>
                                 <td>
                                     <span class="pi-preview__sku">{{ $row['sku'] }}</span>
+                                    @if (! empty($row['auto_sku']))
+                                        <div style="color:#a1a1aa;font-size:0.75rem;">SKU будет сгенерирован при импорте</div>
+                                    @endif
                                     <div style="color:#71717a;font-size:0.75rem;">стр. {{ $row['lines'] }}</div>
                                     <span class="pi-preview__badge pi-preview__badge--{{ $row['action'] === 'create' ? 'create' : 'update' }}">
                                         {{ $row['action'] === 'create' ? 'Создать' : 'Обновить' }}

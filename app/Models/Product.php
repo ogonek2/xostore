@@ -21,6 +21,7 @@ class Product extends Model
         'size_chart_preset_id',
         'sku',
         'model_slug',
+        'color_id',
         'color_label',
         'color_slug',
         'color_hex',
@@ -55,6 +56,11 @@ class Product extends Model
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    public function color(): BelongsTo
+    {
+        return $this->belongsTo(Color::class);
     }
 
     public function primaryCategory(): BelongsTo
