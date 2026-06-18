@@ -5,6 +5,7 @@ import ProductCharacteristics from './ProductCharacteristics.vue';
 import ProductSimilarProducts from './ProductSimilarProducts.vue';
 import ProductSizeChart from './ProductSizeChart.vue';
 import { productCartLines } from '../shop/cart-badges';
+import { addVariantToCart } from '../shop/cart-api';
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -124,33 +125,13 @@ async function addToCart() {
     error.value = '';
 
     try {
-        const response = await fetch(props.routes.cartStore, {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-            },
-            body: JSON.stringify({
-                variant_id: selectedVariantId.value,
-                quantity: quantity.value,
-            }),
+        const data = await addVariantToCart(selectedVariantId.value, {
+            quantity: quantity.value,
+            openDrawer: true,
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            error.value = Object.values(data.errors ?? {}).flat()[0] ?? props.labels.error;
-            return;
-        }
-
-        const { dispatchCartState } = await import('../shop/cart-badges');
-        dispatchCartState(data);
         applyCartItems(data.items ?? []);
-        window.dispatchEvent(new Event('cart:open'));
-    } catch {
-        error.value = props.labels.error;
+    } catch (err) {
+        error.value = err?.message ?? props.labels.error;
     } finally {
         adding.value = false;
     }

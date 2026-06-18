@@ -1,13 +1,37 @@
 <script setup>
-defineProps({
+import { ref } from 'vue';
+import { addVariantToCart } from '../shop/cart-api';
+
+const props = defineProps({
     product: { type: Object, required: true },
     labels: { type: Object, required: true },
 });
 
-function openCart(event) {
+const adding = ref(false);
+
+async function addToCart(event) {
     event.preventDefault();
     event.stopPropagation();
-    window.dispatchEvent(new Event('cart:open'));
+
+    if (!props.product.default_variant_id) {
+        window.location.href = props.product.url;
+
+        return;
+    }
+
+    if (adding.value) {
+        return;
+    }
+
+    adding.value = true;
+
+    try {
+        await addVariantToCart(props.product.default_variant_id);
+    } catch {
+        window.location.href = props.product.url;
+    } finally {
+        adding.value = false;
+    }
 }
 </script>
 
@@ -46,9 +70,11 @@ function openCart(event) {
 
                 <button
                     type="button"
-                    class="absolute left-3 top-3 z-[2] flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105 group-[.is-in-cart]/product-card:hidden"
+                    class="absolute left-3 top-3 z-[2] flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105 disabled:opacity-60 group-[.is-in-cart]/product-card:hidden"
                     :aria-label="labels.cart_label"
-                    @click="openCart"
+                    :aria-busy="adding"
+                    :disabled="adding"
+                    @click="addToCart"
                 >
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                         <path d="M6 6h15l-1.5 9h-12L6 6z" stroke-linejoin="round" />

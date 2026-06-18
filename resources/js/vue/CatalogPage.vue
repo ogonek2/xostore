@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { refreshCartProductBadges } from '../shop/cart-badges';
+import { addVariantToCart } from '../shop/cart-api';
 import CatalogFilterForm from './CatalogFilterForm.vue';
 
 const props = defineProps({
@@ -39,11 +40,37 @@ watch(items, () => {
 function inCartLabel(name) {
     return (props.labels.in_cart_label || '').replace(':name', name);
 }
+
+async function addToCart(event, product) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (!product.default_variant_id) {
+        window.location.href = product.url;
+
+        return;
+    }
+
+    if (addingProductId.value === product.product_id) {
+        return;
+    }
+
+    addingProductId.value = product.product_id;
+
+    try {
+        await addVariantToCart(product.default_variant_id);
+    } catch {
+        window.location.href = product.url;
+    } finally {
+        addingProductId.value = null;
+    }
+}
 const page = ref(props.initialItems.length > 0 ? 2 : 1);
 const loadingMore = ref(false);
 const filtering = ref(false);
 const hasMore = ref(props.initialItems.length >= props.perPage);
 const mobileFiltersOpen = ref(false);
+const addingProductId = ref(null);
 const expandedParents = ref([]);
 const currentPath = ref(typeof window !== 'undefined' ? window.location.pathname : '');
 
@@ -475,9 +502,11 @@ onUnmounted(() => {
                             </span>
                             <button
                                 type="button"
-                                class="absolute right-3 top-3 z-[2] flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105 group-[.is-in-cart]/product-card:hidden"
+                                class="absolute right-3 top-3 z-[2] flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105 disabled:opacity-60 group-[.is-in-cart]/product-card:hidden"
                                 :aria-label="labels.cart"
-                                @click.prevent.stop="window.dispatchEvent(new Event('cart:open'))"
+                                :aria-busy="addingProductId === product.product_id"
+                                :disabled="addingProductId === product.product_id"
+                                @click.prevent.stop="addToCart($event, product)"
                             >
                                 <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                                     <path d="M6 6h15l-1.5 9h-12L6 6z" stroke-linejoin="round" />

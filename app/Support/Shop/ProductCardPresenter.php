@@ -34,6 +34,10 @@ class ProductCardPresenter
         $price = $discounts->applyDiscount((float) $basePrice, $product);
         $compareAt = $price < (float) $basePrice ? (float) $basePrice : null;
         $slug = $product->translate('slug', $locale) ?? $product->sku;
+        $defaultVariant = $product->variants
+            ->where('is_active', true)
+            ->sortByDesc('is_default')
+            ->first();
 
         return [
             'product_id' => $product->id,
@@ -48,6 +52,7 @@ class ProductCardPresenter
             'colors' => $compact ? [] : static::resolveColors($product),
             'alt' => $displayName,
             'is_new' => (bool) $product->is_new,
+            'default_variant_id' => $defaultVariant?->id,
         ];
     }
 

@@ -121,6 +121,7 @@
                             @foreach ($products as $product)
                                 <x-shop.product-card
                                     :product-id="$product['product_id']"
+                                    :default-variant-id="$product['default_variant_id'] ?? null"
                                     :url="$product['url']"
                                     :name="$product['name']"
                                     :category="$product['category']"

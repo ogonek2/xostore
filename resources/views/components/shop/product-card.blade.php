@@ -9,6 +9,7 @@
     'variant' => 'default',
     'showNewBadge' => false,
     'productId' => null,
+    'defaultVariantId' => null,
 ])
 
 @php
@@ -57,12 +58,16 @@
             <button
                 type="button"
                 @class([
-                    'absolute z-[2] flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105 group-[.is-in-cart]/product-card:hidden',
+                    'absolute z-[2] flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105 disabled:opacity-60 group-[.is-in-cart]/product-card:hidden',
                     'left-3 top-3' => ! $isMinimal,
                     'right-3 top-3' => $isMinimal,
                 ])
                 aria-label="{{ __('shop.cart.label') }}"
-                onclick="event.preventDefault(); event.stopPropagation(); window.dispatchEvent(new Event('cart:open'));"
+                @if ($defaultVariantId)
+                    data-add-to-cart
+                    data-variant-id="{{ $defaultVariantId }}"
+                    data-product-url="{{ $url }}"
+                @endif
             >
                 <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path d="M6 6h15l-1.5 9h-12L6 6z" stroke-linejoin="round" />

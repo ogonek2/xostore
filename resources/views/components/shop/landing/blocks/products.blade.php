@@ -21,6 +21,7 @@
                         <div class="swiper-slide !h-auto !w-[min(72vw,220px)] shrink-0 sm:!w-[240px] lg:!w-[260px]">
                             <x-shop.product-card
                                 :product-id="$product['product_id'] ?? null"
+                                :default-variant-id="$product['default_variant_id'] ?? null"
                                 :url="$product['url']"
                                 :name="$product['name']"
                                 :category="$product['category'] ?? null"

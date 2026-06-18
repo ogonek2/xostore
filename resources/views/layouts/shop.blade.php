@@ -46,6 +46,7 @@
         data-labels="{{ json_encode($cartLabels) }}"
         data-routes="{{ json_encode([
             'show' => route('api.cart.show', ['locale' => $locale]),
+            'store' => route('api.cart.store', ['locale' => $locale]),
             'update' => route('api.cart.update', ['locale' => $locale, 'item' => '__ITEM__']),
             'destroy' => route('api.cart.destroy', ['locale' => $locale, 'item' => '__ITEM__']),
             'checkout' => route('checkout.show', ['locale' => $locale]),

@@ -2,11 +2,13 @@ import './bootstrap';
 import './shop/trending-swiper';
 import './shop/new-arrivals-swiper';
 import { initCartBadges } from './shop/cart-badges';
+import { initProductCardAddButtons } from './shop/cart-api';
 import { initShopAnalytics } from './shop/analytics';
 import { initHeaderNav } from './shop/header-nav';
 import { initNewsletterForms } from './shop/newsletter';
 
 initCartBadges();
+initProductCardAddButtons();
 initShopAnalytics();
     initHeaderNav();
     initNewsletterForms();

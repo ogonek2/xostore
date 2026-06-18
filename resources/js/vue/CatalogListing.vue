@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue';
+import { addVariantToCart } from '../shop/cart-api';
 
 const props = defineProps({
     endpoint: { type: String, required: true },
@@ -15,7 +16,33 @@ const props = defineProps({
 const items = ref([...props.initialItems]);
 const page = ref(props.initialItems.length > 0 ? 2 : 1);
 const loading = ref(false);
+const addingProductId = ref(null);
 const hasMore = ref(props.initialItems.length >= props.perPage);
+
+async function addToCart(event, product) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (!product.default_variant_id) {
+        window.location.href = product.url;
+
+        return;
+    }
+
+    if (addingProductId.value === product.product_id) {
+        return;
+    }
+
+    addingProductId.value = product.product_id;
+
+    try {
+        await addVariantToCart(product.default_variant_id);
+    } catch {
+        window.location.href = product.url;
+    } finally {
+        addingProductId.value = null;
+    }
+}
 
 function buildUrl() {
     const url = new URL(props.endpoint, window.location.origin);
@@ -106,9 +133,11 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll));
                         </span>
                         <button
                             type="button"
-                            class="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105"
+                            class="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-white text-primary-DEFAULT shadow-sm transition-transform hover:scale-105 disabled:opacity-60"
                             :aria-label="cartLabel"
-                            @click.prevent.stop="window.dispatchEvent(new Event('cart:open'))"
+                            :aria-busy="addingProductId === product.product_id"
+                            :disabled="addingProductId === product.product_id"
+                            @click.prevent.stop="addToCart($event, product)"
                         >
                             <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                                 <path d="M6 6h15l-1.5 9h-12L6 6z" stroke-linejoin="round" />

@@ -28,6 +28,7 @@
                             <x-shop.product-card
                                 variant="minimal"
                                 :product-id="$product['product_id']"
+                                :default-variant-id="$product['default_variant_id'] ?? null"
                                 :show-new-badge="$product['is_new'] ?? true"
                                 :url="$product['url']"
                                 :name="$product['name']"
