@@ -26,21 +26,17 @@ final class ProductImportVariantSync
 
         $definitions = static::collectDefinitions($product, $entries);
 
-        if ($definitions !== []) {
-            static::removePlaceholderDefaultVariant($product);
-
-            return;
-        }
+        static::removePlaceholderDefaultVariant($product);
 
         $grid = $product->sizeGrid;
 
         if (! $grid || $grid->values->isEmpty()) {
-            $result['warnings'][] = "Товар {$product->sku}: пресет размеров «{$grid?->code}» без значений — кнопки размеров на сайте не появятся.";
+            if ($definitions === []) {
+                $result['warnings'][] = "Товар {$product->sku}: пресет размеров «{$grid?->code}» без значений — кнопки размеров на сайте не появятся.";
+            }
 
             return;
         }
-
-        static::removePlaceholderDefaultVariant($product);
 
         $hasSizedVariants = $product->variants()
             ->where('is_active', true)
@@ -48,6 +44,8 @@ final class ProductImportVariantSync
             ->exists();
 
         if ($hasSizedVariants) {
+            static::attachMissingSizeGridValues($product, $definitions, $result);
+
             return;
         }
 
@@ -116,6 +114,53 @@ final class ProductImportVariantSync
             ->where('sku', $placeholderSku)
             ->whereNull('size_grid_value_id')
             ->delete();
+    }
+
+    /**
+     * @param  list<array{size: ?string, sku: ?string, price: ?float, compare_at_price: ?float, stock: ?int, barcode: ?string, is_default: ?bool}>  $definitions
+     * @param  array{variants_created: int, variants_updated: int, warnings: list<string>}  $result
+     */
+    protected static function attachMissingSizeGridValues(Product $product, array $definitions, array &$result): void
+    {
+        if ($definitions === [] || ! $product->size_grid_id) {
+            return;
+        }
+
+        foreach ($product->variants()->whereNull('size_grid_value_id')->get() as $variant) {
+            $definition = collect($definitions)->first(
+                fn (array $row): bool => filled($row['sku'] ?? null)
+                    && Str::upper((string) $row['sku']) === Str::upper($variant->sku),
+            );
+
+            $sizeCode = $definition['size'] ?? null;
+
+            if (blank($sizeCode)) {
+                continue;
+            }
+
+            $gridValue = static::findSizeGridValue($product->size_grid_id, (string) $sizeCode);
+
+            if (! $gridValue) {
+                continue;
+            }
+
+            $variant->update(['size_grid_value_id' => $gridValue->id]);
+            $result['variants_updated']++;
+        }
+    }
+
+    protected static function findSizeGridValue(int $sizeGridId, string $sizeCode): ?SizeGridValue
+    {
+        $needle = Str::lower(trim($sizeCode));
+
+        return SizeGridValue::query()
+            ->where('size_grid_id', $sizeGridId)
+            ->where(function ($query) use ($needle, $sizeCode): void {
+                $query->whereRaw('LOWER(value) = ?', [$needle])
+                    ->orWhereRaw('LOWER(display_value) = ?', [$needle])
+                    ->orWhereRaw('LOWER(display_value) = ?', [Str::lower($sizeCode)]);
+            })
+            ->first();
     }
 
     public static function ensureSizeGridHasValues(SizeGrid $grid, string $sourceCode): void

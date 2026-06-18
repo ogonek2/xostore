@@ -112,8 +112,8 @@ final class ProductColorPresenter
 
     public static function sizesForColor(Collection $variantRows, ?int $colorId, bool $hasProductColor): array
     {
-        $filtered = $colorId === 0 && $hasProductColor
-            ? $variantRows->filter(fn (array $v) => ! $v['color_id'] || $v['color_id'] === 0)
+        $filtered = ($colorId === 0 || $colorId === null) && $hasProductColor
+            ? $variantRows
             : ($colorId
                 ? $variantRows->where('color_id', $colorId)
                 : $variantRows);
