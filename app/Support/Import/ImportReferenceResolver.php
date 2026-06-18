@@ -14,6 +14,7 @@ use App\Models\SizeGrid;
 use App\Models\SizeGridValue;
 use App\Models\Tag;
 use App\Support\Shop\ProductColorService;
+use App\Support\Shop\ProductImportVariantSync;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -220,14 +221,14 @@ class ImportReferenceResolver
         }
 
         return $this->remember('size_grid', $input, function () use ($input): SizeGrid {
-            $existing = $this->findByCodeOrName(SizeGrid::class, $input);
+            $existing = ImportSizePresetCatalog::findSizeGrid($input);
 
             if ($existing instanceof SizeGrid) {
                 return $existing;
             }
 
             $code = ImportUniqueCode::fromLabel(
-                $input,
+                ImportSizePresetCatalog::resolveSizeGridCode($input),
                 fn (string $candidate): bool => SizeGrid::query()->where('code', $candidate)->exists(),
             );
 
@@ -237,10 +238,12 @@ class ImportReferenceResolver
                 'is_active' => true,
             ]);
 
+            ProductImportVariantSync::ensureSizeGridHasValues($grid, $input);
+
             $this->applyNameTranslations($grid, $input, hasSlug: false);
             $this->logCreated('Пресет размеров', $input, $code);
 
-            return $grid;
+            return $grid->fresh(['values']);
         });
     }
 
@@ -253,14 +256,14 @@ class ImportReferenceResolver
         }
 
         return $this->remember('size_chart_preset', $input, function () use ($input): SizeChartPreset {
-            $existing = $this->findByCodeOrName(SizeChartPreset::class, $input);
+            $existing = ImportSizePresetCatalog::findSizeChartPreset($input);
 
             if ($existing instanceof SizeChartPreset) {
                 return $existing;
             }
 
             $code = ImportUniqueCode::fromLabel(
-                $input,
+                ImportSizePresetCatalog::resolveSizeChartPresetCode($input),
                 fn (string $candidate): bool => SizeChartPreset::query()->where('code', $candidate)->exists(),
             );
 

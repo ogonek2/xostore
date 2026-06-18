@@ -16,6 +16,7 @@ use App\Support\Import\ProductExcelVariantParser;
 use App\Support\Import\ProductImportColumns;
 use App\Support\Import\ProductImportTemplateRowDetector;
 use App\Support\Shop\ProductSkuGenerator;
+use App\Support\Shop\ProductImportVariantSync;
 use App\Support\Shop\ProductUniqueSlug;
 use App\Support\Shop\ProductVariantColorSync;
 use Illuminate\Http\UploadedFile;
@@ -232,6 +233,7 @@ class ProductExcelImporter
             $this->syncTranslations($product, $productData);
             $this->syncRelations($product, $productData, $result);
             $this->importVariants($product, $entries, $result);
+            ProductImportVariantSync::syncAfterImport($product, $entries, $result);
 
             ProductVariantColorSync::syncProductVariants($product);
         });
@@ -288,13 +290,13 @@ class ProductExcelImporter
                 ?->id;
         }
 
-        if (array_key_exists('size_grid_code', $data)) {
+        if (filled($data['size_grid_code'] ?? null)) {
             $attributes['size_grid_id'] = $this->referenceResolver()
                 ->findOrCreateSizeGrid($data['size_grid_code'])
                 ?->id;
         }
 
-        if (array_key_exists('size_chart_preset_code', $data)) {
+        if (filled($data['size_chart_preset_code'] ?? null)) {
             $attributes['size_chart_preset_id'] = $this->referenceResolver()
                 ->findOrCreateSizeChartPreset($data['size_chart_preset_code'])
                 ?->id;

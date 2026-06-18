@@ -27,6 +27,7 @@ final class ProductImportSpreadsheetLoader
             $reader = IOFactory::createReader(IOFactory::READER_CSV);
             $reader->setReadDataOnly(true);
             $reader->setInputEncoding(static::detectCsvEncoding($file));
+            $reader->setDelimiter(static::detectCsvDelimiter($file));
 
             return $reader->load($path);
         }
@@ -55,7 +56,7 @@ final class ProductImportSpreadsheetLoader
     protected static function detectCsvEncoding(UploadedFile $file): string
     {
         $path = $file->getRealPath() ?: $file->getPathname();
-        $sample = @file_get_contents($path, false, null, 0, 4096) ?: '';
+        $sample = @file_get_contents($path, false, null, 0, 8192) ?: '';
 
         if (str_starts_with($sample, "\xEF\xBB\xBF")) {
             return 'UTF-8';
@@ -65,6 +66,34 @@ final class ProductImportSpreadsheetLoader
             return 'UTF-8';
         }
 
-        return 'CP1251';
+        if ($sample !== '' && mb_check_encoding($sample, 'Windows-1251')) {
+            return 'CP1251';
+        }
+
+        return 'UTF-8';
+    }
+
+    protected static function detectCsvDelimiter(UploadedFile $file): string
+    {
+        $path = $file->getRealPath() ?: $file->getPathname();
+        $line = @file_get_contents($path, false, null, 0, 2048) ?: '';
+
+        if (str_starts_with($line, "\xEF\xBB\xBF")) {
+            $line = substr($line, 3);
+        }
+
+        $firstLine = strtok($line, "\r\n") ?: '';
+
+        $counts = [
+            ';' => substr_count($firstLine, ';'),
+            ',' => substr_count($firstLine, ','),
+            "\t" => substr_count($firstLine, "\t"),
+        ];
+
+        arsort($counts);
+
+        $delimiter = (string) array_key_first($counts);
+
+        return $counts[$delimiter] > 0 ? $delimiter : ',';
     }
 }
