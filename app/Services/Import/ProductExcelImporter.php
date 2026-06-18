@@ -14,6 +14,7 @@ use App\Support\Import\ProductExcelRowParser;
 use App\Support\Import\ProductImportSpreadsheetLoader;
 use App\Support\Import\ProductExcelVariantParser;
 use App\Support\Import\ProductImportColumns;
+use App\Support\Import\ProductImportTemplateRowDetector;
 use App\Support\Shop\ProductSkuGenerator;
 use App\Support\Shop\ProductUniqueSlug;
 use App\Support\Shop\ProductVariantColorSync;
@@ -107,7 +108,7 @@ class ProductExcelImporter
 
             $data = ProductExcelRowParser::mapRow($headerMap, $row);
 
-            if ($this->isTemplateMetaRow($line, $headerRowIndex, $data)) {
+            if (ProductImportTemplateRowDetector::isMetaRow($data, $line - $headerRowIndex)) {
                 continue;
             }
 
@@ -656,38 +657,5 @@ class ProductExcelImporter
         }
 
         return '#'.Str::lower($hex);
-    }
-
-    /**
-     * @param  array<string, string>  $data
-     */
-    protected function isTemplateMetaRow(int $line, int $headerRowIndex, array $data): bool
-    {
-        $status = Str::lower(trim((string) ($data['status'] ?? '')));
-
-        if ($status === 'example') {
-            return true;
-        }
-
-        $offset = $line - $headerRowIndex;
-
-        if ($offset < 1 || $offset > 2) {
-            return false;
-        }
-
-        $hintSku = Str::lower((string) ($data['sku'] ?? ''));
-        $hintName = Str::lower((string) ($data['name_pl'] ?? ''));
-
-        if (
-            str_contains($hintSku, 'артикул')
-            || str_contains($hintSku, '*')
-            || str_contains($hintName, 'название')
-            || str_contains($hintName, 'name_pl')
-            || str_contains($hintName, 'nazwa')
-        ) {
-            return true;
-        }
-
-        return $offset === 2 && mb_strlen($hintName) > 60;
     }
 }

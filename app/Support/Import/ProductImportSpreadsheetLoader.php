@@ -26,6 +26,7 @@ final class ProductImportSpreadsheetLoader
         if (static::isCsvFile($file)) {
             $reader = IOFactory::createReader(IOFactory::READER_CSV);
             $reader->setReadDataOnly(true);
+            $reader->setInputEncoding(static::detectCsvEncoding($file));
 
             return $reader->load($path);
         }
@@ -49,5 +50,21 @@ final class ProductImportSpreadsheetLoader
             'application/csv',
             'text/comma-separated-values',
         ], true);
+    }
+
+    protected static function detectCsvEncoding(UploadedFile $file): string
+    {
+        $path = $file->getRealPath() ?: $file->getPathname();
+        $sample = @file_get_contents($path, false, null, 0, 4096) ?: '';
+
+        if (str_starts_with($sample, "\xEF\xBB\xBF")) {
+            return 'UTF-8';
+        }
+
+        if ($sample !== '' && mb_check_encoding($sample, 'UTF-8')) {
+            return 'UTF-8';
+        }
+
+        return 'CP1251';
     }
 }
