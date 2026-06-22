@@ -67,10 +67,12 @@ vueMounts.forEach((el) => {
                 initialItems: JSON.parse(el.dataset.initialItems || '[]'),
                 initialTotal: Number(el.dataset.initialTotal || 0),
                 facets: JSON.parse(el.dataset.facets || '{}'),
-                categories: JSON.parse(el.dataset.categories || '[]'),
+                categoryNav: JSON.parse(el.dataset.categoryNav || '{}'),
                 labels: JSON.parse(el.dataset.labels || '{}'),
                 locale: el.dataset.locale || 'pl',
                 perPage: Number(el.dataset.perPage || 24),
+                listingType: el.dataset.listingType || 'all',
+                allProductsUrl: el.dataset.allProductsUrl || '',
             }).mount(el);
         });
     }

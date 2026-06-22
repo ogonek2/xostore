@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Concerns;
 use App\Http\Requests\ProductListingRequest;
 use App\Support\Seo\PageSeo;
 use App\Support\Seo\SeoBuilder;
+use App\Support\Shop\ListingCategoryNav;
 use App\Support\Shop\ProductCardPresenter;
 use App\Support\Shop\ProductListingFacets;
 use App\Support\Shop\ProductListingQuery;
@@ -44,14 +45,21 @@ trait RendersProductListing
 
         $subcategories = collect();
         if ($category) {
-            $subcategories = $category->children->map(fn ($child) => [
-                'label' => $child->translate('name', $locale),
-                'url' => route('category.show', [
-                    'locale' => $locale,
-                    'category' => $child->translate('slug', $locale) ?? $child->code,
-                ]),
-            ]);
+            $subcategories = $category->children()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->with('translates')
+                ->get()
+                ->map(fn ($child) => [
+                    'label' => $child->translate('name', $locale),
+                    'url' => route('category.show', [
+                        'locale' => $locale,
+                        'category' => $child->translate('slug', $locale) ?? $child->code,
+                    ]),
+                ]);
         }
+
+        $listingType = $catalog ? 'catalog' : ($category ? 'category' : 'all');
 
         $seo ??= SeoBuilder::forListing(
             title: $pageTitle,
@@ -73,8 +81,11 @@ trait RendersProductListing
             'total' => $paginator->total(),
             'apiEndpoint' => route('api.products.index', ['locale' => $locale]),
             'apiQuery' => $apiQuery,
-            'listingType' => $catalog ? 'catalog' : ($category ? 'category' : 'all'),
+            'listingType' => $listingType,
             'subcategories' => $subcategories,
+            'categoryNav' => ListingCategoryNav::forFilters($locale, $category, $listingType),
+            'categoryPills' => $listingType === 'all' ? ListingCategoryNav::rootPills($locale) : $subcategories->all(),
+            'allProductsUrl' => route('products.index', ['locale' => $locale]),
         ]);
     }
 }

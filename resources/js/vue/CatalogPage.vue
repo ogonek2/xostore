@@ -11,10 +11,19 @@ const props = defineProps({
     initialItems: { type: Array, default: () => [] },
     initialTotal: { type: Number, default: 0 },
     facets: { type: Object, required: true },
-    categories: { type: Array, default: () => [] },
+    categoryNav: {
+        type: Object,
+        default: () => ({
+            all_products: { label: '', url: '' },
+            parent: null,
+            links: [],
+        }),
+    },
     labels: { type: Object, required: true },
     locale: { type: String, default: 'pl' },
     perPage: { type: Number, default: 24 },
+    listingType: { type: String, default: 'all' },
+    allProductsUrl: { type: String, default: '' },
 });
 
 const filters = reactive({
@@ -71,7 +80,6 @@ const filtering = ref(false);
 const hasMore = ref(props.initialItems.length >= props.perPage);
 const mobileFiltersOpen = ref(false);
 const addingProductId = ref(null);
-const expandedParents = ref([]);
 const currentPath = ref(typeof window !== 'undefined' ? window.location.pathname : '');
 
 const hasActiveFilters = computed(() => {
@@ -264,25 +272,11 @@ function normalizePath(url) {
     }
 }
 
-function isCategoryActive(url) {
+function isLinkActive(url) {
     const targetPath = normalizePath(url);
     const activePath = (currentPath.value || '').replace(/\/+$/, '');
+
     return targetPath !== '' && targetPath === activePath;
-}
-
-function isParentActive(category) {
-    if (isCategoryActive(category.url)) return true;
-    return (category.children ?? []).some((child) => isCategoryActive(child.url));
-}
-
-function isParentExpanded(categoryUrl) {
-    return expandedParents.value.includes(categoryUrl);
-}
-
-function toggleParent(categoryUrl) {
-    const index = expandedParents.value.indexOf(categoryUrl);
-    if (index === -1) expandedParents.value.push(categoryUrl);
-    else expandedParents.value.splice(index, 1);
 }
 
 function openMobileFilters() {
@@ -316,10 +310,6 @@ onMounted(() => {
     window.addEventListener('scroll', onScroll, { passive: true });
 
     nextTick(() => refreshCartProductBadges());
-
-    expandedParents.value = props.categories
-        .filter((category) => isParentActive(category))
-        .map((category) => category.url);
 });
 
 onUnmounted(() => {
@@ -364,58 +354,12 @@ onUnmounted(() => {
                     </button>
                 </div>
 
-                <div v-if="categories.length" class="mb-8">
-                    <p class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                        {{ labels.categories }}
-                    </p>
-                    <ul class="space-y-2">
-                        <li v-for="category in categories" :key="category.url">
-                            <div class="rounded-lg border border-border-DEFAULT/70">
-                                <div class="flex items-stretch">
-                                    <a
-                                        :href="category.url"
-                                        class="min-w-0 flex-1 px-3 py-2.5 text-sm transition-colors"
-                                        :class="isParentActive(category) ? 'font-semibold text-primary-DEFAULT' : 'font-medium text-text-DEFAULT hover:text-primary-DEFAULT'"
-                                    >
-                                        {{ category.label }}
-                                    </a>
-                                    <button
-                                        v-if="category.children?.length"
-                                        type="button"
-                                        class="inline-flex w-11 items-center justify-center border-l border-border-DEFAULT/70 text-text-muted transition-colors hover:text-primary-DEFAULT"
-                                        :aria-expanded="isParentExpanded(category.url)"
-                                        :aria-label="`Toggle ${category.label}`"
-                                        @click="toggleParent(category.url)"
-                                    >
-                                        <svg class="size-4 transition-transform" :class="{ 'rotate-180': isParentExpanded(category.url) }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                            <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <ul
-                                    v-if="category.children?.length && isParentExpanded(category.url)"
-                                    class="space-y-0.5 border-t border-border-DEFAULT/70 bg-surface-muted/40 px-2 py-2"
-                                >
-                                    <li v-for="child in category.children" :key="child.url">
-                                        <a
-                                            :href="child.url"
-                                            class="block rounded-md px-2.5 py-2 text-sm transition-colors"
-                                            :class="isCategoryActive(child.url) ? 'font-semibold text-primary-DEFAULT bg-primary-DEFAULT/5' : 'text-text-muted hover:bg-surface-muted hover:text-primary-DEFAULT'"
-                                        >
-                                            {{ child.label }}
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-
                 <CatalogFilterForm
                     :filters="filters"
                     :facets-state="facetsState"
                     :labels="labels"
+                    :category-nav="categoryNav"
+                    :is-link-active="isLinkActive"
                     :size-groups="sizeGroups"
                     :has-multiple-size-groups="hasMultipleSizeGroups"
                     :has-active-filters="hasActiveFilters"
@@ -441,6 +385,8 @@ onUnmounted(() => {
                             :filters="filters"
                             :facets-state="facetsState"
                             :labels="labels"
+                            :category-nav="categoryNav"
+                            :is-link-active="isLinkActive"
                             :size-groups="sizeGroups"
                             :has-multiple-size-groups="hasMultipleSizeGroups"
                             :has-active-filters="hasActiveFilters"

@@ -1,10 +1,20 @@
 <script setup>
 import { onMounted, reactive, watch } from 'vue';
+import CatalogCategoryNav from './CatalogCategoryNav.vue';
 
 const props = defineProps({
     filters: { type: Object, required: true },
     facetsState: { type: Object, required: true },
     labels: { type: Object, required: true },
+    categoryNav: {
+        type: Object,
+        default: () => ({
+            all_products: { label: '', url: '' },
+            parent: null,
+            links: [],
+        }),
+    },
+    isLinkActive: { type: Function, default: null },
     sizeGroups: { type: Array, default: () => [] },
     hasMultipleSizeGroups: { type: Boolean, default: false },
     hasActiveFilters: { type: Boolean, default: false },
@@ -147,6 +157,13 @@ watch(
         </div>
 
         <div class="divide-y divide-border-DEFAULT/50">
+            <CatalogCategoryNav
+                v-if="isLinkActive"
+                :nav="categoryNav"
+                :labels="labels"
+                :is-link-active="isLinkActive"
+            />
+
             <section v-if="facetsState.brands?.length" class="py-3">
                 <button
                     type="button"

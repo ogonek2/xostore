@@ -1,32 +1,10 @@
 @php
     $locale = app()->getLocale();
 
-    $listingCategories = $menuRoots
-        ->values()
-        ->map(function ($root) use ($locale) {
-            $rootSlug = $root->translate('slug', $locale) ?? $root->code;
-
-            return [
-                'label' => $root->translate('name', $locale) ?? $root->code,
-                'url' => route('category.show', ['locale' => $locale, 'category' => $rootSlug]),
-                'children' => $root->children
-                    ->map(function ($child) use ($locale) {
-                        $slug = $child->translate('slug', $locale) ?? $child->code;
-
-                        return [
-                            'label' => $child->translate('name', $locale) ?? $child->code,
-                            'url' => route('category.show', ['locale' => $locale, 'category' => $slug]),
-                        ];
-                    })
-                    ->values()
-                    ->all(),
-            ];
-        })
-        ->all();
-
     $listingLabels = [
         'filters' => __('shop.listing.filters'),
         'categories' => __('shop.categories.title'),
+        'all_products' => __('shop.listing.all_products'),
         'open_filters' => __('shop.listing.filters'),
         'close' => __('shop.product.gallery_close'),
         'sort' => __('shop.listing.sort'),
@@ -81,14 +59,14 @@
                 </div>
             </div>
 
-            @if ($subcategories->isNotEmpty())
+            @if (! empty($categoryPills))
                 <div class="mt-8 flex flex-wrap gap-2">
-                    @foreach ($subcategories as $sub)
+                    @foreach ($categoryPills as $pill)
                         <a
-                            href="{{ $sub['url'] }}"
-                            class="border border-border-DEFAULT px-4 py-2 text-sm transition-colors hover:border-primary-DEFAULT hover:bg-surface-muted"
+                            href="{{ $pill['url'] }}"
+                            class="border border-border-DEFAULT px-4 py-2 text-sm font-medium transition-colors hover:border-primary-DEFAULT hover:bg-surface-muted"
                         >
-                            {{ $sub['label'] }}
+                            {{ $pill['label'] }}
                         </a>
                     @endforeach
                 </div>
@@ -103,7 +81,9 @@
                 data-initial-items="{{ json_encode($products->values()) }}"
                 data-initial-total="{{ $total }}"
                 data-facets="{{ json_encode($facets) }}"
-                data-categories="{{ json_encode($listingCategories) }}"
+                data-category-nav="{{ json_encode($categoryNav) }}"
+                data-listing-type="{{ $listingType }}"
+                data-all-products-url="{{ $allProductsUrl }}"
                 data-labels="{{ json_encode($listingLabels) }}"
                 data-locale="{{ app()->getLocale() }}"
                 data-per-page="{{ config('shop.listing.per_page', 24) }}"
@@ -114,6 +94,7 @@
                             <x-shop.catalog-filters
                                 :facets="$facets"
                                 :filters="$filters"
+                                :category-nav="$categoryNav"
                                 :form-action="url()->current()"
                             />
                         </aside>

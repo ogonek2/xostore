@@ -2,6 +2,11 @@
     'facets',
     'filters',
     'formAction',
+    'categoryNav' => [
+        'all_products' => ['label' => '', 'url' => ''],
+        'parent' => null,
+        'links' => [],
+    ],
 ])
 
 <form method="get" action="{{ $formAction }}" class="space-y-8">
@@ -42,6 +47,38 @@
             </label>
         </div>
     </fieldset>
+
+    @if (! empty($categoryNav['links']) || ! empty($categoryNav['parent']))
+        <fieldset>
+            <legend class="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                {{ __('shop.categories.title') }}
+            </legend>
+            <nav class="max-h-52 space-y-1 overflow-y-auto">
+                <a
+                    href="{{ $categoryNav['all_products']['url'] ?? '#' }}"
+                    class="block rounded-md px-2.5 py-2 text-sm text-text-muted transition-colors hover:text-primary-DEFAULT"
+                >
+                    {{ $categoryNav['all_products']['label'] ?? __('shop.listing.all_products') }}
+                </a>
+                @if (! empty($categoryNav['parent']))
+                    <a
+                        href="{{ $categoryNav['parent']['url'] }}"
+                        class="block rounded-md px-2.5 py-2 text-sm text-text-muted transition-colors hover:text-primary-DEFAULT"
+                    >
+                        {{ $categoryNav['parent']['label'] }}
+                    </a>
+                @endif
+                @foreach ($categoryNav['links'] ?? [] as $link)
+                    <a
+                        href="{{ $link['url'] }}"
+                        class="block rounded-md px-2.5 py-2 text-sm transition-colors hover:text-primary-DEFAULT"
+                    >
+                        {{ $link['label'] }}
+                    </a>
+                @endforeach
+            </nav>
+        </fieldset>
+    @endif
 
     @if (! empty($facets['brands']))
         <fieldset>
