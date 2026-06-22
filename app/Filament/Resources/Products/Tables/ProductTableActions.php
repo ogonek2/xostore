@@ -14,7 +14,6 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 final class ProductTableActions
 {
@@ -165,19 +164,15 @@ final class ProductTableActions
 
     protected static function bulkApplyStatus(BulkAction $action, ProductStatus $status): void
     {
-        $action->process(static function (BulkAction $action, EloquentCollection $records) use ($status): void {
-            $records->each(function (Product $product) use ($status): void {
-                static::applyStatus($product, $status);
-            });
+        $action->getSelectedRecords()->each(function (Product $product) use ($status): void {
+            static::applyStatus($product, $status);
         });
     }
 
     protected static function bulkUpdateFlag(BulkAction $action, string $field, bool $value): void
     {
-        $action->process(static function (BulkAction $action, EloquentCollection $records) use ($field, $value): void {
-            $records->each(function (Product $product) use ($field, $value): void {
-                $product->update([$field => $value]);
-            });
+        $action->getSelectedRecords()->each(function (Product $product) use ($field, $value): void {
+            $product->update([$field => $value]);
         });
     }
 
