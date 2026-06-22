@@ -139,7 +139,7 @@ async function addToCart() {
 </script>
 
 <template>
-    <div class="grid gap-10 lg:grid-cols-2 lg:gap-14">
+    <div class="grid min-w-0 gap-10 lg:grid-cols-2 lg:gap-14">
         <ProductGallery
             :images="product.images"
             :product-name="product.name"

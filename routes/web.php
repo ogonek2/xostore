@@ -14,6 +14,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\ProductFeedController;
 use App\Http\Controllers\ProductIndexController;
 use App\Http\Controllers\ProductShowController;
 use App\Http\Controllers\RobotsController;
@@ -22,6 +23,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('/robots.txt', RobotsController::class)->name('robots');
+Route::get('/feeds/{slug}', ProductFeedController::class)
+    ->where('slug', '[\w\.\-]+')
+    ->name('feeds.show');
 
 Route::middleware(['web', 'auth'])
     ->prefix('admin')

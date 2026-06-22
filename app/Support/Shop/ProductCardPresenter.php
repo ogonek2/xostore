@@ -78,10 +78,11 @@ class ProductCardPresenter
             ?? $product->images->first();
 
         if ($image?->path) {
-            return MediaUrl::orPlaceholder(
+            return MediaUrl::orPlaceholderSized(
                 $image->path,
                 $image->disk,
                 'images/products/placeholder.jpg',
+                (int) config('shop.media.card_width', 640),
             );
         }
 

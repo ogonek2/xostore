@@ -56,7 +56,8 @@ function openLightbox(index = activeIndex.value) {
 </script>
 
 <template>
-    <div class="flex gap-3 sm:gap-4">
+    <div class="w-full min-w-0 max-w-full">
+        <div class="flex w-full min-w-0 max-w-full gap-3 sm:gap-4">
         <div
             v-if="images.length > 1"
             class="hidden shrink-0 flex-col gap-2 sm:flex"
@@ -70,7 +71,13 @@ function openLightbox(index = activeIndex.value) {
                 :aria-label="`${labels.thumbnail ?? 'Photo'} ${index + 1}`"
                 @click="selectImage(index)"
             >
-                <img :src="image.url" :alt="image.alt" class="size-full object-cover object-center">
+                <img
+                    :src="image.thumb_url ?? image.url"
+                    :alt="image.alt"
+                    loading="lazy"
+                    decoding="async"
+                    class="size-full object-cover object-center"
+                >
             </button>
         </div>
 
@@ -86,6 +93,8 @@ function openLightbox(index = activeIndex.value) {
                 <img
                     :src="activeImage?.url"
                     :alt="activeImage?.alt ?? productName"
+                    fetchpriority="high"
+                    decoding="async"
                     class="size-full object-cover object-center transition-opacity duration-150"
                     :class="zoomActive ? 'opacity-0' : 'opacity-100'"
                     draggable="false"
@@ -106,7 +115,7 @@ function openLightbox(index = activeIndex.value) {
 
             <div
                 v-if="images.length > 1"
-                class="mt-3 flex gap-2 overflow-x-auto pb-1 sm:hidden"
+                class="mt-3 flex w-full max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch] sm:hidden"
             >
                 <button
                     v-for="(image, index) in images"
@@ -116,9 +125,16 @@ function openLightbox(index = activeIndex.value) {
                     :class="activeIndex === index ? 'border-primary-DEFAULT' : 'border-transparent'"
                     @click="selectImage(index)"
                 >
-                    <img :src="image.url" :alt="image.alt" class="size-full object-cover">
+                    <img
+                        :src="image.thumb_url ?? image.url"
+                        :alt="image.alt"
+                        loading="lazy"
+                        decoding="async"
+                        class="size-full object-cover"
+                    >
                 </button>
             </div>
+        </div>
         </div>
     </div>
 

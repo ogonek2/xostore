@@ -44,6 +44,32 @@ return [
         'infinite_scroll' => true,
     ],
 
+    'media' => [
+        'max_upload_bytes' => (int) env('SHOP_MEDIA_MAX_UPLOAD_BYTES', 1_048_576),
+        'max_width' => (int) env('SHOP_MEDIA_MAX_WIDTH', 2000),
+        'max_height' => (int) env('SHOP_MEDIA_MAX_HEIGHT', 2500),
+        'jpeg_quality' => (int) env('SHOP_MEDIA_JPEG_QUALITY', 85),
+        'cdn_resize' => (bool) env('SHOP_MEDIA_CDN_RESIZE', true),
+        'card_width' => (int) env('SHOP_MEDIA_CARD_WIDTH', 640),
+        'gallery_width' => (int) env('SHOP_MEDIA_GALLERY_WIDTH', 1280),
+        'thumb_width' => (int) env('SHOP_MEDIA_THUMB_WIDTH', 160),
+    ],
+
+    'feeds' => [
+        'enabled' => (bool) env('SHOP_FEEDS_ENABLED', true),
+        'disk' => env('SHOP_FEEDS_DISK', 'public'),
+        'directory' => env('SHOP_FEEDS_DIRECTORY', 'feeds'),
+        'regenerate_on_product_save' => (bool) env('SHOP_FEEDS_REGENERATE_ON_SAVE', true),
+        'product_condition' => env('SHOP_FEEDS_PRODUCT_CONDITION', 'new'),
+        'google' => [
+            'slug' => env('SHOP_FEEDS_GOOGLE_SLUG', 'google-merchant.xml'),
+            'default_category' => env('SHOP_FEEDS_GOOGLE_CATEGORY', 'Apparel & Accessories > Clothing'),
+        ],
+        'facebook' => [
+            'slug' => env('SHOP_FEEDS_FACEBOOK_SLUG', 'facebook-catalog.csv'),
+        ],
+    ],
+
     'mega_menu' => [
         'product_limit' => (int) env('SHOP_MEGA_MENU_PRODUCT_LIMIT', 4),
     ],

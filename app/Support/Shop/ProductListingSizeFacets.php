@@ -2,14 +2,14 @@
 
 namespace App\Support\Shop;
 
-use App\Enums\SizeGridPresetKind;
-use App\Models\SizeGrid;
 use App\Models\SizeGridValue;
 use Illuminate\Database\Eloquent\Builder;
 
 final class ProductListingSizeFacets
 {
     /**
+     * Unique in-stock sizes available across the current catalog scope (fashion-style flat list).
+     *
      * @return list<array{
      *     id: int,
      *     label: string,
@@ -19,9 +19,9 @@ final class ProductListingSizeFacets
     public static function build(Builder $productScope, string $locale): array
     {
         $values = SizeGridValue::query()
-            ->with(['sizeGrid.translates'])
             ->whereHas('variants', fn (Builder $q) => $q
                 ->where('is_active', true)
+                ->whereNotNull('size_grid_value_id')
                 ->whereIn('product_id', $productScope))
             ->orderBy('sort_order')
             ->get();
@@ -30,66 +30,48 @@ final class ProductListingSizeFacets
             return [];
         }
 
-        /** @var array<int, array{id: int, label: string, sort: int, sizes: array<string, array{key: string, label: string, sort: int}>}> $groups */
-        $groups = [];
+        /** @var array<string, array{key: string, label: string, sort: int}> $unique */
+        $unique = [];
 
         foreach ($values as $value) {
-            $grid = $value->sizeGrid;
-
-            if (! $grid) {
-                continue;
-            }
-
-            $gridId = (int) $grid->id;
-            $normalized = static::normalizeValue($value->value);
             $label = trim((string) ($value->display_value ?: $value->value));
+            $normalized = static::normalizeValue($label);
 
             if ($normalized === '' || $label === '') {
                 continue;
             }
 
-            if (! isset($groups[$gridId])) {
-                $groups[$gridId] = [
-                    'id' => $gridId,
-                    'label' => static::gridLabel($grid, $locale),
-                    'sort' => (int) $value->sort_order,
-                    'sizes' => [],
-                ];
-            }
-
-            $groups[$gridId]['sort'] = min($groups[$gridId]['sort'], (int) $value->sort_order);
-
-            if (! isset($groups[$gridId]['sizes'][$normalized])) {
-                $groups[$gridId]['sizes'][$normalized] = [
-                    'key' => static::filterKey($gridId, $normalized),
+            if (! isset($unique[$normalized])) {
+                $unique[$normalized] = [
+                    'key' => static::filterKey($normalized),
                     'label' => $label,
-                    'sort' => (int) $value->sort_order,
+                    'sort' => static::sortWeight($label, (int) $value->sort_order),
                 ];
+
+                continue;
             }
+
+            $unique[$normalized]['sort'] = min($unique[$normalized]['sort'], static::sortWeight($label, (int) $value->sort_order));
         }
 
-        return collect($groups)
+        $sizes = collect($unique)
             ->sortBy('sort')
             ->values()
-            ->map(function (array $group): array {
-                $sizes = collect($group['sizes'])
-                    ->sortBy('sort')
-                    ->values()
-                    ->map(fn (array $size) => [
-                        'key' => $size['key'],
-                        'label' => $size['label'],
-                    ])
-                    ->all();
-
-                return [
-                    'id' => $group['id'],
-                    'label' => $group['label'],
-                    'sizes' => $sizes,
-                ];
-            })
-            ->filter(fn (array $group) => $group['sizes'] !== [])
-            ->values()
+            ->map(fn (array $size) => [
+                'key' => $size['key'],
+                'label' => $size['label'],
+            ])
             ->all();
+
+        if ($sizes === []) {
+            return [];
+        }
+
+        return [[
+            'id' => 0,
+            'label' => '',
+            'sizes' => $sizes,
+        ]];
     }
 
     public static function normalizeValue(string $value): string
@@ -97,9 +79,9 @@ final class ProductListingSizeFacets
         return strtolower(trim($value));
     }
 
-    public static function filterKey(int $gridId, string $normalizedValue): string
+    public static function filterKey(string $normalizedValue): string
     {
-        return $gridId.':'.static::normalizeValue($normalizedValue);
+        return static::normalizeValue($normalizedValue);
     }
 
     /**
@@ -119,44 +101,74 @@ final class ProductListingSizeFacets
                     continue;
                 }
 
-                if (! is_string($filter) || ! str_contains($filter, ':')) {
+                if (! is_string($filter) || trim($filter) === '') {
                     continue;
                 }
 
-                [$gridId, $normalized] = explode(':', $filter, 2);
-                $gridId = (int) $gridId;
-                $normalized = static::normalizeValue($normalized);
+                if (str_contains($filter, ':')) {
+                    [$gridId, $normalized] = explode(':', $filter, 2);
+                    $gridId = (int) $gridId;
+                    $normalized = static::normalizeValue($normalized);
 
-                if ($gridId <= 0 || $normalized === '') {
+                    if ($gridId <= 0 || $normalized === '') {
+                        continue;
+                    }
+
+                    $outer->orWhereHas('sizeGridValue', function (Builder $sizeValue) use ($gridId, $normalized): void {
+                        static::applyNormalizedMatch($sizeValue->where('size_grid_id', $gridId), $normalized);
+                    });
+
                     continue;
                 }
 
-                $outer->orWhereHas('sizeGridValue', function (Builder $sizeValue) use ($gridId, $normalized): void {
-                    $sizeValue
-                        ->where('size_grid_id', $gridId)
-                        ->where(function (Builder $match) use ($normalized): void {
-                            $match->whereRaw('LOWER(TRIM(value)) = ?', [$normalized])
-                                ->orWhereRaw('LOWER(TRIM(COALESCE(display_value, value))) = ?', [$normalized]);
-                        });
+                $normalized = static::normalizeValue($filter);
+
+                if ($normalized === '') {
+                    continue;
+                }
+
+                $outer->orWhereHas('sizeGridValue', function (Builder $sizeValue) use ($normalized): void {
+                    static::applyNormalizedMatch($sizeValue, $normalized);
                 });
             }
         });
     }
 
-    protected static function gridLabel(SizeGrid $grid, string $locale): string
+    protected static function applyNormalizedMatch(Builder $sizeValue, string $normalized): void
     {
-        $translated = $grid->translate('name', $locale);
+        $sizeValue->where(function (Builder $match) use ($normalized): void {
+            $match->whereRaw('LOWER(TRIM(value)) = ?', [$normalized])
+                ->orWhereRaw('LOWER(TRIM(COALESCE(display_value, value))) = ?', [$normalized]);
+        });
+    }
 
-        if (filled($translated)) {
-            return (string) $translated;
+    protected static function sortWeight(string $label, int $gridSortOrder): int
+    {
+        static $letterOrder = [
+            'xxxs' => 10,
+            'xxs' => 20,
+            'xs' => 30,
+            's' => 40,
+            'm' => 50,
+            'l' => 60,
+            'xl' => 70,
+            'xxl' => 80,
+            '2xl' => 85,
+            '3xl' => 90,
+            '4xl' => 95,
+            '5xl' => 100,
+        ];
+
+        $key = strtolower(trim($label));
+
+        if (isset($letterOrder[$key])) {
+            return $letterOrder[$key];
         }
 
-        $preset = SizeGridPresetKind::tryFrom((string) $grid->preset_kind);
-
-        if ($preset) {
-            return __('shop.size_grid_labels.'.$preset->value);
+        if (is_numeric($key)) {
+            return 500 + (int) $key;
         }
 
-        return $grid->code;
+        return 1000 + $gridSortOrder;
     }
 }

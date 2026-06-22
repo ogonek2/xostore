@@ -83,10 +83,19 @@ class ProductDetailPresenter
             'category_slug' => $product->primaryCategory?->translate('slug', $locale),
             'images' => $product->images->isNotEmpty()
                 ? $product->images->map(fn ($img) => [
-                    'url' => MediaUrl::fromPath($img->path, $img->disk) ?? asset('images/products/placeholder.jpg'),
+                    'url' => MediaUrl::sized(
+                        $img->path,
+                        $img->disk,
+                        (int) config('shop.media.gallery_width', 1280),
+                    ) ?? asset('images/products/placeholder.jpg'),
+                    'thumb_url' => MediaUrl::sized(
+                        $img->path,
+                        $img->disk,
+                        (int) config('shop.media.thumb_width', 160),
+                    ) ?? asset('images/products/placeholder.jpg'),
                     'alt' => $img->alt ?: $name,
                 ])->all()
-                : [['url' => asset('images/products/placeholder.jpg'), 'alt' => $name]],
+                : [['url' => asset('images/products/placeholder.jpg'), 'thumb_url' => asset('images/products/placeholder.jpg'), 'alt' => $name]],
             'colors' => $colorOptions,
             'color_products' => $colorProducts,
             'sizes' => $sizesForColor,

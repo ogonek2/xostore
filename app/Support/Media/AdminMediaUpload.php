@@ -52,22 +52,34 @@ final class AdminMediaUpload
             return null;
         }
 
-        $extension = strtolower($file->getClientOriginalExtension() ?: 'jpg');
-        $path = $directory.'/'.Str::ulid().'.'.$extension;
-
-        if (! AdminMediaPaths::isAllowed($path)) {
-            return null;
-        }
-
         $realPath = $file->getRealPath();
 
         if (! is_string($realPath) || ! is_readable($realPath)) {
             return null;
         }
 
-        $stream = fopen($realPath, 'rb');
+        $optimizedPath = ProductImageOptimizer::optimize($realPath);
+        $uploadPath = $optimizedPath ?? $realPath;
+        $extension = $optimizedPath !== null
+            ? 'jpg'
+            : strtolower($file->getClientOriginalExtension() ?: 'jpg');
+        $path = $directory.'/'.Str::ulid().'.'.$extension;
+
+        if (! AdminMediaPaths::isAllowed($path)) {
+            if ($optimizedPath !== null) {
+                @unlink($optimizedPath);
+            }
+
+            return null;
+        }
+
+        $stream = fopen($uploadPath, 'rb');
 
         if ($stream === false) {
+            if ($optimizedPath !== null) {
+                @unlink($optimizedPath);
+            }
+
             return null;
         }
 
@@ -76,6 +88,10 @@ final class AdminMediaUpload
         } finally {
             if (is_resource($stream)) {
                 fclose($stream);
+            }
+
+            if ($optimizedPath !== null) {
+                @unlink($optimizedPath);
             }
         }
 

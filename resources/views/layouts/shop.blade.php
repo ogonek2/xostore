@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,15 +11,42 @@
         <title>{{ config('shop.name') }}</title>
     @endisset
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700|cormorant-garamond:400,500,600" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700|cormorant-garamond:400,500,600"
+        rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
+
+    <!-- Meta Pixel Code -->
+    <script>
+        ! function(f, b, e, v, n, t, s) {
+            if (f.fbq) return;
+            n = f.fbq = function() {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n;
+            n.push = n;
+            n.loaded = !0;
+            n.version = '2.0';
+            n.queue = [];
+            t = b.createElement(e);
+            t.async = !0;
+            t.src = v;
+            s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '977524365108591');
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=977524365108591&ev=PageView&noscript=1" /></noscript>
+    <!-- End Meta Pixel Code -->
 </head>
-<body
-    class="flex min-h-screen flex-col bg-surface-DEFAULT font-sans text-text-DEFAULT antialiased"
-    data-analytics-endpoint="{{ route('api.analytics.store', ['locale' => app()->getLocale()]) }}"
->
+
+<body class="flex min-h-screen flex-col bg-surface-DEFAULT font-sans text-text-DEFAULT antialiased"
+    data-analytics-endpoint="{{ route('api.analytics.store', ['locale' => app()->getLocale()]) }}">
     <div class="flex flex-1 flex-col">
         @yield('content')
     </div>
@@ -39,10 +67,7 @@
             'loading' => __('shop.cart.loading'),
         ];
     @endphp
-    <div
-        id="cart-drawer-root"
-        data-vue="cart-drawer"
-        data-locale="{{ $locale }}"
+    <div id="cart-drawer-root" data-vue="cart-drawer" data-locale="{{ $locale }}"
         data-labels="{{ json_encode($cartLabels) }}"
         data-routes="{{ json_encode([
             'show' => route('api.cart.show', ['locale' => $locale]),
@@ -50,8 +75,8 @@
             'update' => route('api.cart.update', ['locale' => $locale, 'item' => '__ITEM__']),
             'destroy' => route('api.cart.destroy', ['locale' => $locale, 'item' => '__ITEM__']),
             'checkout' => route('checkout.show', ['locale' => $locale]),
-        ]) }}"
-    ></div>
+        ]) }}">
+    </div>
 
     @stack('scripts')
 
@@ -72,22 +97,18 @@
     @endphp
 
     @if ($chatProvider === 'telegram' && config('shop.chat.telegram_url'))
-        <a
-            href="{{ config('shop.chat.telegram_url') }}"
-            target="_blank"
-            rel="noopener noreferrer"
+        <a href="{{ config('shop.chat.telegram_url') }}" target="_blank" rel="noopener noreferrer"
             style="position:fixed;right:18px;bottom:18px;z-index:9999;display:inline-flex;align-items:center;gap:8px;padding:10px 14px;background:#229ED9;color:#fff;border-radius:9999px;text-decoration:none;font:600 13px/1 Arial,sans-serif;box-shadow:0 10px 24px rgba(0,0,0,.2);"
-            aria-label="Telegram chat"
-        >
+            aria-label="Telegram chat">
             <span>Telegram</span>
         </a>
     @elseif ($chatProvider === 'jivo' && config('shop.chat.jivo_widget_id'))
-        <script src="//code.jivosite.com/widget/{{ config('shop.chat.jivo_widget_id') }}" async></script>
+        <script src="//code.jivo.ru/widget/{{ config('shop.chat.jivo_widget_id') }}" async></script>
     @elseif ($chatProvider === 'crisp' && config('shop.chat.crisp_website_id'))
         <script>
             window.$crisp = [];
             window.CRISP_WEBSITE_ID = @json(config('shop.chat.crisp_website_id'));
-            (function () {
+            (function() {
                 var d = document;
                 var s = d.createElement('script');
                 s.src = 'https://client.crisp.chat/l.js';
@@ -99,11 +120,12 @@
         <script>
             var Tawk_API = Tawk_API || {};
             var Tawk_LoadStart = new Date();
-            (function () {
+            (function() {
                 var s1 = document.createElement('script');
                 var s0 = document.getElementsByTagName('script')[0];
                 s1.async = true;
-                s1.src = 'https://embed.tawk.to/{{ config('shop.chat.tawk_property_id') }}/{{ config('shop.chat.tawk_widget_id', '1') }}';
+                s1.src =
+                    'https://embed.tawk.to/{{ config('shop.chat.tawk_property_id') }}/{{ config('shop.chat.tawk_widget_id', '1') }}';
                 s1.charset = 'UTF-8';
                 s1.setAttribute('crossorigin', '*');
                 s0.parentNode.insertBefore(s1, s0);
@@ -111,4 +133,5 @@
         </script>
     @endif
 </body>
+
 </html>

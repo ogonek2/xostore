@@ -43,4 +43,40 @@ final class MediaUrl
     {
         return static::fromPath($path, $disk) ?? asset($placeholder);
     }
+
+    public static function sized(?string $path, ?string $disk, int $width, ?int $quality = null): ?string
+    {
+        $url = static::fromPath($path, $disk);
+
+        if ($url === null || $width <= 0) {
+            return $url;
+        }
+
+        if (str_starts_with($url, asset('images/'))) {
+            return $url;
+        }
+
+        if (! config('shop.media.cdn_resize', true)) {
+            return $url;
+        }
+
+        $quality ??= (int) config('shop.media.jpeg_quality', 82);
+
+        if (str_contains($url, '?')) {
+            return $url;
+        }
+
+        return $url.'?width='.$width.'&quality='.$quality;
+    }
+
+    public static function orPlaceholderSized(
+        ?string $path,
+        ?string $disk,
+        string $placeholder,
+        int $width,
+        ?int $quality = null,
+    ): string {
+        return static::sized($path, $disk, $width, $quality)
+            ?? asset($placeholder);
+    }
 }

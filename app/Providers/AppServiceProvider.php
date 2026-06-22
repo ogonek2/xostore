@@ -4,8 +4,12 @@ namespace App\Providers;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductImage;
+use App\Models\ProductVariant;
 use App\Observers\OrderObserver;
+use App\Observers\ProductImageObserver;
 use App\Observers\ProductObserver;
+use App\Observers\ProductVariantObserver;
 use App\Services\Locale\CurrentLanguage;
 use App\Support\Analytics\ShopAnalytics;
 use App\View\Composers\ShopLayoutComposer;
@@ -28,5 +32,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.shop', ShopLayoutComposer::class);
         Order::observe(OrderObserver::class);
         Product::observe(ProductObserver::class);
+        ProductVariant::observe(ProductVariantObserver::class);
+        ProductImage::observe(ProductImageObserver::class);
     }
 }
