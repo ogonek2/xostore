@@ -105,7 +105,7 @@ class ProductListingFacets
             ->map(fn (AttributeValue $value) => [
                 'id' => $value->id,
                 'label' => $value->translate('label', $locale) ?? $value->code,
-                'hex' => $value->color_hex,
+                'hex' => ProductColorService::resolveHex($value->color_hex, colorCode: $value->code),
             ])
             ->values()
             ->all();

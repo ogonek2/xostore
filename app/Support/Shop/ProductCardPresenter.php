@@ -15,6 +15,7 @@ class ProductCardPresenter
             'brand.translates',
             'primaryCategory.translates',
             'images',
+            'color',
             'variants.attributeValues.attribute',
         ]);
 
@@ -91,12 +92,27 @@ class ProductCardPresenter
 
     protected static function resolveColors(Product $product): array
     {
-        return $product->variants
-            ->flatMap(fn ($variant) => $variant->attributeValues)
-            ->filter(fn ($value) => $value->color_hex)
-            ->unique('id')
+        $colors = collect();
+
+        if ($hex = ProductColorService::resolveHex(
+            $product->color_hex,
+            $product->color_id,
+            $product->color_slug,
+        )) {
+            $colors->push($hex);
+        }
+
+        foreach ($product->variants as $variant) {
+            foreach ($variant->attributeValues as $value) {
+                if ($hex = ProductColorService::resolveHex($value->color_hex, colorCode: $value->code)) {
+                    $colors->push($hex);
+                }
+            }
+        }
+
+        return $colors
+            ->unique()
             ->take(6)
-            ->pluck('color_hex')
             ->values()
             ->all();
     }

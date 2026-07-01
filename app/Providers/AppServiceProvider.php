@@ -6,6 +6,8 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
+use App\Models\Color;
+use App\Observers\ColorObserver;
 use App\Observers\OrderObserver;
 use App\Observers\ProductImageObserver;
 use App\Observers\ProductObserver;
@@ -31,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
     {
         View::composer('layouts.shop', ShopLayoutComposer::class);
         Order::observe(OrderObserver::class);
+        Color::observe(ColorObserver::class);
         Product::observe(ProductObserver::class);
         ProductVariant::observe(ProductVariantObserver::class);
         ProductImage::observe(ProductImageObserver::class);

@@ -29,6 +29,54 @@ final class ProductColorService
         return '#'.Str::lower($hex);
     }
 
+    public static function normalizeColorValue(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        $value = trim($value);
+
+        if ($hex = static::normalizeHex($value)) {
+            return $hex;
+        }
+
+        if (preg_match('/^(hsl|hsla|rgb|rgba)\(/i', $value)) {
+            return $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Prefer catalog color over denormalized product / attribute fields.
+     */
+    public static function resolveHex(
+        ?string $colorHex = null,
+        ?int $colorId = null,
+        ?string $colorCode = null,
+    ): ?string {
+        if ($colorId) {
+            $hex = Color::query()->whereKey($colorId)->value('hex');
+
+            if ($resolved = static::normalizeColorValue(is_string($hex) ? $hex : null)) {
+                return $resolved;
+            }
+        }
+
+        if (filled($colorCode)) {
+            $hex = Color::query()
+                ->whereRaw('LOWER(code) = ?', [Str::lower($colorCode)])
+                ->value('hex');
+
+            if ($resolved = static::normalizeColorValue(is_string($hex) ? $hex : null)) {
+                return $resolved;
+            }
+        }
+
+        return static::normalizeColorValue($colorHex);
+    }
+
     public static function findByCodeOrName(string $input): ?Color
     {
         $input = trim($input);
@@ -152,12 +200,12 @@ final class ProductColorService
         $data['color_id'] = $color->id;
         $data['color_label'] = $color->translate('name', $defaultLocale) ?? $color->code;
         $data['color_slug'] = $color->code;
-        $data['color_hex'] = $color->hex;
+        $data['color_hex'] = static::normalizeColorValue($color->hex) ?? $color->hex;
 
         return $data;
     }
 
-    public static function syncProduct(Product $product): void
+    public static function applyColorFromCatalog(Product $product): void
     {
         if (! $product->color_id) {
             return;
@@ -170,11 +218,23 @@ final class ProductColorService
         }
 
         $defaultLocale = (string) config('shop.default_language', 'pl');
+        $hex = static::normalizeColorValue($product->color->hex) ?? $product->color->hex;
 
         $product->forceFill([
             'color_label' => $product->color->translate('name', $defaultLocale) ?? $product->color->code,
             'color_slug' => $product->color->code,
-            'color_hex' => $product->color->hex,
-        ])->saveQuietly();
+            'color_hex' => $hex,
+        ]);
+    }
+
+    public static function syncProduct(Product $product): void
+    {
+        static::applyColorFromCatalog($product);
+
+        if (! $product->color_id || ! $product->isDirty(['color_label', 'color_slug', 'color_hex'])) {
+            return;
+        }
+
+        $product->saveQuietly();
     }
 }

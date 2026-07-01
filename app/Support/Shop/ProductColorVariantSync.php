@@ -17,7 +17,7 @@ class ProductColorVariantSync
         ?string $slug = null,
         string $locale = 'pl',
     ): ?AttributeValue {
-        $hex = trim($hex);
+        $hex = ProductColorService::resolveHex($hex, colorCode: $slug) ?? trim($hex);
         if ($hex === '') {
             return null;
         }
@@ -58,12 +58,18 @@ class ProductColorVariantSync
 
     public static function syncProduct(Product $product, string $locale = 'pl'): void
     {
-        if (! $product->color_hex) {
+        $hex = ProductColorService::resolveHex(
+            $product->color_hex,
+            $product->color_id,
+            $product->color_slug,
+        );
+
+        if (! $hex) {
             return;
         }
 
         $value = static::ensureAttributeValue(
-            hex: $product->color_hex,
+            hex: $hex,
             label: $product->color_label,
             slug: $product->color_slug,
             locale: $locale,

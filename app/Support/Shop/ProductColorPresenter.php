@@ -16,12 +16,18 @@ final class ProductColorPresenter
     {
         $colors = collect();
 
-        if (filled($product->color_hex)) {
+        $productHex = ProductColorService::resolveHex(
+            $product->color_hex,
+            $product->color_id,
+            $product->color_slug,
+        );
+
+        if ($productHex) {
             $colors->push([
                 'id' => 0,
                 'code' => $product->color_slug ?: 'default',
                 'label' => $product->color_label ?: ($product->translate('name', $locale) ?? $product->sku),
-                'hex' => $product->color_hex,
+                'hex' => $productHex,
             ]);
         }
 
@@ -36,7 +42,7 @@ final class ProductColorPresenter
                 'id' => (int) $color->id,
                 'code' => $color->code,
                 'label' => $color->translate('label', $locale) ?? $color->code,
-                'hex' => $color->color_hex,
+                'hex' => ProductColorService::resolveHex($color->color_hex, colorCode: $color->code),
             ]);
         }
 
@@ -99,7 +105,11 @@ final class ProductColorPresenter
         return [
             'id' => $product->id,
             'label' => $product->color_label ?: ($product->translate('name', $locale) ?? $product->sku),
-            'hex' => $product->color_hex,
+            'hex' => ProductColorService::resolveHex(
+                $product->color_hex,
+                $product->color_id,
+                $product->color_slug,
+            ),
             'slug' => $slug,
             'url' => route('product.show', [
                 'locale' => $locale,

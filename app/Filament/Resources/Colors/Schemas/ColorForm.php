@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Colors\Schemas;
 
 use App\Filament\Forms\TranslationTabs;
 use App\Support\Import\ImportUniqueCode;
+use App\Support\Shop\ProductColorService;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -43,7 +44,10 @@ class ColorForm
                     ColorPicker::make('hex')
                         ->label('HEX')
                         ->required()
-                        ->default('#CCCCCC'),
+                        ->default('#CCCCCC')
+                        ->dehydrateStateUsing(
+                            fn (?string $state): string => ProductColorService::normalizeColorValue($state) ?? '#CCCCCC'
+                        ),
                     Toggle::make('is_active')->label('Активен')->default(true),
                     TextInput::make('sort_order')
                         ->label('Порядок')
