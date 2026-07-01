@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Catalogs\Tables;
 
+use App\Enums\CatalogHomepageSection;
 use App\Enums\CatalogType;
 use App\Filament\Support\AdminTableColumns;
 use Filament\Actions\BulkActionGroup;
@@ -43,6 +44,10 @@ class CatalogsTable
                 IconColumn::make('show_on_homepage')
                     ->label('На главной')
                     ->boolean(),
+                TextColumn::make('homepage_section')
+                    ->label('Блок')
+                    ->formatStateUsing(fn ($state) => $state instanceof CatalogHomepageSection ? $state->label() : null)
+                    ->placeholder('—'),
             ])
             ->defaultSort('sort_order')
             ->filters([

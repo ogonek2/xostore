@@ -23,7 +23,7 @@ class CatalogSeeder extends Seeder
         $trendy = $this->catalog('trendy', CatalogType::Mixed, $pl, $en, [
             'pl' => ['name' => 'Trendy', 'slug' => 'trendy'],
             'en' => ['name' => 'Trends', 'slug' => 'trends'],
-        ], showOnHome: true, sort: 1);
+        ], showOnHome: true, homepageSection: 'trending', sort: 1);
 
         $promo = $this->catalog('promotions', CatalogType::Manual, $pl, $en, [
             'pl' => ['name' => 'Promocje', 'slug' => 'promocje'],
@@ -33,7 +33,7 @@ class CatalogSeeder extends Seeder
         $this->catalog('nowynki', CatalogType::Manual, $pl, $en, [
             'pl' => ['name' => 'Nowynki', 'slug' => 'nowynki'],
             'en' => ['name' => 'New in', 'slug' => 'new-in'],
-        ], showOnHome: true, sort: 3);
+        ], showOnHome: true, homepageSection: 'new_arrivals', sort: 3);
 
         $this->catalog('ready_to_ship', CatalogType::Manual, $pl, $en, [
             'pl' => ['name' => 'Towary w magazynie', 'slug' => 'w-magazynie'],
@@ -65,6 +65,7 @@ class CatalogSeeder extends Seeder
         Language $en,
         array $translations,
         bool $showOnHome = false,
+        ?string $homepageSection = null,
         int $sort = 0
     ): Catalog {
         $catalog = Catalog::query()->updateOrCreate(
@@ -73,6 +74,7 @@ class CatalogSeeder extends Seeder
                 'type' => $type,
                 'is_active' => true,
                 'show_on_homepage' => $showOnHome,
+                'homepage_section' => $homepageSection,
                 'sort_order' => $sort,
                 'published_at' => now(),
             ]

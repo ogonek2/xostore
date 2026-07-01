@@ -510,24 +510,6 @@ class ProductExcelImporter
                 $this->upsertVariantDefinition($product, $definition, $line, $index, $result);
             }
         }
-
-        if (! $hasVariantRows && $product->base_price) {
-            $defaultSku = "{$product->sku}-DEFAULT";
-            $exists = $product->variants()->where('sku', $defaultSku)->exists();
-
-            if (! $exists) {
-                ProductVariant::query()->create([
-                    'product_id' => $product->id,
-                    'sku' => $defaultSku,
-                    'price' => $product->base_price,
-                    'compare_at_price' => $product->compare_at_price,
-                    'is_default' => true,
-                    'is_active' => true,
-                    'stock_qty' => 0,
-                ]);
-                $result['variants_created']++;
-            }
-        }
     }
 
     /**

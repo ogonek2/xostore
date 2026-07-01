@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CatalogHomepageSection;
 use App\Enums\CatalogType;
 use App\Models\Concerns\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,7 @@ class Catalog extends Model
         'image_path',
         'is_active',
         'show_on_homepage',
+        'homepage_section',
         'sort_order',
         'published_at',
     ];
@@ -27,6 +29,7 @@ class Catalog extends Model
             'type' => CatalogType::class,
             'is_active' => 'boolean',
             'show_on_homepage' => 'boolean',
+            'homepage_section' => CatalogHomepageSection::class,
             'published_at' => 'datetime',
         ];
     }

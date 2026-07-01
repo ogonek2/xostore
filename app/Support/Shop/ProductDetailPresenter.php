@@ -164,24 +164,90 @@ class ProductDetailPresenter
             array_map(fn (array $card) => $card['product_id'], $cards),
         );
 
-        $random = Product::query()
-            ->published()
-            ->with([
-                'brand.translates',
-                'primaryCategory.translates',
-                'images',
-                'variants.attributeValues',
-                'translates',
-            ])
-            ->whereNotIn('id', $excludeIds)
-            ->inRandomOrder()
-            ->limit($limit - count($cards))
-            ->get();
+        $tiered = static::querySimilarCandidates($product, $excludeIds, $limit - count($cards));
 
         return array_merge(
             $cards,
-            ProductCardPresenter::collection($random, $locale)->all(),
+            ProductCardPresenter::collection($tiered, $locale)->all(),
         );
+    }
+
+    /**
+     * @param  list<int>  $excludeIds
+     */
+    protected static function querySimilarCandidates(Product $product, array $excludeIds, int $limit): Collection
+    {
+        if ($limit <= 0) {
+            return collect();
+        }
+
+        $eager = [
+            'brand.translates',
+            'primaryCategory.translates',
+            'images',
+            'variants.attributeValues',
+            'translates',
+        ];
+
+        $result = collect();
+        $excluded = $excludeIds;
+        $remaining = $limit;
+
+        $append = function (callable $scope, bool $random = false) use (&$result, &$excluded, &$remaining, $eager): void {
+            if ($remaining <= 0) {
+                return;
+            }
+
+            $query = Product::query()
+                ->published()
+                ->with($eager)
+                ->whereNotIn('id', $excluded);
+
+            $scope($query);
+
+            if ($random) {
+                $query->inRandomOrder();
+            } else {
+                $query->orderByDesc('published_at');
+            }
+
+            $found = $query->limit($remaining)->get();
+
+            if ($found->isEmpty()) {
+                return;
+            }
+
+            $result = $result->merge($found);
+            $excluded = array_merge($excluded, $found->pluck('id')->all());
+            $remaining -= $found->count();
+        };
+
+        if ($product->primary_category_id) {
+            $append(fn ($query) => $query->where('primary_category_id', $product->primary_category_id));
+        }
+
+        if ($product->brand_id) {
+            $append(fn ($query) => $query->where('brand_id', $product->brand_id));
+        }
+
+        if (filled($product->color_hex)) {
+            $append(fn ($query) => $query->where('color_hex', $product->color_hex));
+        }
+
+        $categoryIds = $product->categories->pluck('id')->all();
+
+        if ($categoryIds !== []) {
+            $append(fn ($query) => $query->whereHas(
+                'categories',
+                fn ($category) => $category->whereIn('categories.id', $categoryIds),
+            ));
+        }
+
+        if ($remaining > 0) {
+            $append(fn ($query) => $query, random: true);
+        }
+
+        return $result;
     }
 
     protected static function buildRelatedGroups(Product $product, string $locale): array

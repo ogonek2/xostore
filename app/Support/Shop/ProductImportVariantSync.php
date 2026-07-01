@@ -49,6 +49,10 @@ final class ProductImportVariantSync
             return;
         }
 
+        if ($definitions === []) {
+            return;
+        }
+
         $basePrice = (float) ($product->base_price ?? 0);
         $compareAt = $product->compare_at_price ? (float) $product->compare_at_price : null;
 

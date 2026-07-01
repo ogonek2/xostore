@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Catalogs\Schemas;
 
+use App\Enums\CatalogHomepageSection;
 use App\Enums\CatalogType;
 use App\Filament\Forms\TranslationTabs;
 use App\Filament\Support\FilamentMedia;
@@ -47,7 +48,18 @@ class CatalogForm
                             ->default(true),
                         Toggle::make('show_on_homepage')
                             ->label('На главной')
+                            ->helperText('Каталог может выводиться в блоке «Тренды» или «Новинки», если ниже выбран соответствующий раздел.')
+                            ->live()
                             ->default(false),
+                        Select::make('homepage_section')
+                            ->label('Блок на главной')
+                            ->options(collect(CatalogHomepageSection::cases())->mapWithKeys(
+                                fn (CatalogHomepageSection $section) => [$section->value => $section->label()]
+                            ))
+                            ->nullable()
+                            ->native(false)
+                            ->visible(fn (Get $get): bool => (bool) $get('show_on_homepage'))
+                            ->helperText('Товары блока берутся из категорий и ручного списка этого каталога — без отдельных галочек «новинка» / «в тренде».'),
                         DateTimePicker::make('published_at')
                             ->label('Дата публикации')
                             ->seconds(false),
