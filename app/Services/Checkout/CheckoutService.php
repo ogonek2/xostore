@@ -108,6 +108,12 @@ class CheckoutService
                 // Не блокируем оформление при ошибке почты
             }
 
+            try {
+                app(\App\Support\Telegram\TelegramNotifier::class)->notifyOrder($order);
+            } catch (\Throwable) {
+                // Не блокируем оформление при ошибке Telegram
+            }
+
             return $order;
         });
 

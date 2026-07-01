@@ -136,7 +136,7 @@ return [
         'product' => 'Produkt',
         'submit' => 'Wyślij zapytanie',
         'success' => 'Dziękujemy! Skontaktujemy się wkrótce.',
-        'cta' => 'Konsultacja',
+        'cta' => 'Kontakt',
     ],
 
     'product' => [

@@ -14,7 +14,7 @@ class HomepageSettingsResource extends Resource
 {
     protected static ?string $model = HomepageSettings::class;
 
-    protected static ?string $navigationLabel = 'Главная страница';
+    protected static ?string $navigationLabel = 'Редактор главной';
 
     protected static ?string $modelLabel = 'настройки главной';
 

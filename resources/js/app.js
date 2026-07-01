@@ -1,6 +1,7 @@
 import './bootstrap';
 import './shop/trending-swiper';
 import './shop/new-arrivals-swiper';
+import './shop/hero-slider';
 import { initCartBadges } from './shop/cart-badges';
 import { initProductCardAddButtons } from './shop/cart-api';
 import { initShopAnalytics } from './shop/analytics';

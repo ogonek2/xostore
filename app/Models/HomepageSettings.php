@@ -2,28 +2,19 @@
 
 namespace App\Models;
 
+use App\Enums\HomepageBlockType;
 use Illuminate\Database\Eloquent\Model;
 
 class HomepageSettings extends Model
 {
     protected $fillable = [
-        'show_category_showcase',
-        'show_trending_section',
-        'show_promotions_section',
-        'show_new_arrivals_section',
-        'show_banners_section',
-        'category_showcase',
+        'blocks',
     ];
 
     protected function casts(): array
     {
         return [
-            'show_category_showcase' => 'boolean',
-            'show_trending_section' => 'boolean',
-            'show_promotions_section' => 'boolean',
-            'show_new_arrivals_section' => 'boolean',
-            'show_banners_section' => 'boolean',
-            'category_showcase' => 'array',
+            'blocks' => 'array',
         ];
     }
 
@@ -31,13 +22,42 @@ class HomepageSettings extends Model
     {
         return static::query()->firstOrCreate(
             ['id' => 1],
-            [
-                'show_category_showcase' => true,
-                'show_trending_section' => true,
-                'show_promotions_section' => true,
-                'show_new_arrivals_section' => true,
-                'show_banners_section' => true,
-            ],
+            ['blocks' => static::defaultBlocks()],
+        );
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function resolvedBlocks(): array
+    {
+        $blocks = $this->blocks;
+
+        if (is_array($blocks) && $blocks !== []) {
+            return $blocks;
+        }
+
+        return static::defaultBlocks();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public static function defaultBlocks(): array
+    {
+        return array_map(
+            fn (HomepageBlockType $type) => match ($type) {
+                HomepageBlockType::CategoryShowcase => [
+                    'type' => $type->value,
+                    'is_active' => true,
+                    'settings' => ['items' => []],
+                ],
+                default => [
+                    'type' => $type->value,
+                    'is_active' => true,
+                ],
+            },
+            HomepageBlockType::defaults(),
         );
     }
 }

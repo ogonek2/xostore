@@ -10,7 +10,7 @@ class ManageHomepageSettings extends EditRecord
 {
     protected static string $resource = HomepageSettingsResource::class;
 
-    protected static ?string $title = 'Главная страница';
+    protected static ?string $title = 'Редактор главной страницы';
 
     public function mount(int|string|null $record = null): void
     {

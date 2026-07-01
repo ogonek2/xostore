@@ -22,7 +22,7 @@
         @endforeach
     </div>
 @elseif ($layout === 'three_columns')
-    <div class="grid {{ $heightClass }} gap-1 md:grid-cols-3 lg:gap-1">
+    <div class="grid {{ $heightClass }} gap-1 lg:grid-cols-3 lg:gap-1">
         @foreach ($items->take(3) as $item)
             <x-shop.hero-builder-tile
                 :item="$item"

@@ -33,6 +33,14 @@ return [
         'tawk_widget_id' => env('SHOP_CHAT_TAWK_WIDGET_ID'),
     ],
 
+    'telegram' => [
+        'enabled' => (bool) env('TELEGRAM_NOTIFICATIONS_ENABLED', false),
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'chat_id' => env('TELEGRAM_ADMIN_CHAT_ID'),
+        'verify_ssl' => env('TELEGRAM_VERIFY_SSL'),
+        'admin_url' => env('TELEGRAM_ADMIN_URL'),
+    ],
+
     'social' => [
         'instagram' => env('SHOP_INSTAGRAM_URL', 'https://instagram.com'),
         'facebook' => env('SHOP_FACEBOOK_URL', 'https://facebook.com'),

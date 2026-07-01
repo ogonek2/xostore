@@ -10,16 +10,16 @@ use Illuminate\Support\Collection;
 
 class HomepageCategoryShowcase
 {
-    public static function cards(string $locale): Collection
+    public static function cards(string $locale, ?array $items = null): Collection
     {
-        $items = static::configuredItems();
+        $configuredItems = $items ?? static::configuredItems();
 
-        if ($items === []) {
+        if ($configuredItems === []) {
             return collect();
         }
 
-        $categoryIds = collect($items)->pluck('category_id')->filter()->unique()->values();
-        $categoryCodes = collect($items)->pluck('category_code')->filter()->unique()->values();
+        $categoryIds = collect($configuredItems)->pluck('category_id')->filter()->unique()->values();
+        $categoryCodes = collect($configuredItems)->pluck('category_code')->filter()->unique()->values();
 
         $categories = Category::query()
             ->with('translates')
@@ -35,7 +35,7 @@ class HomepageCategoryShowcase
             $categories->pluck('id')->all(),
         );
 
-        return collect($items)->map(function (array $item) use ($categories, $productImages, $locale) {
+        return collect($configuredItems)->map(function (array $item) use ($categories, $productImages, $locale) {
             $category = isset($item['category_id'])
                 ? $categories->get((int) $item['category_id'])
                 : $categories->get($item['category_code'] ?? '');
@@ -77,10 +77,18 @@ class HomepageCategoryShowcase
      */
     protected static function configuredItems(): array
     {
-        $stored = HomepageSettings::instance()->category_showcase;
+        $stored = HomepageSettings::instance()->resolvedBlocks();
 
-        if (is_array($stored) && $stored !== []) {
-            return $stored;
+        foreach ($stored as $block) {
+            if (($block['type'] ?? null) !== 'category_showcase') {
+                continue;
+            }
+
+            $items = $block['settings']['items'] ?? null;
+
+            if (is_array($items) && $items !== []) {
+                return $items;
+            }
         }
 
         return collect(config('shop.homepage_showcase', []))

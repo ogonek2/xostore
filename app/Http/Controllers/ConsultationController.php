@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Support\Seo\SeoBuilder;
 use App\Support\Shop\ShopLayoutData;
 use App\Support\Shop\SlugResolver;
+use App\Support\Telegram\TelegramNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -53,7 +54,7 @@ class ConsultationController extends Controller
             'preferred_at' => ['nullable', 'date'],
         ]);
 
-        ConsultationRequest::query()->create([
+        $consultation = ConsultationRequest::query()->create([
             'status' => ConsultationStatus::New,
             'locale' => $locale,
             'name' => $data['name'],
@@ -63,6 +64,12 @@ class ConsultationController extends Controller
             'message' => $data['message'],
             'preferred_at' => $data['preferred_at'] ?? null,
         ]);
+
+        try {
+            app(TelegramNotifier::class)->notifyConsultation($consultation);
+        } catch (\Throwable) {
+            // Не блокируем отправку формы при ошибке Telegram
+        }
 
         return redirect()
             ->route('consultation.show', ['locale' => $locale])

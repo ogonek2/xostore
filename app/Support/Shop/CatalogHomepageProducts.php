@@ -42,6 +42,47 @@ final class CatalogHomepageProducts
         ];
     }
 
+    /**
+     * @return array{products: Collection, view_all_url: string, catalog: ?Catalog}
+     */
+    public static function forCatalog(int $catalogId, string $locale, int $limit = 12): array
+    {
+        $catalog = Catalog::query()
+            ->where('is_active', true)
+            ->find($catalogId);
+
+        if (! $catalog) {
+            return [
+                'products' => collect(),
+                'view_all_url' => '#',
+                'catalog' => null,
+            ];
+        }
+
+        $query = CatalogProductScope::baseQuery()
+            ->orderByDesc('published_at')
+            ->orderByDesc('id');
+
+        $catalog->loadMissing('categories', 'products');
+
+        if ($catalog->products->isEmpty() && $catalog->categories->isEmpty()) {
+            $products = collect();
+        } else {
+            CatalogProductScope::apply($query, $catalog);
+            static::applyManualSort($query, $catalog);
+            $products = $query->limit($limit)->get();
+        }
+
+        return [
+            'products' => $products,
+            'view_all_url' => route('catalog.show', [
+                'locale' => $locale,
+                'catalog' => $catalog->translate('slug', $locale) ?? $catalog->code,
+            ]),
+            'catalog' => $catalog,
+        ];
+    }
+
     protected static function orderedQuery(CatalogHomepageSection $section): Builder
     {
         $query = CatalogProductScope::baseQuery();
