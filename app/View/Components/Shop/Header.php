@@ -23,6 +23,14 @@ class Header extends Component
     /** @var list<array<string, mixed>> */
     public array $mobileUtilityLinks = [];
 
+    /** @var array{quick_actions: list<array<string, mixed>>, collections: list<array<string, mixed>>, pages: list<array<string, mixed>>, dropdowns: list<array<string, mixed>>} */
+    public array $mobileMenu = [
+        'quick_actions' => [],
+        'collections' => [],
+        'pages' => [],
+        'dropdowns' => [],
+    ];
+
     /**
      * @param  list<array<string, mixed>>  $navigation
      */
@@ -59,11 +67,16 @@ class Header extends Component
             fn (array $item) => ($item['type'] ?? '') !== 'mega' || empty($item['panels'])
         );
         $this->catalogMegaItems = MobileNavUtilities::catalogMegaItems($megaItems);
-        $this->mobileUtilityLinks = MobileNavUtilities::utilityLinks(
+        $this->mobileMenu = MobileNavUtilities::menu(
             $this->cartCount,
             $this->simpleNavItems,
             $this->catalogMegaItems,
         );
+        $this->mobileUtilityLinks = collect($this->mobileMenu['quick_actions'])
+            ->merge($this->mobileMenu['collections'])
+            ->merge($this->mobileMenu['pages'])
+            ->values()
+            ->all();
     }
 
     public function render(): View

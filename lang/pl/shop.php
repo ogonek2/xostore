@@ -17,8 +17,11 @@ return [
         'view_all' => 'Zobacz wszystkie',
         'all_brands' => 'Wszystkie marki',
         'explore_brand' => 'Odkryj',
+        'show_more' => 'Pokaż więcej',
         'open_menu' => 'Otwórz menu',
         'close_menu' => 'Zamknij menu',
+        'collections' => 'Kolekcje',
+        'pages' => 'Więcej',
     ],
     'hero' => [
         'subtitle' => 'Odkryj nową kolekcję',

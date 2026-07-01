@@ -5,7 +5,7 @@
 @if (($item['type'] ?? '') === 'mega' && array_key_exists('mega_index', $item))
     <button
         type="button"
-        class="nav-mega-trigger flex items-center gap-1 text-sm font-medium text-text-DEFAULT transition-colors hover:text-text-muted"
+        class="nav-mega-trigger flex items-center gap-1 text-sm font-medium uppercase tracking-[0.12em] text-text-DEFAULT transition-colors hover:text-text-muted"
         data-mega-trigger="{{ $item['mega_index'] }}"
         aria-expanded="false"
         aria-haspopup="true"
@@ -28,7 +28,7 @@
 @elseif (! empty($item['url']))
     <a
         href="{{ $item['url'] }}"
-        class="text-sm font-medium text-text-DEFAULT transition-colors hover:text-text-muted"
+        class="text-sm font-medium uppercase tracking-[0.12em] text-text-DEFAULT transition-colors hover:text-text-muted"
         @if ($item['open_in_new_tab'] ?? false) target="_blank" rel="noopener noreferrer" @endif
     >
         {{ $item['label'] }}

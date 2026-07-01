@@ -13,9 +13,13 @@ final class MobileNavUtilities
         'catalog_products',
     ];
 
+    /** @var list<string> */
+    private const SHOP_LABELS = ['sklep', 'shop', 'store'];
+
+    /** @var list<string> */
+    private const CONTACT_LABELS = ['kontakt', 'contact', 'konsultacja', 'consultation'];
+
     /**
-     * Mega items for the mobile catalog accordion (categories, brands, catalog links only).
-     *
      * @param  list<array<string, mixed>>  $megaItems
      * @return list<array<string, mixed>>
      */
@@ -41,17 +45,21 @@ final class MobileNavUtilities
     }
 
     /**
-     * Canonical shop links + admin simple nav items (deduped against catalog URLs).
-     *
      * @param  list<array<string, mixed>>  $catalogMegaItems
-     * @return list<array<string, mixed>>
+     * @return array{
+     *     quick_actions: list<array<string, mixed>>,
+     *     collections: list<array<string, mixed>>,
+     *     pages: list<array<string, mixed>>,
+     *     dropdowns: list<array<string, mixed>>
+     * }
      */
-    public static function utilityLinks(int $cartCount, Collection $simpleNavItems, array $catalogMegaItems): array
+    public static function menu(int $cartCount, Collection $simpleNavItems, array $catalogMegaItems): array
     {
         $locale = app()->getLocale();
         $catalogUrls = static::collectUrls($catalogMegaItems);
+        $collectionUrls = static::collectionUrls($locale);
 
-        $links = [
+        $quickActions = [
             [
                 'label' => __('shop.search'),
                 'action' => 'search',
@@ -61,6 +69,9 @@ final class MobileNavUtilities
                 'action' => 'cart',
                 'badge' => $cartCount,
             ],
+        ];
+
+        $collections = [
             [
                 'label' => __('shop.footer.links.promotions'),
                 'url' => route('catalog.show', [
@@ -82,36 +93,137 @@ final class MobileNavUtilities
                     'catalog' => $locale === 'en' ? 'trends' : 'trendy',
                 ]),
             ],
-            [
-                'label' => __('shop.nav.shop'),
-                'url' => route('products.index', ['locale' => $locale]),
-            ],
-            [
-                'label' => __('shop.footer.links.contact'),
-                'url' => route('consultation.show', ['locale' => $locale]),
-            ],
         ];
 
-        foreach ($simpleNavItems as $item) {
-            $url = $item['url'] ?? null;
+        $pages = [];
+        $dropdowns = [];
+        $seenLabels = [];
+        $seenUrls = [];
 
-            if (! $url || static::urlIsListed($url, $catalogUrls)) {
+        foreach ($simpleNavItems as $item) {
+            if (! empty($item['children'])) {
+                $dropdowns[] = $item;
+
                 continue;
             }
 
-            $links[] = [
-                'label' => $item['label'],
-                'url' => $url,
-                'open_in_new_tab' => (bool) ($item['open_in_new_tab'] ?? false),
-            ];
+            $url = $item['url'] ?? null;
 
-            $catalogUrls[] = $url;
+            if (! $url || static::urlIsListed($url, $catalogUrls) || static::urlIsListed($url, $collectionUrls)) {
+                continue;
+            }
+
+            if (static::registerLink($item, $seenLabels, $seenUrls)) {
+                $pages[] = [
+                    'label' => $item['label'],
+                    'url' => $url,
+                    'open_in_new_tab' => (bool) ($item['open_in_new_tab'] ?? false),
+                ];
+            }
         }
 
-        return collect($links)
-            ->unique(fn (array $link) => $link['action'] ?? $link['url'] ?? $link['label'])
+        if (! static::hasLabelKind($pages, self::SHOP_LABELS)) {
+            $shopLink = [
+                'label' => __('shop.nav.shop'),
+                'url' => route('products.index', ['locale' => $locale]),
+            ];
+
+            if (static::registerLink($shopLink, $seenLabels, $seenUrls)) {
+                $pages[] = $shopLink;
+            }
+        }
+
+        if (! static::hasLabelKind($pages, self::CONTACT_LABELS)) {
+            $contactLink = [
+                'label' => __('shop.nav.contact'),
+                'url' => route('consultation.show', ['locale' => $locale]),
+            ];
+
+            if (static::registerLink($contactLink, $seenLabels, $seenUrls)) {
+                $pages[] = $contactLink;
+            }
+        }
+
+        return [
+            'quick_actions' => $quickActions,
+            'collections' => $collections,
+            'pages' => $pages,
+            'dropdowns' => $dropdowns,
+        ];
+    }
+
+    /**
+     * @deprecated Use menu() instead.
+     *
+     * @param  list<array<string, mixed>>  $catalogMegaItems
+     * @return list<array<string, mixed>>
+     */
+    public static function utilityLinks(int $cartCount, Collection $simpleNavItems, array $catalogMegaItems): array
+    {
+        $menu = static::menu($cartCount, $simpleNavItems, $catalogMegaItems);
+
+        return collect($menu['quick_actions'])
+            ->merge($menu['collections'])
+            ->merge($menu['pages'])
             ->values()
             ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected static function collectionUrls(string $locale): array
+    {
+        return [
+            rtrim(route('catalog.show', ['locale' => $locale, 'catalog' => $locale === 'en' ? 'promotions' : 'promocje']), '/'),
+            rtrim(route('catalog.show', ['locale' => $locale, 'catalog' => $locale === 'en' ? 'new-in' : 'nowynki']), '/'),
+            rtrim(route('catalog.show', ['locale' => $locale, 'catalog' => $locale === 'en' ? 'trends' : 'trendy']), '/'),
+        ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $links
+     * @param  list<string>  $kinds
+     */
+    protected static function hasLabelKind(array $links, array $kinds): bool
+    {
+        foreach ($links as $link) {
+            $label = static::normalizeLabel((string) ($link['label'] ?? ''));
+
+            if (in_array($label, $kinds, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, bool>  $seenLabels
+     * @param  list<string>  $seenUrls
+     */
+    protected static function registerLink(array $link, array &$seenLabels, array &$seenUrls): bool
+    {
+        $label = static::normalizeLabel((string) ($link['label'] ?? ''));
+        $url = rtrim((string) ($link['url'] ?? ''), '/');
+
+        if ($label === '' || $url === '') {
+            return false;
+        }
+
+        if (isset($seenLabels[$label]) || in_array($url, $seenUrls, true)) {
+            return false;
+        }
+
+        $seenLabels[$label] = true;
+        $seenUrls[] = $url;
+
+        return true;
+    }
+
+    protected static function normalizeLabel(string $label): string
+    {
+        return mb_strtolower(trim($label));
     }
 
     /**

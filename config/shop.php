@@ -80,6 +80,7 @@ return [
 
     'mega_menu' => [
         'product_limit' => (int) env('SHOP_MEGA_MENU_PRODUCT_LIMIT', 4),
+        'mobile_link_limit' => (int) env('SHOP_MEGA_MENU_MOBILE_LINK_LIMIT', 8),
     ],
 
     'homepage_banners' => [

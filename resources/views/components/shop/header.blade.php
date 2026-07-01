@@ -172,13 +172,32 @@
                 </div>
 
                 <div class="flex-1 overflow-y-auto px-5 py-4">
+                    @if (! empty($mobileMenu['quick_actions']))
+                        <div class="grid grid-cols-2 gap-2">
+                            @foreach ($mobileMenu['quick_actions'] as $link)
+                                <button
+                                    type="button"
+                                    class="inline-flex min-h-11 items-center justify-center gap-2 border border-border-DEFAULT px-3 text-sm font-medium uppercase tracking-[0.12em] text-text-DEFAULT transition-colors hover:bg-surface-muted"
+                                    data-mobile-nav-action="{{ $link['action'] }}"
+                                >
+                                    <span>{{ $link['label'] }}</span>
+                                    @if (($link['badge'] ?? 0) > 0)
+                                        <span class="flex size-5 items-center justify-center rounded-full bg-primary-DEFAULT text-[10px] font-semibold text-text-inverse">
+                                            {{ $link['badge'] }}
+                                        </span>
+                                    @endif
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+
                     @if ($catalogMegaItems !== [])
-                        <div class="mt-2 border-b border-border-DEFAULT pt-2">
+                        <div @class(['border-b border-border-DEFAULT', empty($mobileMenu['quick_actions']) ? 'mt-2 pt-2' : 'mt-5 pb-2'])>
                             <button
                                 type="button"
                                 data-mobile-catalog-toggle
                                 aria-expanded="false"
-                                class="flex w-full items-center justify-between py-3.5 text-left text-sm font-medium text-text-DEFAULT"
+                                class="flex w-full items-center justify-between py-3 text-left text-sm font-semibold uppercase tracking-[0.12em] text-text-DEFAULT"
                             >
                                 <span>{{ __('shop.nav.catalog') }}</span>
                                 <svg class="size-4 shrink-0 text-text-muted transition-transform" data-mobile-catalog-icon viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -186,48 +205,59 @@
                                 </svg>
                             </button>
 
-                            <div data-mobile-catalog-panel class="hidden border-t border-border-DEFAULT/60 pb-4 pt-3">
+                            <div data-mobile-catalog-panel class="hidden max-h-[min(52vh,22rem)] overflow-y-auto border-t border-border-DEFAULT/60 pb-3 pt-3 [-webkit-overflow-scrolling:touch]">
                                 <x-shop.nav-mega-mobile :mega-items="$catalogMegaItems" />
                             </div>
                         </div>
                     @endif
-                    
-                    @if ($mobileUtilityLinks !== [])
-                        <ul class="divide-y divide-border-DEFAULT/80">
-                            @foreach ($mobileUtilityLinks as $link)
-                                <li>
-                                    @if (! empty($link['action']))
-                                        <button
-                                            type="button"
-                                            class="flex w-full items-center justify-between py-3.5 text-left text-sm font-medium text-text-DEFAULT"
-                                            data-mobile-nav-action="{{ $link['action'] }}"
-                                        >
-                                            <span>{{ $link['label'] }}</span>
-                                            @if (($link['badge'] ?? 0) > 0)
-                                                <span class="flex size-5 items-center justify-center rounded-full bg-primary-DEFAULT text-[10px] font-semibold text-text-inverse">
-                                                    {{ $link['badge'] }}
-                                                </span>
-                                            @endif
-                                        </button>
-                                    @else
+
+                    @if (! empty($mobileMenu['collections']))
+                        <div class="border-b border-border-DEFAULT py-4">
+                            <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                                {{ __('shop.nav.collections') }}
+                            </p>
+                            <ul class="space-y-0.5">
+                                @foreach ($mobileMenu['collections'] as $link)
+                                    <li>
                                         <a
                                             href="{{ $link['url'] }}"
-                                            class="block py-3.5 text-sm font-medium text-text-DEFAULT"
+                                            class="block py-2.5 text-sm font-medium uppercase tracking-[0.12em] text-text-DEFAULT"
+                                            data-mobile-nav-link
+                                        >
+                                            {{ $link['label'] }}
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    @if (! empty($mobileMenu['pages']))
+                        <div class="border-b border-border-DEFAULT py-4">
+                            <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                                {{ __('shop.nav.pages') }}
+                            </p>
+                            <ul class="space-y-0.5">
+                                @foreach ($mobileMenu['pages'] as $link)
+                                    <li>
+                                        <a
+                                            href="{{ $link['url'] }}"
+                                            class="block py-2.5 text-sm font-medium uppercase tracking-[0.12em] text-text-DEFAULT"
                                             data-mobile-nav-link
                                             @if ($link['open_in_new_tab'] ?? false) target="_blank" rel="noopener noreferrer" @endif
                                         >
                                             {{ $link['label'] }}
                                         </a>
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ul>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
                     @endif
 
-                    @foreach ($simpleNavItems->filter(fn ($item) => ! empty($item['children'])) as $item)
-                        <div class="mt-2 border-t border-border-DEFAULT pt-2">
+                    @foreach ($mobileMenu['dropdowns'] ?? [] as $item)
+                        <div class="border-b border-border-DEFAULT py-2 last:border-b-0">
                             <details class="group">
-                                <summary class="flex cursor-pointer list-none items-center justify-between py-3.5 text-sm font-medium text-text-DEFAULT [&::-webkit-details-marker]:hidden">
+                                <summary class="flex cursor-pointer list-none items-center justify-between py-3 text-sm font-medium uppercase tracking-[0.12em] text-text-DEFAULT [&::-webkit-details-marker]:hidden">
                                     {{ $item['label'] }}
                                     <svg class="size-4 text-text-muted transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                         <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
@@ -238,7 +268,7 @@
                                         <li>
                                             <a
                                                 href="{{ $child['url'] ?? '#' }}"
-                                                class="block py-2 text-sm text-text-muted"
+                                                class="block py-2 text-sm uppercase tracking-[0.1em] text-text-muted"
                                                 data-mobile-nav-link
                                             >
                                                 {{ $child['label'] }}
