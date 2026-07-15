@@ -3,6 +3,7 @@
     'positionMap',
     'textClass',
     'imageFit' => 'cover',
+    'autoHeight' => false,
 ])
 
 @php
@@ -12,19 +13,18 @@
     $position = $positionMap[$item['text_position'] ?? 'bottom_left'] ?? $positionMap['bottom_left'];
     $href = $item['link_url'] ?: ($item['button_url'] ?: null);
     $isContain = $imageFit === 'contain';
-    $imgClass = $isContain
-        ? 'absolute inset-0 h-full w-full object-contain object-center'
-        : 'absolute inset-0 h-full w-full object-cover object-center';
+    $imgClass = $autoHeight
+        ? 'block h-auto w-full'
+        : ($isContain
+            ? 'absolute inset-0 h-full w-full object-contain object-center'
+            : 'absolute inset-0 h-full w-full object-cover object-center');
 @endphp
 
-<article {{ $attributes->class([
-    'relative min-h-0 overflow-hidden',
-    'bg-[#eceae6]' => $isContain,
-]) }}>
+<article {{ $attributes->class(['relative min-h-0 overflow-hidden']) }}>
     @if ($href)
-        <a href="{{ $href }}" class="relative block h-full">
+        <a href="{{ $href }}" @class(['relative block', 'h-full' => ! $autoHeight])>
     @else
-        <div class="relative block h-full">
+        <div @class(['relative', 'h-full' => ! $autoHeight])>
     @endif
         <img
             src="{{ $item['image'] }}"

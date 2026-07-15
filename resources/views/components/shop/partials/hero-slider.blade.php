@@ -2,17 +2,19 @@
     'tiles',
     'positionMap',
     'textClass',
-    /**
-     * Fixed frame for every slide — keeps slider height stable with object-contain.
-     * Tall images scale down; wide images letterbox on the sides.
-     */
-    'slideHeight' => 'h-[min(72vw,22rem)] sm:h-[min(56vw,26rem)]',
+    'slideHeight' => 'h-[min(48vw,15rem)] sm:h-[min(42vw,18rem)]',
     'imageFit' => 'contain',
+    'autoHeight' => false,
+    'widthClass' => 'w-full',
     'controlsClass' => 'mt-3 flex min-h-8 items-center justify-between gap-4 px-5 lg:px-0',
 ])
 
+@php
+    $useAuto = $autoHeight && $tiles->count() === 1;
+@endphp
+
 @if ($tiles->count() > 1)
-    <div class="relative" data-hero-slider>
+    <div class="relative {{ $widthClass }}" data-hero-slider>
         <div class="overflow-hidden">
             <div class="flex w-full transition-transform duration-500 ease-out will-change-transform" data-hero-track>
                 @foreach ($tiles as $item)
@@ -68,15 +70,15 @@
         </div>
     </div>
 @elseif ($tiles->count() === 1)
-    <div>
+    <div class="{{ $widthClass }}">
         <x-shop.hero-builder-tile
             :item="$tiles->first()"
             :position-map="$positionMap"
             :text-class="$textClass"
             :image-fit="$imageFit"
-            :class="$slideHeight"
+            :auto-height="$useAuto"
+            :class="$useAuto ? 'w-full' : $slideHeight"
         />
-        {{-- Reserve the same space as slider controls so a single banner doesn't fuse with the next block --}}
         <div class="{{ $controlsClass }}" aria-hidden="true"></div>
     </div>
 @endif

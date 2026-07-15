@@ -24,6 +24,9 @@ class HomepageHeroBanners
             ->map(fn ($section) => [
                 'name' => $section->name,
                 'layout' => $section->layout,
+                'height_preset' => $section->height_preset ?: 'auto',
+                'width_preset' => $section->width_preset ?: 'full',
+                'image_fit' => HeroBannerFrame::normalizeFit($section->image_fit),
                 'items' => $section->items
                     ->map(fn ($item) => [
                         'title' => $item->translate('title', $locale),

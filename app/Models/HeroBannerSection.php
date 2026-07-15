@@ -12,6 +12,9 @@ class HeroBannerSection extends Model
         'name',
         'code',
         'layout',
+        'height_preset',
+        'width_preset',
+        'image_fit',
         'sort_order',
         'is_active',
     ];

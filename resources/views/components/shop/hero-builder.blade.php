@@ -3,6 +3,8 @@
 ])
 
 @php
+    use App\Support\Shop\HeroBannerFrame;
+
     $sections = collect($sections)
         ->filter(fn ($section) => collect($section['items'] ?? [])->contains(fn ($item) => ! empty($item['image'])))
         ->values();
@@ -21,7 +23,14 @@
 
     $mobileTiles = $sections->flatMap($sectionTiles)->values();
     $hasMultipleDesktopSections = $sections->count() > 1;
-    $slideHeight = 'h-[min(72vw,22rem)] sm:h-[min(56vw,26rem)] lg:h-[min(42vw,32rem)]';
+
+    // Mobile slider shared frame from first section (stable height across slides).
+    $first = $sections->first() ?? [];
+    $mobileHeightPreset = $first['height_preset'] ?? 'auto';
+    $mobileFit = HeroBannerFrame::normalizeFit($first['image_fit'] ?? 'contain');
+    $mobileWidth = HeroBannerFrame::widthClass($first['width_preset'] ?? 'full');
+    $mobileAuto = HeroBannerFrame::isAutoHeight($mobileHeightPreset) && $mobileTiles->count() === 1;
+    $mobileSlideHeight = HeroBannerFrame::heightClass($mobileHeightPreset, forSlider: $mobileTiles->count() > 1);
 
     $positionMap = [
         'top_left' => 'items-start justify-start text-left',
@@ -41,14 +50,16 @@
 @endphp
 
 @if ($sections->isNotEmpty())
-    <section class="mx-auto max-w-[90rem] px-0 pb-2 lg:px-8 lg:pb-4">
+    <section class="mx-auto w-full pb-2 lg:pb-4">
         <div class="lg:hidden">
             @include('components.shop.partials.hero-slider', [
                 'tiles' => $mobileTiles,
                 'positionMap' => $positionMap,
                 'textClass' => $textClass,
-                'slideHeight' => $slideHeight,
-                'imageFit' => 'contain',
+                'slideHeight' => $mobileSlideHeight,
+                'imageFit' => $mobileFit,
+                'autoHeight' => $mobileAuto,
+                'widthClass' => $mobileWidth,
             ])
         </div>
 
@@ -58,7 +69,7 @@
                     <div class="overflow-hidden">
                         <div class="flex w-full transition-transform duration-500 ease-out will-change-transform" data-hero-track>
                             @foreach ($sections as $section)
-                                <div class="w-full min-w-full shrink-0 grow-0 basis-full">
+                                <div class="w-full min-w-full shrink-0 grow-0 basis-full px-8">
                                     <x-shop.hero-builder-layout
                                         :section="$section"
                                         :position-map="$positionMap"
@@ -69,7 +80,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-3 flex min-h-8 items-center justify-between gap-4">
+                    <div class="mt-3 flex min-h-8 items-center justify-between gap-4 px-8">
                         <div class="flex items-center gap-2">
                             @foreach ($sections as $index => $unused)
                                 <button
@@ -108,13 +119,12 @@
                     </div>
                 </div>
             @else
-                <div>
+                <div class="px-8">
                     <x-shop.hero-builder-layout
                         :section="$sections->first()"
                         :position-map="$positionMap"
                         :text-class="$textClass"
                     />
-                    {{-- Same footprint as slider controls when pagination is hidden --}}
                     <div class="mt-3 min-h-8" aria-hidden="true"></div>
                 </div>
             @endif

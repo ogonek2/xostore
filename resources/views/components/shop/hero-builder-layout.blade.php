@@ -5,13 +5,19 @@
 ])
 
 @php
+    use App\Support\Shop\HeroBannerFrame;
+
     $layout = $section['layout'] ?? 'single';
     $items = collect($section['items'] ?? [])->filter(fn ($item) => ! empty($item['image']))->values();
-    // Grid layouts need a shared cell height + cover. Full-width single uses a capped frame + contain.
-    $gridHeight = 'h-[18rem] sm:h-[23rem] lg:h-[32rem]';
-    $singleHeight = 'h-[min(72vw,22rem)] sm:h-[min(56vw,26rem)] lg:h-[min(42vw,32rem)]';
+    $heightPreset = $section['height_preset'] ?? 'auto';
+    $imageFit = HeroBannerFrame::normalizeFit($section['image_fit'] ?? 'contain');
+    $widthClass = HeroBannerFrame::widthClass($section['width_preset'] ?? 'full');
+    $isAuto = HeroBannerFrame::isAutoHeight($heightPreset);
+    $gridHeight = HeroBannerFrame::heightClass($isAuto ? 'lg' : $heightPreset);
+    $singleHeight = HeroBannerFrame::heightClass($heightPreset);
 @endphp
 
+<div class="{{ $widthClass }}">
 @if ($layout === 'two_columns')
     <div class="grid {{ $gridHeight }} gap-4 lg:grid-cols-2 lg:gap-6">
         @foreach ($items->take(2) as $item)
@@ -70,7 +76,9 @@
         :item="$items->first()"
         :position-map="$positionMap"
         :text-class="$textClass"
-        image-fit="contain"
-        :class="$singleHeight"
+        :image-fit="$imageFit"
+        :auto-height="$isAuto"
+        :class="$isAuto ? 'w-full' : $singleHeight"
     />
 @endif
+</div>
