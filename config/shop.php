@@ -92,6 +92,7 @@ return [
             'title',
             'link_url',
         ],
+        'required_translation_fields' => [],
     ],
 
     'checkout' => [
@@ -177,6 +178,8 @@ return [
             'subtitle',
             'button_label',
         ],
+        // Only image is required for hero cards — texts and CTA stay optional.
+        'required_translation_fields' => [],
     ],
 
     'attribute_group' => [

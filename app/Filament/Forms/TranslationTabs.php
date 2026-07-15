@@ -20,13 +20,14 @@ class TranslationTabs
     public static function make(string $configKey, ?string $heading = null, ?array $onlyFields = null): Tabs
     {
         $fields = $onlyFields ?? config("shop.{$configKey}.translatable_fields", ['name', 'slug']);
+        $requiredFields = config("shop.{$configKey}.required_translation_fields");
         $languages = Language::query()->where('is_active', true)->orderBy('sort_order')->get();
 
         return Tabs::make($heading ?? __('admin.translations'))
             ->tabs(
-                $languages->map(function (Language $language) use ($fields) {
+                $languages->map(function (Language $language) use ($fields, $requiredFields) {
                     $schema = collect($fields)->map(
-                        fn (string $field) => static::fieldComponent($field, $language->code)
+                        fn (string $field) => static::fieldComponent($field, $language->code, $requiredFields)
                     )->all();
 
                     return Tab::make($language->name)
@@ -36,12 +37,16 @@ class TranslationTabs
             ->columnSpanFull();
     }
 
-    protected static function fieldComponent(string $field, string $locale): TextInput|Textarea|RichEditor
+    /**
+     * @param  list<string>|null  $requiredFields
+     */
+    protected static function fieldComponent(string $field, string $locale, ?array $requiredFields = null): TextInput|Textarea|RichEditor
     {
         $name = "trans_{$locale}_{$field}";
         $label = __('admin.fields.'.$field, [], 'ru');
         $defaultLocale = (string) config('shop.default_language', 'pl');
-        $isRequiredOnLocale = in_array($field, ['name', 'title', 'label'], true) && $locale === $defaultLocale;
+        $primaryFields = $requiredFields ?? ['name', 'title', 'label'];
+        $isRequiredOnLocale = in_array($field, $primaryFields, true) && $locale === $defaultLocale;
 
         if ($label === 'admin.fields.'.$field) {
             $label = ucfirst(str_replace('_', ' ', $field));

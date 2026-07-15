@@ -17,6 +17,7 @@ class HeroBannerItem extends Model
         'button_url',
         'text_position',
         'text_color',
+        'darken_overlay',
         'overlay_opacity',
         'sort_order',
         'is_active',
@@ -26,6 +27,7 @@ class HeroBannerItem extends Model
     {
         return [
             'is_active' => 'boolean',
+            'darken_overlay' => 'boolean',
             'overlay_opacity' => 'integer',
         ];
     }

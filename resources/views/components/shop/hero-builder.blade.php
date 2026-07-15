@@ -21,6 +21,7 @@
 
     $mobileTiles = $sections->flatMap($sectionTiles)->values();
     $hasMultipleDesktopSections = $sections->count() > 1;
+    $slideHeight = 'h-[min(72vw,22rem)] sm:h-[min(56vw,26rem)] lg:h-[min(42vw,32rem)]';
 
     $positionMap = [
         'top_left' => 'items-start justify-start text-left',
@@ -40,13 +41,14 @@
 @endphp
 
 @if ($sections->isNotEmpty())
-    <section class="mx-auto max-w-[90rem] px-0 lg:px-8">
+    <section class="mx-auto max-w-[90rem] px-0 pb-2 lg:px-8 lg:pb-4">
         <div class="lg:hidden">
             @include('components.shop.partials.hero-slider', [
                 'tiles' => $mobileTiles,
                 'positionMap' => $positionMap,
                 'textClass' => $textClass,
-                'slideHeight' => 'h-[18rem] sm:h-[23rem]',
+                'slideHeight' => $slideHeight,
+                'imageFit' => 'contain',
             ])
         </div>
 
@@ -67,7 +69,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-3 flex items-center justify-between gap-4">
+                    <div class="mt-3 flex min-h-8 items-center justify-between gap-4">
                         <div class="flex items-center gap-2">
                             @foreach ($sections as $index => $unused)
                                 <button
@@ -106,11 +108,15 @@
                     </div>
                 </div>
             @else
-                <x-shop.hero-builder-layout
-                    :section="$sections->first()"
-                    :position-map="$positionMap"
-                    :text-class="$textClass"
-                />
+                <div>
+                    <x-shop.hero-builder-layout
+                        :section="$sections->first()"
+                        :position-map="$positionMap"
+                        :text-class="$textClass"
+                    />
+                    {{-- Same footprint as slider controls when pagination is hidden --}}
+                    <div class="mt-3 min-h-8" aria-hidden="true"></div>
+                </div>
             @endif
         </div>
     </section>

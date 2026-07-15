@@ -2,8 +2,13 @@
     'tiles',
     'positionMap',
     'textClass',
-    'slideHeight' => 'h-[18rem] sm:h-[23rem]',
-    'controlsClass' => 'mt-3 flex items-center justify-between gap-4 px-5 lg:px-0',
+    /**
+     * Fixed frame for every slide — keeps slider height stable with object-contain.
+     * Tall images scale down; wide images letterbox on the sides.
+     */
+    'slideHeight' => 'h-[min(72vw,22rem)] sm:h-[min(56vw,26rem)]',
+    'imageFit' => 'contain',
+    'controlsClass' => 'mt-3 flex min-h-8 items-center justify-between gap-4 px-5 lg:px-0',
 ])
 
 @if ($tiles->count() > 1)
@@ -16,6 +21,7 @@
                             :item="$item"
                             :position-map="$positionMap"
                             :text-class="$textClass"
+                            :image-fit="$imageFit"
                             :class="$slideHeight"
                         />
                     </div>
@@ -62,10 +68,15 @@
         </div>
     </div>
 @elseif ($tiles->count() === 1)
-    <x-shop.hero-builder-tile
-        :item="$tiles->first()"
-        :position-map="$positionMap"
-        :text-class="$textClass"
-        :class="$slideHeight"
-    />
+    <div>
+        <x-shop.hero-builder-tile
+            :item="$tiles->first()"
+            :position-map="$positionMap"
+            :text-class="$textClass"
+            :image-fit="$imageFit"
+            :class="$slideHeight"
+        />
+        {{-- Reserve the same space as slider controls so a single banner doesn't fuse with the next block --}}
+        <div class="{{ $controlsClass }}" aria-hidden="true"></div>
+    </div>
 @endif

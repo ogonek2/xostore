@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
@@ -69,22 +70,26 @@ class HeroBannerItemsRelationManager extends RelationManager
                             'bottom_center' => 'Снизу по центру',
                             'bottom_right' => 'Снизу справа',
                         ])
-                        ->default('bottom_left')
-                        ->required(),
+                        ->default('bottom_left'),
                     Select::make('text_color')
                         ->label('Цвет текста')
                         ->options([
                             'light' => 'Светлый',
                             'dark' => 'Тёмный',
                         ])
-                        ->default('light')
-                        ->required(),
+                        ->default('light'),
+                    Toggle::make('darken_overlay')
+                        ->label('Затемнять полотно')
+                        ->helperText('Тёмный оверлей поверх картинки. Выключите, если изображение должно остаться ярким.')
+                        ->default(true)
+                        ->live(),
                     TextInput::make('overlay_opacity')
-                        ->label('Затемнение (0–90)')
+                        ->label('Сила затемнения (0–90)')
                         ->numeric()
                         ->minValue(0)
                         ->maxValue(90)
-                        ->default(30),
+                        ->default(30)
+                        ->visible(fn (Get $get): bool => (bool) $get('darken_overlay')),
                     TextInput::make('sort_order')
                         ->label('Позиция в сетке')
                         ->numeric()

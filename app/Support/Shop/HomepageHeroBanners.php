@@ -34,6 +34,7 @@ class HomepageHeroBanners
                         'button_url' => $item->button_url,
                         'text_position' => $item->text_position,
                         'text_color' => $item->text_color,
+                        'darken_overlay' => (bool) $item->darken_overlay,
                         'overlay_opacity' => max(0, min(90, (int) $item->overlay_opacity)),
                     ])
                     ->values()
