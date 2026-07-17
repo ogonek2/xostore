@@ -35,4 +35,30 @@ return [
         ],
     ],
 
+    'payment_bridge' => [
+        'enabled' => (bool) env('PAYMENT_BRIDGE_ENABLED', false),
+        'inbound_secret' => env('PAYMENT_BRIDGE_INBOUND_SECRET'),
+        'outbound_secret' => env('PAYMENT_BRIDGE_OUTBOUND_SECRET'),
+        'time_window' => (int) env('PAYMENT_BRIDGE_TIME_WINDOW', 300),
+        'com_payment_url' => env('COM_PAYMENT_URL'),
+        'allowed_return_hosts' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('PAYMENT_BRIDGE_ALLOWED_RETURN_HOSTS', 'xostore.com,www.xostore.com'))
+        ))),
+        'reconciliation_enabled' => (bool) env('PAYMENT_BRIDGE_RECONCILIATION_ENABLED', false),
+        'reconcile_after_minutes' => (int) env('PAYMENT_BRIDGE_RECONCILE_AFTER_MINUTES', 15),
+    ],
+
+    'payu' => [
+        'environment' => env('PAYU_ENVIRONMENT', 'sandbox'),
+        'pos_id' => env('PAYU_POS_ID'),
+        'client_id' => env('PAYU_CLIENT_ID'),
+        'client_secret' => env('PAYU_CLIENT_SECRET'),
+        'second_key' => env('PAYU_SECOND_KEY'),
+        'redirect_hosts' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('PAYU_REDIRECT_HOSTS', 'secure.snd.payu.com,secure.payu.com'))
+        ))),
+    ],
+
 ];

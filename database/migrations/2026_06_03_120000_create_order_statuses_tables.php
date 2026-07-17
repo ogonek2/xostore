@@ -41,14 +41,18 @@ return new class extends Migration
         $this->migrateOrders();
 
         Schema::table('orders', function (Blueprint $table) {
+            $table->dropIndex(['status', 'placed_at']);
             $table->dropColumn('status');
+            $table->index(['order_status_id', 'placed_at']);
         });
     }
 
     public function down(): void
     {
         Schema::table('orders', function (Blueprint $table) {
+            $table->dropIndex(['order_status_id', 'placed_at']);
             $table->string('status', 32)->default('pending')->after('access_token');
+            $table->index(['status', 'placed_at']);
         });
 
         Schema::table('orders', function (Blueprint $table) {

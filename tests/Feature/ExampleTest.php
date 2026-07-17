@@ -2,18 +2,22 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Database\Seeders\LanguageSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
+    use RefreshDatabase;
+
+    public function test_the_root_redirects_to_the_default_locale(): void
     {
+        $this->seed(LanguageSeeder::class);
+
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertRedirect(route('home', [
+            'locale' => config('shop.default_language'),
+        ]));
     }
 }
