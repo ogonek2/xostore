@@ -13,7 +13,7 @@ Route::post('/payu/notifications', PayUNotificationController::class)
     ->middleware('throttle:payu-notifications')
     ->name('payu.notifications');
 
-Route::get('/payu/return/{brokerPaymentId}/{token}', PayUReturnController::class)
+Route::match(['GET', 'POST'], '/payu/return/{brokerPaymentId}/{token}', PayUReturnController::class)
     ->whereUuid('brokerPaymentId')
     ->where('token', '[A-Za-z0-9]{64}')
     ->name('payu.return');

@@ -217,6 +217,10 @@ class PaymentBridgeTest extends TestCase
             'brokerPaymentId' => $intent->broker_payment_id,
             'token' => $intent->return_token,
         ]))->assertRedirect($intent->return_url);
+        $this->post(route('payu.return', [
+            'brokerPaymentId' => $intent->broker_payment_id,
+            'token' => $intent->return_token,
+        ]))->assertRedirect($intent->return_url);
         $this->assertSame('pending', $intent->fresh()->status);
 
         config(['services.payment_bridge.allowed_return_hosts' => ['other.example']]);
