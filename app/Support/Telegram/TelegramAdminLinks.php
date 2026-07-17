@@ -6,7 +6,23 @@ final class TelegramAdminLinks
 {
     public static function resolve(string $path): ?string
     {
-        $base = rtrim((string) (config('shop.telegram.admin_url') ?: config('app.url')), '/');
+        $configuredBase = rtrim((string) config('shop.telegram.admin_url'), '/');
+
+        if (preg_match('#^https?://#i', $path)) {
+            if ($configuredBase === '') {
+                return self::isValidButtonUrl($path) ? $path : null;
+            }
+
+            $query = parse_url($path, PHP_URL_QUERY);
+            $fragment = parse_url($path, PHP_URL_FRAGMENT);
+            $path = (string) (parse_url($path, PHP_URL_PATH) ?: '/');
+            $path .= is_string($query) && $query !== '' ? '?'.$query : '';
+            $path .= is_string($fragment) && $fragment !== '' ? '#'.$fragment : '';
+        }
+
+        $base = $configuredBase !== ''
+            ? $configuredBase
+            : rtrim((string) config('app.url'), '/');
 
         if ($base === '') {
             return null;
@@ -14,7 +30,7 @@ final class TelegramAdminLinks
 
         $url = $base.'/'.ltrim($path, '/');
 
-        return static::isValidButtonUrl($url) ? $url : null;
+        return self::isValidButtonUrl($url) ? $url : null;
     }
 
     public static function isValidButtonUrl(?string $url): bool
