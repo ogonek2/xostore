@@ -234,9 +234,22 @@ class PaymentBridgeTest extends TestCase
         });
     }
 
-    public function test_browser_return_only_redirects_to_current_allowlist_and_never_marks_paid(): void
+    public function test_browser_return_verifies_payu_status_delivers_it_and_redirects_to_allowlisted_com(): void
     {
         $intent = $this->intent();
+        Http::fake([
+            '*/oauth/authorize' => Http::response(['access_token' => 'token']),
+            '*/api/v2_1/orders/*' => Http::response(['orders' => [[
+                'merchantPosId' => '123456',
+                'extOrderId' => $intent->source_payment_id,
+                'orderId' => $intent->payu_order_id,
+                'totalAmount' => (string) $intent->amount_minor,
+                'currencyCode' => $intent->currency,
+                'status' => 'COMPLETED',
+            ]]]),
+            'https://xostore.com/api/internal/v1/payments/events' => Http::response([], 200),
+        ]);
+
         $this->get(route('payu.return', [
             'brokerPaymentId' => $intent->broker_payment_id,
             'token' => $intent->return_token,
@@ -245,7 +258,8 @@ class PaymentBridgeTest extends TestCase
             'brokerPaymentId' => $intent->broker_payment_id,
             'token' => $intent->return_token,
         ]))->assertRedirect($intent->return_url);
-        $this->assertSame('pending', $intent->fresh()->status);
+        $this->assertSame('paid', $intent->fresh()->status);
+        $this->assertNotNull($intent->fresh()->callback_delivered_at);
 
         config(['services.payment_bridge.allowed_return_hosts' => ['other.example']]);
         $this->get(route('payu.return', [
