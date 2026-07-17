@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'payment_bridge' => [
+        'enabled' => env('PAYMENT_BRIDGE_ENABLED', false),
+        'shop_url' => env('SHOP_PAYMENT_URL'),
+        'outbound_secret' => env('PAYMENT_BRIDGE_OUTBOUND_SECRET'),
+        'inbound_secret' => env('PAYMENT_BRIDGE_INBOUND_SECRET'),
+        'time_window' => env('PAYMENT_BRIDGE_TIME_WINDOW', 300),
+        'allowed_redirect_hosts' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', env('PAYMENT_BRIDGE_ALLOWED_REDIRECT_HOSTS', 'secure.payu.com,secure.snd.payu.com'))
+        ))),
+    ],
+
 ];

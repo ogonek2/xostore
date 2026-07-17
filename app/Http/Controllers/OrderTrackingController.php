@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Services\Cart\CartService;
 use App\Support\Seo\SeoBuilder;
 use App\Support\Shop\ShopLayoutData;
-use App\Services\Cart\CartService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -32,7 +32,7 @@ class OrderTrackingController extends Controller
         ]);
 
         $order = Order::query()
-            ->with(['items', 'paymentMethod', 'orderStatus'])
+            ->with(['items', 'paymentMethod', 'orderStatus', 'latestPayment'])
             ->where('number', strtoupper(trim($data['number'])))
             ->where('email', $data['email'])
             ->first();

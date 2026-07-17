@@ -44,6 +44,27 @@
                 <p class="mt-6 text-center text-sm text-text-muted">{{ $order->paymentMethod->instructionsText(app()->getLocale()) }}</p>
             @endif
 
+            @php($payment = $order->latestPayment)
+            @if ($payment)
+                <div class="mt-8 border border-border-DEFAULT bg-surface-muted/40 p-6 text-center">
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">{{ __('shop.checkout.payment_status') }}</p>
+                    <p class="mt-2 font-medium">{{ __('shop.checkout.payment_statuses.'.$payment->status->value) }}</p>
+
+                    @if (session('payment_retry_failed'))
+                        <p class="mt-3 text-sm text-sale-DEFAULT" role="alert">{{ __('shop.checkout.payment_retry_failed') }}</p>
+                    @endif
+
+                    @if ($payment->status !== \App\Enums\PaymentStatus::Paid)
+                        <form method="post" action="{{ route('payments.retry', ['locale' => app()->getLocale(), 'order' => $order->access_token, 'payment' => $payment->public_token]) }}" class="mt-4">
+                            @csrf
+                            <button type="submit" class="inline-flex bg-primary-DEFAULT px-8 py-3.5 text-sm font-medium text-text-inverse hover:bg-primary-hover">
+                                {{ __('shop.checkout.payment_retry') }}
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            @endif
+
             <div class="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <a href="{{ route('order.track', ['locale' => app()->getLocale()]) }}" class="inline-flex border border-border-DEFAULT px-8 py-3.5 text-sm font-medium text-text-DEFAULT hover:bg-surface-muted">
                     {{ __('shop.order_track.link') }}

@@ -19,6 +19,11 @@ class OrdersTable
                     ->badge()
                     ->color(fn ($record) => $record->orderStatus?->color ?: 'gray'),
                 TextColumn::make('paymentMethod.labels.pl')->label('Оплата')->placeholder('—'),
+                TextColumn::make('latestPayment.status')
+                    ->label('Статус платежа')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state?->value ?? '—')
+                    ->placeholder('—'),
                 TextColumn::make('customer_name')->label('Клиент')->searchable(),
                 TextColumn::make('email')->label('E-mail')->searchable(),
                 TextColumn::make('total')->label('Сумма')->money('PLN')->sortable(),

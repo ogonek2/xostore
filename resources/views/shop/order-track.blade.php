@@ -84,6 +84,21 @@
                             {{ __('shop.checkout.payment_method') }}: {{ $order->paymentMethod->label(app()->getLocale()) }}
                         </p>
                     @endif
+                    @php($trackingPayment = $order->latestPayment)
+                    @if ($trackingPayment)
+                        <p class="mt-2 text-sm text-text-muted">
+                            {{ __('shop.checkout.payment_status') }}:
+                            {{ __('shop.checkout.payment_statuses.'.$trackingPayment->status->value) }}
+                        </p>
+                        @if ($trackingPayment->status !== \App\Enums\PaymentStatus::Paid)
+                            <form method="post" action="{{ route('payments.retry', ['locale' => app()->getLocale(), 'order' => $order->access_token, 'payment' => $trackingPayment->public_token]) }}" class="mt-4">
+                                @csrf
+                                <button type="submit" class="inline-flex bg-primary-DEFAULT px-6 py-3 text-sm font-medium text-text-inverse hover:bg-primary-hover">
+                                    {{ __('shop.checkout.payment_retry') }}
+                                </button>
+                            </form>
+                        @endif
+                    @endif
 
                     <dl class="mt-6 space-y-2 border-t border-border-DEFAULT pt-6 text-sm">
                         <div><dt class="text-text-muted">{{ __('shop.checkout.customer_name') }}</dt><dd>{{ $order->displayName() }}</dd></div>

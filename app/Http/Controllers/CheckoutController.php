@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PaymentStatus;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Services\Cart\CartService;
 use App\Services\Checkout\CheckoutService;
@@ -11,6 +13,7 @@ use App\Support\Seo\SeoBuilder;
 use App\Support\Shop\ShopLayoutData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class CheckoutController extends Controller
@@ -67,6 +70,7 @@ class CheckoutController extends Controller
             'payment_method_id' => ['required', 'integer', 'exists:payment_methods,id'],
             'country' => ['nullable', 'string', 'size:2'],
         ]);
+        $data['_customer_ip'] = $request->ip();
 
         $result = $this->checkout->createOrder($data, $locale);
         $order = $result['order'];
@@ -88,7 +92,7 @@ class CheckoutController extends Controller
     public function thankyou(string $locale, string $order): View
     {
         $record = Order::query()
-            ->with(['items', 'paymentMethod'])
+            ->with(['items', 'paymentMethod', 'latestPayment'])
             ->where('access_token', $order)
             ->firstOrFail();
 
@@ -105,6 +109,50 @@ class CheckoutController extends Controller
             'breadcrumbs' => [
                 ['label' => __('shop.checkout.thankyou_title'), 'url' => null],
             ],
+        ]);
+    }
+
+    public function retryPayment(Request $request, string $locale, string $order, string $payment): RedirectResponse
+    {
+        $record = Payment::query()
+            ->where('public_token', $payment)
+            ->whereHas('order', fn ($query) => $query->where('access_token', $order))
+            ->firstOrFail();
+
+        if (
+            $record->status === PaymentStatus::Cancelled
+            || ($record->status === PaymentStatus::Failed && $record->provider_order_id)
+        ) {
+            $record = Payment::query()->create([
+                'id' => (string) Str::uuid(),
+                'public_token' => Str::random(48),
+                'order_id' => $record->order_id,
+                'provider' => $record->provider,
+                'amount_minor' => $record->amount_minor,
+                'currency' => $record->currency,
+                'status' => PaymentStatus::Pending,
+                'idempotency_key' => (string) Str::uuid(),
+            ]);
+        }
+
+        $redirectUrl = $this->checkout->initiatePayment($record, (string) $request->ip());
+
+        if ($redirectUrl) {
+            return redirect()->away($redirectUrl);
+        }
+
+        return redirect()
+            ->route('checkout.thankyou', ['locale' => $locale, 'order' => $order])
+            ->with('payment_retry_failed', true);
+    }
+
+    public function paymentReturn(string $locale, string $payment): RedirectResponse
+    {
+        $record = Payment::query()->with('order')->where('public_token', $payment)->firstOrFail();
+
+        return redirect()->route('checkout.thankyou', [
+            'locale' => $locale,
+            'order' => $record->order->access_token,
         ]);
     }
 }

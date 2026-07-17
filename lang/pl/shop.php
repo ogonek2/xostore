@@ -116,6 +116,16 @@ return [
         'bank_account' => 'Numer konta',
         'bank_amount' => 'Kwota',
         'bank_reference' => 'Tytuł przelewu',
+        'payment_status' => 'Status płatności',
+        'payment_retry' => 'Ponów płatność',
+        'payment_retry_failed' => 'Nie udało się połączyć z operatorem płatności. Zamówienie zostało zapisane — spróbuj ponownie.',
+        'payment_statuses' => [
+            'pending' => 'Oczekuje na rozpoczęcie',
+            'waiting_for_confirmation' => 'Oczekuje na potwierdzenie',
+            'paid' => 'Opłacona',
+            'cancelled' => 'Anulowana',
+            'failed' => 'Nieudana',
+        ],
     ],
 
     'order_track' => [

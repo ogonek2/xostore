@@ -116,6 +116,16 @@ return [
         'bank_account' => 'Account number',
         'bank_amount' => 'Amount',
         'bank_reference' => 'Payment reference',
+        'payment_status' => 'Payment status',
+        'payment_retry' => 'Retry payment',
+        'payment_retry_failed' => 'The payment provider is temporarily unavailable. Your order is saved — please try again.',
+        'payment_statuses' => [
+            'pending' => 'Waiting to start',
+            'waiting_for_confirmation' => 'Waiting for confirmation',
+            'paid' => 'Paid',
+            'cancelled' => 'Cancelled',
+            'failed' => 'Failed',
+        ],
     ],
 
     'order_track' => [

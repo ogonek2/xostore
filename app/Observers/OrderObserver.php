@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Order;
 use App\Services\Mail\OrderStatusEmailNotifier;
+use Illuminate\Support\Facades\DB;
 
 class OrderObserver
 {
@@ -14,10 +15,17 @@ class OrderObserver
         }
 
         $previousStatusId = $order->getOriginal('order_status_id');
+        $orderId = $order->getKey();
 
-        app(OrderStatusEmailNotifier::class)->notifyIfConfigured(
-            $order,
-            $previousStatusId ? (int) $previousStatusId : null,
-        );
+        DB::afterCommit(function () use ($orderId, $previousStatusId): void {
+            $committedOrder = Order::query()->find($orderId);
+
+            if ($committedOrder) {
+                app(OrderStatusEmailNotifier::class)->notifyIfConfigured(
+                    $committedOrder,
+                    $previousStatusId ? (int) $previousStatusId : null,
+                );
+            }
+        });
     }
 }

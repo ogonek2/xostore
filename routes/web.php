@@ -4,16 +4,16 @@ use App\Http\Controllers\Admin\MediaPreviewController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CheckoutQuoteController;
 use App\Http\Controllers\Api\NewsletterSubscriptionController;
-use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\Api\ProductListingController;
 use App\Http\Controllers\Api\ShopAnalyticsController;
-use App\Http\Controllers\NewsletterUnsubscribeController;
 use App\Http\Controllers\CatalogShowController;
 use App\Http\Controllers\CategoryShowController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\NewsletterUnsubscribeController;
+use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\ProductFeedController;
 use App\Http\Controllers\ProductIndexController;
 use App\Http\Controllers\ProductShowController;
@@ -73,6 +73,10 @@ Route::prefix('{locale}')
         Route::get('/zamowienie', [CheckoutController::class, 'show'])->name('checkout.show');
         Route::post('/zamowienie', [CheckoutController::class, 'store'])->name('checkout.store');
         Route::get('/zamowienie/dziekujemy/{order}', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
+        Route::post('/zamowienie/{order}/platnosc/{payment}/ponow', [CheckoutController::class, 'retryPayment'])
+            ->name('payments.retry');
+        Route::get('/platnosc/powrot/{payment}', [CheckoutController::class, 'paymentReturn'])
+            ->name('payments.return');
 
         Route::get('/zamowienie/sledzenie', [OrderTrackingController::class, 'show'])->name('order.track');
         Route::post('/zamowienie/sledzenie', [OrderTrackingController::class, 'lookup'])->name('order.track.lookup');
