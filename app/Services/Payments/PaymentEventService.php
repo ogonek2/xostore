@@ -9,6 +9,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class PaymentEventService
 {
@@ -21,7 +22,16 @@ class PaymentEventService
 
     public function accept(array $order, string $fingerprint): ?BrokerPaymentEvent
     {
-        if (BrokerPaymentEvent::query()->where('fingerprint', $fingerprint)->exists()) {
+        $existingEvent = BrokerPaymentEvent::query()
+            ->with('intent')
+            ->where('fingerprint', $fingerprint)
+            ->first();
+
+        if ($existingEvent) {
+            if (! $existingEvent->intent->callback_delivered_at) {
+                $this->deliver($existingEvent);
+            }
+
             return null;
         }
 
@@ -32,7 +42,7 @@ class PaymentEventService
         }
 
         try {
-            return DB::transaction(function () use ($order, $fingerprint, $status, $providerStatus) {
+            $event = DB::transaction(function () use ($order, $fingerprint, $status, $providerStatus) {
                 $intent = BrokerPaymentIntent::query()
                     ->where('source_payment_id', (string) ($order['extOrderId'] ?? ''))
                     ->lockForUpdate()
@@ -48,7 +58,12 @@ class PaymentEventService
 
                 $effectiveStatus = $intent->status === 'paid' ? 'paid' : $status;
                 $occurredAt = now();
-                $updates = ['status' => $effectiveStatus, 'last_event_at' => $occurredAt];
+                $updates = [
+                    'status' => $effectiveStatus,
+                    'last_event_at' => $occurredAt,
+                    'callback_delivered_at' => null,
+                    'callback_delivery_error' => null,
+                ];
                 if ($effectiveStatus === 'paid' && ! $intent->paid_at) {
                     $updates['paid_at'] = $occurredAt;
                 }
@@ -72,14 +87,28 @@ class PaymentEventService
                     'occurred_at' => $occurredAt,
                 ]);
 
-                DeliverPaymentStatusToCom::dispatch($event)->afterCommit();
-
                 return $event;
             });
+
+            $this->deliver($event);
+
+            return $event;
         } catch (UniqueConstraintViolationException $exception) {
             if (BrokerPaymentEvent::query()->where('fingerprint', $fingerprint)->exists()) {
                 return null;
             }
+
+            throw $exception;
+        }
+    }
+
+    private function deliver(BrokerPaymentEvent $event): void
+    {
+        try {
+            (new DeliverPaymentStatusToCom($event))->handle(app(BridgeSigner::class));
+        } catch (Throwable $exception) {
+            report($exception);
+            DeliverPaymentStatusToCom::dispatch($event);
 
             throw $exception;
         }

@@ -130,6 +130,9 @@ class PaymentBridgeTest extends TestCase
     public function test_notifications_validate_signature_deduplicate_and_map_statuses(): void
     {
         Queue::fake();
+        Http::fake([
+            'https://xostore.com/api/internal/v1/payments/events' => Http::response([], 200),
+        ]);
         $intent = $this->intent();
 
         foreach ([
@@ -148,7 +151,28 @@ class PaymentBridgeTest extends TestCase
         $count = BrokerPaymentEvent::query()->count();
         $this->payuNotify($paidBody)->assertOk();
         $this->assertSame($count, BrokerPaymentEvent::query()->count());
-        Queue::assertPushed(DeliverPaymentStatusToCom::class, 4);
+        Queue::assertNotPushed(DeliverPaymentStatusToCom::class);
+        $this->assertNotNull($intent->fresh()->callback_delivered_at);
+    }
+
+    public function test_failed_immediate_delivery_is_queued_and_retried_on_duplicate_notification(): void
+    {
+        Queue::fake();
+        Http::fake([
+            'https://xostore.com/api/internal/v1/payments/events' => Http::sequence()
+                ->push([], 500)
+                ->push([], 200),
+        ]);
+        $intent = $this->intent();
+        $body = $this->notificationBody($intent, 'COMPLETED');
+
+        $this->payuNotify($body)->assertServerError();
+        Queue::assertPushed(DeliverPaymentStatusToCom::class);
+        $this->assertNull($intent->fresh()->callback_delivered_at);
+
+        $this->payuNotify($body)->assertOk();
+        $this->assertNotNull($intent->fresh()->callback_delivered_at);
+        $this->assertDatabaseCount('broker_payment_events', 1);
     }
 
     public function test_notification_rejects_invalid_signature_and_order_mismatch(): void
@@ -230,7 +254,7 @@ class PaymentBridgeTest extends TestCase
         ]))->assertBadRequest();
     }
 
-    public function test_reconciliation_fetches_order_and_queues_delivery(): void
+    public function test_reconciliation_fetches_order_and_delivers_status(): void
     {
         Queue::fake();
         $intent = $this->intent();
@@ -244,6 +268,7 @@ class PaymentBridgeTest extends TestCase
                 'currencyCode' => $intent->currency,
                 'status' => 'COMPLETED',
             ]]]),
+            'https://xostore.com/api/internal/v1/payments/events' => Http::response([], 200),
         ]);
 
         (new ReconcileBrokerPayment($intent->id))->handle(
@@ -252,7 +277,8 @@ class PaymentBridgeTest extends TestCase
         );
 
         $this->assertSame('paid', $intent->fresh()->status);
-        Queue::assertPushed(DeliverPaymentStatusToCom::class);
+        Queue::assertNotPushed(DeliverPaymentStatusToCom::class);
+        $this->assertNotNull($intent->fresh()->callback_delivered_at);
     }
 
     private function contract(): array
