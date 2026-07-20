@@ -40,7 +40,9 @@ final class TelegramNotifier
             TelegramHtml::line('Email', $order->email),
             TelegramHtml::line('Телефон', $order->phone),
             TelegramHtml::line('Адрес', $order->displayAddress()),
+            TelegramHtml::line('Индекс', $order->postal_code),
             TelegramHtml::line('Город', $order->city),
+            TelegramHtml::line('Доставка', $order->deliveryMethodLabel('pl')),
             TelegramHtml::line('Страна', $order->country),
         ];
 

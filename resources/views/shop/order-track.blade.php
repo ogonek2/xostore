@@ -102,8 +102,10 @@
 
                     <dl class="mt-6 space-y-2 border-t border-border-DEFAULT pt-6 text-sm">
                         <div><dt class="text-text-muted">{{ __('shop.checkout.customer_name') }}</dt><dd>{{ $order->displayName() }}</dd></div>
+                        <div><dt class="text-text-muted">{{ __('shop.checkout.delivery_method') }}</dt><dd>{{ $order->deliveryMethodLabel() }}</dd></div>
                         <div><dt class="text-text-muted">{{ __('shop.checkout.city') }}</dt><dd>{{ $order->city }}</dd></div>
-                        <div><dt class="text-text-muted">{{ __('shop.checkout.delivery_address') }}</dt><dd>{{ $order->displayAddress() }}</dd></div>
+                        <div><dt class="text-text-muted">{{ __('shop.checkout.postal_code') }}</dt><dd>{{ $order->postal_code }}</dd></div>
+                        <div><dt class="text-text-muted">{{ __('shop.checkout.street') }}</dt><dd>{{ $order->street ?: $order->displayAddress() }}</dd></div>
                     </dl>
                 </div>
             @endif

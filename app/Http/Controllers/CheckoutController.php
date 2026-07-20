@@ -64,12 +64,21 @@ class CheckoutController extends Controller
             'customer_name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:32'],
+            'delivery_method' => ['required', 'in:courier,paczkomat'],
             'city' => ['required', 'string', 'max:120'],
-            'delivery_address' => ['required', 'string', 'max:500'],
+            'postal_code' => ['required', 'string', 'max:16', 'regex:/^\d{2}-?\d{3}$/'],
+            'street' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'payment_method_id' => ['required', 'integer', 'exists:payment_methods,id'],
             'country' => ['nullable', 'string', 'size:2'],
         ]);
+
+        $postalCode = (string) $data['postal_code'];
+        if (preg_match('/^\d{5}$/', $postalCode)) {
+            $postalCode = substr($postalCode, 0, 2).'-'.substr($postalCode, 2);
+        }
+        $data['postal_code'] = $postalCode;
+        $data['delivery_address'] = $data['street'];
         $data['_customer_ip'] = $request->ip();
 
         $result = $this->checkout->createOrder($data, $locale);

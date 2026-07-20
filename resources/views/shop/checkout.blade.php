@@ -33,8 +33,31 @@
 
                         <fieldset class="space-y-4">
                             <legend class="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">{{ __('shop.checkout.shipping') }}</legend>
-                            <input type="text" name="city" required placeholder="{{ __('shop.checkout.city') }}" value="{{ old('city') }}" class="w-full border border-border-DEFAULT px-4 py-3 text-sm">
-                            <textarea name="delivery_address" required rows="2" placeholder="{{ __('shop.checkout.delivery_address') }}" class="w-full border border-border-DEFAULT px-4 py-3 text-sm">{{ old('delivery_address') }}</textarea>
+
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                @foreach ([
+                                    'courier' => __('shop.checkout.delivery_methods.courier'),
+                                    'paczkomat' => __('shop.checkout.delivery_methods.paczkomat'),
+                                ] as $method => $label)
+                                    <label class="flex cursor-pointer gap-3 border border-border-DEFAULT p-4 transition has-[:checked]:border-primary-DEFAULT has-[:checked]:bg-surface-muted/50">
+                                        <input
+                                            type="radio"
+                                            name="delivery_method"
+                                            value="{{ $method }}"
+                                            class="mt-1"
+                                            @checked(old('delivery_method', 'courier') === $method)
+                                            required
+                                        >
+                                        <span class="text-sm font-medium text-text-DEFAULT">{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <input type="text" name="city" required placeholder="{{ __('shop.checkout.city') }}" value="{{ old('city') }}" class="w-full border border-border-DEFAULT px-4 py-3 text-sm sm:col-span-1" autocomplete="address-level2">
+                                <input type="text" name="postal_code" required placeholder="{{ __('shop.checkout.postal_code') }}" value="{{ old('postal_code') }}" class="w-full border border-border-DEFAULT px-4 py-3 text-sm" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{2}-?[0-9]{3}" maxlength="6">
+                            </div>
+                            <input type="text" name="street" required placeholder="{{ __('shop.checkout.street') }}" value="{{ old('street') }}" class="w-full border border-border-DEFAULT px-4 py-3 text-sm" autocomplete="street-address">
                             <input type="hidden" name="country" value="PL">
                             <textarea name="notes" rows="3" placeholder="{{ __('shop.checkout.notes') }}" class="w-full border border-border-DEFAULT px-4 py-3 text-sm">{{ old('notes') }}</textarea>
                         </fieldset>
