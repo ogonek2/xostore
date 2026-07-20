@@ -2,15 +2,20 @@
 
 namespace App\Services\Checkout;
 
+use App\Enums\PaymentStatus;
 use App\Enums\ShopEventType;
-use App\Models\OrderStatus;
 use App\Mail\OrderPlacedMail;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderStatus;
+use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Services\Analytics\ShopAnalyticsService;
 use App\Services\Cart\CartService;
+use App\Services\Payments\ShopPaymentBrokerClient;
+use App\Support\Payments\MinorUnits;
 use App\Support\Shop\OrderNumberGenerator;
+use App\Support\Telegram\TelegramNotifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -22,6 +27,7 @@ class CheckoutService
         protected CartService $cart,
         protected OrderShippingCalculator $shippingCalculator,
         protected PaymentRedirectBuilder $redirectBuilder,
+        protected ShopPaymentBrokerClient $paymentBroker,
     ) {}
 
     /**
@@ -70,8 +76,11 @@ class CheckoutService
                 'email' => $data['email'],
                 'phone' => $data['phone'],
                 'customer_name' => $data['customer_name'],
+                'delivery_method' => $data['delivery_method'],
                 'city' => $data['city'],
-                'delivery_address' => $data['delivery_address'],
+                'postal_code' => $data['postal_code'],
+                'street' => $data['street'],
+                'delivery_address' => $data['delivery_address'] ?? $data['street'],
                 'country' => $data['country'] ?? 'PL',
                 'notes' => $data['notes'] ?? null,
                 'subtotal' => $subtotal,
@@ -95,29 +104,28 @@ class CheckoutService
 
             $this->cart->clear();
 
-            app(ShopAnalyticsService::class)->track(
-                ShopEventType::OrderPlaced,
-                payload: ['order_id' => $order->id, 'total' => (float) $order->total],
-            );
-
-            $order->loadMissing(['items', 'paymentMethod']);
-
-            try {
-                Mail::to($order->email)->send(new OrderPlacedMail($order));
-            } catch (\Throwable) {
-                // Не блокируем оформление при ошибке почты
-            }
-
-            try {
-                app(\App\Support\Telegram\TelegramNotifier::class)->notifyOrder($order);
-            } catch (\Throwable) {
-                // Не блокируем оформление при ошибке Telegram
+            if ($paymentMethod->code === 'payu') {
+                Payment::query()->create([
+                    'id' => (string) Str::uuid(),
+                    'public_token' => Str::random(48),
+                    'order_id' => $order->id,
+                    'provider' => 'payu',
+                    'amount_minor' => MinorUnits::fromDecimal($order->total),
+                    'currency' => strtoupper($order->currency),
+                    'status' => PaymentStatus::Pending,
+                    'idempotency_key' => (string) Str::uuid(),
+                ]);
             }
 
             return $order;
         });
 
-        $redirectUrl = $this->redirectBuilder->build($paymentMethod, $order);
+        $order->loadMissing(['items', 'paymentMethod', 'payments']);
+        $this->sendOrderNotifications($order);
+
+        $redirectUrl = $paymentMethod->code === 'payu'
+            ? $this->initiatePayment($order->payments->firstOrFail(), (string) ($data['_customer_ip'] ?? '0.0.0.0'))
+            : $this->redirectBuilder->build($paymentMethod, $order);
         $bank = $paymentMethod->type->value === 'bank_transfer'
             ? $this->redirectBuilder->bankInstructions($paymentMethod, $order)
             : null;
@@ -127,6 +135,60 @@ class CheckoutService
             'redirect_url' => $redirectUrl,
             'bank' => $bank,
         ];
+    }
+
+    public function initiatePayment(Payment $payment, string $customerIp): ?string
+    {
+        if ($payment->status === PaymentStatus::Paid) {
+            return null;
+        }
+
+        try {
+            $result = $this->paymentBroker->create($payment, $customerIp);
+            DB::transaction(function () use ($payment, $result): void {
+                $lockedPayment = Payment::query()->lockForUpdate()->findOrFail($payment->id);
+                $updates = [
+                    'broker_payment_id' => $lockedPayment->broker_payment_id ?: $result['broker_payment_id'],
+                    'provider_order_id' => $lockedPayment->provider_order_id ?: $result['provider_order_id'],
+                ];
+
+                if ($lockedPayment->status !== PaymentStatus::Paid) {
+                    $updates['status'] = $result['status'];
+                }
+
+                $lockedPayment->update($updates);
+            });
+
+            return $result['redirect_url'];
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return null;
+        }
+    }
+
+    private function sendOrderNotifications(Order $order): void
+    {
+        try {
+            app(ShopAnalyticsService::class)->track(
+                ShopEventType::OrderPlaced,
+                payload: ['order_id' => $order->id, 'total' => (float) $order->total],
+            );
+        } catch (\Throwable) {
+            // External analytics must not invalidate a committed order.
+        }
+
+        try {
+            Mail::to($order->email)->send(new OrderPlacedMail($order));
+        } catch (\Throwable) {
+            // Не блокируем оформление при ошибке почты
+        }
+
+        try {
+            app(TelegramNotifier::class)->notifyOrder($order);
+        } catch (\Throwable) {
+            // Не блокируем оформление при ошибке Telegram
+        }
     }
 
     /**

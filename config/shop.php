@@ -25,8 +25,9 @@ return [
     ],
 
     'chat' => [
-        'provider' => env('SHOP_CHAT_PROVIDER'), // telegram | jivo | crisp | tawk
+        'provider' => env('SHOP_CHAT_PROVIDER'), // telegram | respondio | jivo | crisp | tawk
         'telegram_url' => env('SHOP_CHAT_TELEGRAM_URL'),
+        'respondio_channel_id' => env('SHOP_CHAT_RESPONDIO_CHANNEL_ID'),
         'jivo_widget_id' => env('SHOP_CHAT_JIVO_WIDGET_ID'),
         'crisp_website_id' => env('SHOP_CHAT_CRISP_WEBSITE_ID'),
         'tawk_property_id' => env('SHOP_CHAT_TAWK_PROPERTY_ID'),

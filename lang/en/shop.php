@@ -89,10 +89,15 @@ return [
         'last_name' => 'Last name',
         'email' => 'Email',
         'phone' => 'Phone',
-        'street' => 'Street address',
+        'street' => 'Delivery address — street and number',
         'delivery_address' => 'Delivery address',
         'city' => 'City',
         'postal_code' => 'Postal code',
+        'delivery_method' => 'Delivery method',
+        'delivery_methods' => [
+            'courier' => 'Courier',
+            'paczkomat' => 'Parcel locker',
+        ],
         'notes' => 'Order comment',
         'payment' => 'Payment method',
         'payment_method' => 'Payment',
@@ -116,6 +121,16 @@ return [
         'bank_account' => 'Account number',
         'bank_amount' => 'Amount',
         'bank_reference' => 'Payment reference',
+        'payment_status' => 'Payment status',
+        'payment_retry' => 'Retry payment',
+        'payment_retry_failed' => 'The payment provider is temporarily unavailable. Your order is saved — please try again.',
+        'payment_statuses' => [
+            'pending' => 'Waiting to start',
+            'waiting_for_confirmation' => 'Waiting for confirmation',
+            'paid' => 'Paid',
+            'cancelled' => 'Cancelled',
+            'failed' => 'Failed',
+        ],
     ],
 
     'order_track' => [

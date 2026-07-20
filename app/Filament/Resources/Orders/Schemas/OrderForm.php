@@ -45,8 +45,17 @@ class OrderForm
                 TextInput::make('email')->label('E-mail'),
                 TextInput::make('phone')->label('Телефон'),
                 TextInput::make('customer_name')->label('Имя'),
+                Select::make('delivery_method')
+                    ->label('Способ доставки')
+                    ->options([
+                        'courier' => 'Kurier',
+                        'paczkomat' => 'Paczkomat',
+                    ])
+                    ->native(false),
                 TextInput::make('city')->label('Город'),
-                Textarea::make('delivery_address')->label('Адрес доставки')->rows(2)->columnSpanFull(),
+                TextInput::make('postal_code')->label('Индекс'),
+                TextInput::make('street')->label('Улица и номер')->columnSpanFull(),
+                Textarea::make('delivery_address')->label('Адрес (старое поле)')->rows(2)->columnSpanFull()->disabled(),
                 Textarea::make('notes')->label('Комментарий клиента')->disabled()->columnSpanFull(),
             ])->columns(2),
         ]);

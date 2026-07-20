@@ -102,6 +102,8 @@
             aria-label="Telegram chat">
             <span>Telegram</span>
         </a>
+    @elseif ($chatProvider === 'respondio' && config('shop.chat.respondio_channel_id'))
+        <script id="respondio__widget" src="https://cdn.respond.io/webchat/widget/widget.js?cId={{ config('shop.chat.respondio_channel_id') }}"></script>
     @elseif ($chatProvider === 'jivo' && config('shop.chat.jivo_widget_id'))
         <script src="//code.jivo.ru/widget/{{ config('shop.chat.jivo_widget_id') }}" async></script>
     @elseif ($chatProvider === 'crisp' && config('shop.chat.crisp_website_id'))
