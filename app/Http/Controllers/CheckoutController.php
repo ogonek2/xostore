@@ -101,7 +101,7 @@ class CheckoutController extends Controller
     public function thankyou(string $locale, string $order): View
     {
         $record = Order::query()
-            ->with(['items', 'paymentMethod', 'latestPayment'])
+            ->with(['items.variant', 'paymentMethod', 'latestPayment'])
             ->where('access_token', $order)
             ->firstOrFail();
 
@@ -109,12 +109,21 @@ class CheckoutController extends Controller
             ? $this->redirectBuilder->bankInstructions($record->paymentMethod, $record)
             : null;
 
+        $purchaseContentIds = $record->items
+            ->map(fn ($item) => $item->variant?->product_id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
         return view('shop.checkout-thankyou', [
             ...ShopLayoutData::shared(),
             'seo' => SeoBuilder::privatePage(__('shop.checkout.thankyou_title')),
             'cartCount' => 0,
             'order' => $record,
             'bank' => $bank,
+            'purchaseContentIds' => $purchaseContentIds,
             'breadcrumbs' => [
                 ['label' => __('shop.checkout.thankyou_title'), 'url' => null],
             ],

@@ -1,4 +1,5 @@
 import { dispatchCartState } from './cart-badges';
+import { trackAddToCart } from './meta-pixel';
 
 export function getCartStoreUrl() {
     const root = document.getElementById('cart-drawer-root');
@@ -42,6 +43,16 @@ export async function addVariantToCart(variantId, { quantity = 1, openDrawer = f
     }
 
     dispatchCartState(data);
+
+    const addedItem = (data.items ?? []).find((item) => Number(item.variant_id) === Number(variantId));
+
+    if (addedItem) {
+        trackAddToCart({
+            productId: addedItem.product_id,
+            value: Number(addedItem.unit_price) * Number(quantity),
+            currency: 'PLN',
+        });
+    }
 
     if (openDrawer) {
         window.dispatchEvent(new Event('cart:open'));
