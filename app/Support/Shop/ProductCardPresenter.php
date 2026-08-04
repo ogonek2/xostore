@@ -44,6 +44,7 @@ class ProductCardPresenter
             'product_id' => $product->id,
             'url' => route('product.show', ['locale' => $locale, 'product' => $slug]),
             'name' => $displayName,
+            'brand' => $brandName,
             'category' => $compact ? null : $product->primaryCategory?->translate('name', $locale),
             'price' => $price,
             'price_formatted' => static::formatPrice($price),

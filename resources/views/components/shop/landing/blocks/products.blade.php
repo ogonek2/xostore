@@ -15,7 +15,12 @@
                 <p class="landing-block-subtitle">{{ $block['subtitle'] }}</p>
             @endif
 
-            <div class="landing-products-swiper swiper">
+            <div
+                class="landing-products-swiper swiper"
+                data-ga4-item-list
+                data-ga4-list-name="{{ $block['title'] ?? 'Landing Products' }}"
+                data-ga4-list-id="landing_products_{{ $block['id'] ?? 'block' }}"
+            >
                 <div class="swiper-wrapper">
                     @foreach ($products as $product)
                         <div class="swiper-slide !h-auto !w-[min(72vw,220px)] shrink-0 sm:!w-[240px] lg:!w-[260px]">
@@ -24,7 +29,9 @@
                                 :default-variant-id="$product['default_variant_id'] ?? null"
                                 :url="$product['url']"
                                 :name="$product['name']"
+                                :brand="$product['brand'] ?? null"
                                 :category="$product['category'] ?? null"
+                                :price="$product['price'] ?? null"
                                 :price-formatted="$product['price_formatted']"
                                 :image="$product['image']"
                                 :colors="$product['colors'] ?? []"

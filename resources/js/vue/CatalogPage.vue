@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { refreshCartProductBadges } from '../shop/cart-badges';
 import { addVariantToCart } from '../shop/cart-api';
+import { selectItem, viewItemList } from '../shop/ga4-ecommerce';
 import CatalogFilterForm from './CatalogFilterForm.vue';
 
 const props = defineProps({
@@ -23,8 +24,45 @@ const props = defineProps({
     locale: { type: String, default: 'pl' },
     perPage: { type: Number, default: 24 },
     listingType: { type: String, default: 'all' },
+    listName: { type: String, default: '' },
+    listId: { type: String, default: 'catalog' },
     allProductsUrl: { type: String, default: '' },
 });
+
+const gaListName = computed(() => props.listName || props.listingType || 'Catalog');
+const gaListId = computed(() => props.listId || props.listingType || 'catalog');
+
+function trackListImpressions(products, startIndex = 0) {
+    if (!products?.length) {
+        return;
+    }
+
+    viewItemList(
+        products.map((product, index) => ({
+            product_id: product.product_id,
+            name: product.name,
+            brand: product.brand,
+            category: product.category,
+            price: product.price,
+            index: startIndex + index + 1,
+            quantity: 1,
+        })),
+        gaListName.value,
+        gaListId.value,
+    );
+}
+
+function onProductSelect(product, index) {
+    selectItem({
+        product_id: product.product_id,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        price: product.price,
+        index: index + 1,
+        quantity: 1,
+    }, gaListName.value, gaListId.value);
+}
 
 const filters = reactive({
     sort: props.initialFilters.sort ?? 'newest',
@@ -196,6 +234,7 @@ async function applyFilters() {
         syncBrowserUrl();
         syncSearchInputs();
         emitCount();
+        trackListImpressions(items.value);
     } finally {
         filtering.value = false;
     }
@@ -213,9 +252,12 @@ async function loadMore() {
 
     try {
         const data = await fetchProducts(page.value, true);
-        items.value.push(...(data.data ?? []));
+        const batch = data.data ?? [];
+        const startIndex = items.value.length;
+        items.value.push(...batch);
         hasMore.value = data.meta?.has_more ?? false;
         page.value += 1;
+        trackListImpressions(batch, startIndex);
     } finally {
         loadingMore.value = false;
     }
@@ -303,6 +345,7 @@ onMounted(() => {
         applyFilters();
     } else {
         emitCount();
+        trackListImpressions(items.value);
     }
 
     watch(total, emitCount);
@@ -424,7 +467,7 @@ onUnmounted(() => {
                     :data-in-cart-label="inCartLabel(product.name)"
                     class="group/product-card flex w-full flex-col"
                 >
-                    <a :href="product.url" class="flex flex-col">
+                    <a :href="product.url" class="flex flex-col" @click="onProductSelect(product, index)">
                         <div class="relative aspect-[4/5] overflow-hidden rounded-t-2xl bg-[#eceae6] ring-inset ring-1 ring-transparent group-[.is-in-cart]/product-card:ring-primary-DEFAULT">
                             <img
                                 :src="product.image"

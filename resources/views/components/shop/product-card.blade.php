@@ -2,6 +2,8 @@
     'url' => '#',
     'name',
     'category' => null,
+    'brand' => null,
+    'price' => null,
     'priceFormatted' => null,
     'image',
     'colors' => [],
@@ -19,6 +21,13 @@
 <article
     @if ($productId) data-product-id="{{ $productId }}" @endif
     data-product-card
+    @if ($productId)
+        data-ga4-item-id="{{ $productId }}"
+        data-ga4-item-name="{{ $name }}"
+        @if ($price !== null) data-ga4-price="{{ $price }}" @endif
+        @if ($brand) data-ga4-brand="{{ $brand }}" @endif
+        @if ($category) data-ga4-category="{{ $category }}" @endif
+    @endif
     data-in-cart-label="{{ __('shop.cart.in_cart_label', ['name' => $name]) }}"
     {{ $attributes->class([
         'group/product-card flex min-w-0 max-w-full flex-col',

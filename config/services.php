@@ -35,6 +35,13 @@ return [
         ],
     ],
 
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+        'min_form_seconds' => (int) env('CONSULTATION_MIN_FORM_SECONDS', 2),
+        'max_form_seconds' => (int) env('CONSULTATION_MAX_FORM_SECONDS', 7200),
+    ],
+
     'payment_bridge' => [
         'enabled' => env('PAYMENT_BRIDGE_ENABLED', false),
         'shop_url' => env('SHOP_PAYMENT_URL'),

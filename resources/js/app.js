@@ -7,12 +7,14 @@ import { initProductCardAddButtons } from './shop/cart-api';
 import { initShopAnalytics } from './shop/analytics';
 import { initHeaderNav } from './shop/header-nav';
 import { initNewsletterForms } from './shop/newsletter';
+import { initGa4ProductLists } from './shop/ga4-ecommerce';
 
 initCartBadges();
 initProductCardAddButtons();
 initShopAnalytics();
-    initHeaderNav();
-    initNewsletterForms();
+initHeaderNav();
+initNewsletterForms();
+initGa4ProductLists();
 import { createApp } from 'vue';
 
 const vueMounts = document.querySelectorAll('[data-vue]');
@@ -73,6 +75,8 @@ vueMounts.forEach((el) => {
                 locale: el.dataset.locale || 'pl',
                 perPage: Number(el.dataset.perPage || 24),
                 listingType: el.dataset.listingType || 'all',
+                listName: el.dataset.listName || '',
+                listId: el.dataset.listId || el.dataset.listingType || 'catalog',
                 allProductsUrl: el.dataset.allProductsUrl || '',
             }).mount(el);
         });

@@ -1,5 +1,6 @@
 import { dispatchCartState } from './cart-badges';
 import { trackAddToCart } from './meta-pixel';
+import { addToCart as trackGa4AddToCart } from './ga4-ecommerce';
 
 export function getCartStoreUrl() {
     const root = document.getElementById('cart-drawer-root');
@@ -51,6 +52,16 @@ export async function addVariantToCart(variantId, { quantity = 1, openDrawer = f
             productId: addedItem.product_id,
             value: Number(addedItem.unit_price) * Number(quantity),
             currency: 'PLN',
+        });
+
+        trackGa4AddToCart({
+            product_id: addedItem.product_id,
+            name: addedItem.name,
+            brand: addedItem.brand,
+            category: addedItem.category,
+            price: addedItem.unit_price,
+            variant_label: addedItem.variant_label,
+            quantity,
         });
     }
 

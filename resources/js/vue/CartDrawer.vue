@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue';
 import { dispatchCartState } from '../shop/cart-badges';
+import { removeFromCart } from '../shop/ga4-ecommerce';
 
 const props = defineProps({
     locale: { type: String, required: true },
@@ -26,6 +27,7 @@ async function fetchCart() {
 }
 
 async function updateQty(item, quantity) {
+    const previousQty = Number(item.quantity);
     loading.value = true;
     try {
         const response = await fetch(props.routes.update.replace('__ITEM__', item.id), {
@@ -38,7 +40,20 @@ async function updateQty(item, quantity) {
             },
             body: JSON.stringify({ quantity }),
         });
-        if (response.ok) cart.value = await response.json();
+        if (response.ok) {
+            cart.value = await response.json();
+            if (quantity < previousQty) {
+                removeFromCart({
+                    product_id: item.product_id,
+                    name: item.name,
+                    brand: item.brand,
+                    category: item.category,
+                    price: item.unit_price,
+                    variant_label: item.variant_label,
+                    quantity: previousQty - Math.max(quantity, 0),
+                });
+            }
+        }
     } finally {
         loading.value = false;
         dispatchCartState(cart.value);
@@ -56,7 +71,18 @@ async function removeItem(item) {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
             },
         });
-        if (response.ok) cart.value = await response.json();
+        if (response.ok) {
+            cart.value = await response.json();
+            removeFromCart({
+                product_id: item.product_id,
+                name: item.name,
+                brand: item.brand,
+                category: item.category,
+                price: item.unit_price,
+                variant_label: item.variant_label,
+                quantity: item.quantity,
+            });
+        }
     } finally {
         loading.value = false;
         dispatchCartState(cart.value);

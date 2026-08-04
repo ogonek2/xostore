@@ -12,7 +12,12 @@
         </h2>
 
         @if ($products->isNotEmpty())
-            <div class="trending-swiper swiper overflow-hidden">
+            <div
+                class="trending-swiper swiper overflow-hidden"
+                data-ga4-item-list
+                data-ga4-list-name="{{ $title ?? __('shop.trending.title') }}"
+                data-ga4-list-id="trending"
+            >
                 <div class="swiper-wrapper">
                     @foreach ($products as $product)
                         <div class="swiper-slide !h-auto !w-[min(72vw,220px)] shrink-0 sm:!w-[240px] lg:!w-[260px]">
@@ -21,7 +26,9 @@
                                 :default-variant-id="$product['default_variant_id'] ?? null"
                                 :url="$product['url']"
                                 :name="$product['name']"
+                                :brand="$product['brand'] ?? null"
                                 :category="$product['category']"
+                                :price="$product['price'] ?? null"
                                 :price-formatted="$product['price_formatted']"
                                 :image="$product['image']"
                                 :colors="$product['colors']"

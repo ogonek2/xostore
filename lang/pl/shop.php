@@ -151,10 +151,14 @@ return [
         'email' => 'E-mail',
         'phone' => 'Telefon',
         'message' => 'Wiadomość',
+        'preferred_at' => 'Preferowany termin (opcjonalnie)',
         'product' => 'Produkt',
         'submit' => 'Wyślij zapytanie',
         'success' => 'Dziękujemy! Skontaktujemy się wkrótce.',
         'cta' => 'Kontakt',
+        'spam_rejected' => 'Nie udało się wysłać formularza. Odśwież stronę i spróbuj ponownie.',
+        'captcha_required' => 'Potwierdź, że nie jesteś botem.',
+        'captcha_failed' => 'Weryfikacja antybot nie powiodła się. Spróbuj ponownie.',
     ],
 
     'product' => [

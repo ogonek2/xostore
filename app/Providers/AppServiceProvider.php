@@ -35,6 +35,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('payment-bridge', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
+        RateLimiter::for('consultation', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by($request->ip()),
+                Limit::perHour(10)->by($request->ip()),
+            ];
+        });
         View::composer('layouts.shop', ShopLayoutComposer::class);
         Order::observe(OrderObserver::class);
         Color::observe(ColorObserver::class);

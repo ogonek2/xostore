@@ -82,7 +82,9 @@ Route::prefix('{locale}')
         Route::post('/zamowienie/sledzenie', [OrderTrackingController::class, 'lookup'])->name('order.track.lookup');
 
         Route::get('/konsultacja/{product?}', [ConsultationController::class, 'show'])->name('consultation.show');
-        Route::post('/konsultacja', [ConsultationController::class, 'store'])->name('consultation.store');
+        Route::post('/konsultacja', [ConsultationController::class, 'store'])
+            ->middleware('throttle:consultation')
+            ->name('consultation.store');
 
         Route::get('/promocje', fn (string $locale) => redirect()->route('catalog.show', [
             'locale' => $locale,

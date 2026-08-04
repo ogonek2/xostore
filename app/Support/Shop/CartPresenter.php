@@ -20,6 +20,8 @@ class CartPresenter
                 return null;
             }
 
+            $product->loadMissing(['brand.translates', 'primaryCategory.translates']);
+
             $name = $product->translate('name', $locale) ?? $product->sku;
             $brand = $product->brand?->translate('name', $locale);
             $displayName = $brand && ! str_starts_with($name, $brand)
@@ -44,6 +46,8 @@ class CartPresenter
                 'variant_id' => $variant->id,
                 'quantity' => $item->quantity,
                 'name' => $displayName,
+                'brand' => $brand,
+                'category' => $product->primaryCategory?->translate('name', $locale),
                 'sku' => $variant->sku,
                 'variant_label' => $variantLabel ?: null,
                 'unit_price' => $unitPrice,

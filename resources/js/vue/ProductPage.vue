@@ -6,6 +6,7 @@ import ProductSimilarProducts from './ProductSimilarProducts.vue';
 import ProductSizeChart from './ProductSizeChart.vue';
 import { productCartLines } from '../shop/cart-badges';
 import { addVariantToCart } from '../shop/cart-api';
+import { viewItem } from '../shop/ga4-ecommerce';
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -85,6 +86,17 @@ function onCartUpdated(event) {
 
 onMounted(() => {
     window.addEventListener('cart:updated', onCartUpdated);
+
+    const variant = selectedVariant.value;
+    viewItem({
+        product_id: props.product.id,
+        name: props.product.display_name || props.product.name,
+        brand: props.product.brand,
+        category: props.product.category,
+        price: variant?.price ?? props.product.variants?.[0]?.price ?? 0,
+        variant_label: variant?.size || variant?.sku || undefined,
+        quantity: 1,
+    });
 });
 
 onUnmounted(() => {

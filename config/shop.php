@@ -13,6 +13,11 @@ return [
     'currency' => env('SHOP_CURRENCY', 'PLN'),
     'currency_symbol' => env('SHOP_CURRENCY_SYMBOL', 'zł'),
 
+    'analytics' => [
+        'gtm_container_id' => env('GTM_CONTAINER_ID'),
+        'affiliation' => env('GA4_AFFILIATION', env('SHOP_NAME', 'XOStore')),
+    ],
+
     'contact' => [
         'email' => env('SHOP_CONTACT_EMAIL', 'hello@xostorebrand.com'),
         'phone' => env('SHOP_PHONE', '+48 22 000 00 00'),

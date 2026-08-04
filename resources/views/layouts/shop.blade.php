@@ -14,6 +14,26 @@
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700|cormorant-garamond:400,500,600"
         rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+
+    {{-- dataLayer MUST be initialized before GTM (GA4 ecommerce). --}}
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        window.__SHOP_CURRENCY__ = @json(config('shop.currency', 'PLN'));
+    </script>
+    @stack('datalayer')
+    @php($gtmId = config('shop.analytics.gtm_container_id'))
+    @if (filled($gtmId))
+        <!-- Google Tag Manager -->
+        <script>
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer',@json($gtmId));
+        </script>
+        <!-- End Google Tag Manager -->
+    @endif
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 
@@ -37,7 +57,15 @@
 </head>
 
 <body class="flex min-h-screen flex-col bg-surface-DEFAULT font-sans text-text-DEFAULT antialiased"
-    data-analytics-endpoint="{{ route('api.analytics.store', ['locale' => app()->getLocale()]) }}">
+    data-analytics-endpoint="{{ route('api.analytics.store', ['locale' => app()->getLocale()]) }}"
+    data-ga4-currency="{{ config('shop.currency', 'PLN') }}"
+    data-ga4-affiliation="{{ config('shop.analytics.affiliation') }}">
+    @if (filled($gtmId ?? config('shop.analytics.gtm_container_id')))
+        <!-- Google Tag Manager (noscript) -->
+        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ config('shop.analytics.gtm_container_id') }}"
+        height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+        <!-- End Google Tag Manager (noscript) -->
+    @endif
     <div class="flex flex-1 flex-col">
         @yield('content')
     </div>

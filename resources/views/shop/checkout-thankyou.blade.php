@@ -77,6 +77,35 @@
     </main>
 @endsection
 
+{{-- Purchase must be pushed to dataLayer BEFORE GTM loads. --}}
+@push('datalayer')
+    <script>
+        (function () {
+            window.dataLayer = window.dataLayer || [];
+            var orderId = @json($order->number);
+            var storageKey = 'ga4_purchase_' + orderId;
+
+            try {
+                if (sessionStorage.getItem(storageKey)) {
+                    return;
+                }
+                sessionStorage.setItem(storageKey, '1');
+            } catch (e) {}
+
+            var ecommerce = @json($purchaseEcommerce ?? null);
+            if (!ecommerce || !ecommerce.transaction_id) {
+                return;
+            }
+
+            dataLayer.push({ ecommerce: null });
+            dataLayer.push({
+                event: 'purchase',
+                ecommerce: ecommerce
+            });
+        })();
+    </script>
+@endpush
+
 @push('scripts')
     <script>
         (function () {

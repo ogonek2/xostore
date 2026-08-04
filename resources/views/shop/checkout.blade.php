@@ -20,6 +20,16 @@
                     data-quote-url="{{ $quoteUrl }}"
                     data-subtotal="{{ $cart['subtotal'] }}"
                     data-currency="{{ config('shop.currency_symbol') }}"
+                    data-ga4-value="{{ $cart['subtotal'] }}"
+                    data-ga4-items="{{ json_encode(collect($cart['items'])->map(fn ($item) => [
+                        'item_id' => (string) $item['product_id'],
+                        'item_name' => $item['name'],
+                        'item_brand' => $item['brand'] ?? null,
+                        'item_category' => $item['category'] ?? null,
+                        'item_variant' => $item['variant_label'] ?? null,
+                        'price' => (float) $item['unit_price'],
+                        'quantity' => (int) $item['quantity'],
+                    ])->values()) }}"
                 >
                     @csrf
 

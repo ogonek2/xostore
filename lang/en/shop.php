@@ -151,10 +151,14 @@ return [
         'email' => 'Email',
         'phone' => 'Phone',
         'message' => 'Message',
+        'preferred_at' => 'Preferred time (optional)',
         'product' => 'Product',
         'submit' => 'Send request',
         'success' => 'Thank you! We will be in touch soon.',
         'cta' => 'Consultation',
+        'spam_rejected' => 'Could not submit the form. Please refresh the page and try again.',
+        'captcha_required' => 'Please confirm you are not a robot.',
+        'captcha_failed' => 'Anti-bot verification failed. Please try again.',
     ],
 
     'product' => [

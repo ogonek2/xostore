@@ -101,7 +101,7 @@ class CheckoutController extends Controller
     public function thankyou(string $locale, string $order): View
     {
         $record = Order::query()
-            ->with(['items.variant', 'paymentMethod', 'latestPayment'])
+            ->with(['items.variant.product', 'paymentMethod', 'latestPayment'])
             ->where('access_token', $order)
             ->firstOrFail();
 
@@ -117,6 +117,21 @@ class CheckoutController extends Controller
             ->map(fn ($id) => (string) $id)
             ->all();
 
+        $purchaseEcommerce = [
+            'transaction_id' => $record->number,
+            'affiliation' => config('shop.analytics.affiliation'),
+            'value' => (float) $record->total,
+            'shipping' => (float) $record->shipping,
+            'currency' => config('shop.currency', 'PLN'),
+            'items' => $record->items->map(fn ($item) => [
+                'item_id' => (string) ($item->variant?->product_id ?? $item->variant_sku),
+                'item_name' => $item->product_name,
+                'item_variant' => $item->variant_label,
+                'price' => (float) $item->unit_price,
+                'quantity' => (int) $item->quantity,
+            ])->values()->all(),
+        ];
+
         return view('shop.checkout-thankyou', [
             ...ShopLayoutData::shared(),
             'seo' => SeoBuilder::privatePage(__('shop.checkout.thankyou_title')),
@@ -124,6 +139,7 @@ class CheckoutController extends Controller
             'order' => $record,
             'bank' => $bank,
             'purchaseContentIds' => $purchaseContentIds,
+            'purchaseEcommerce' => $purchaseEcommerce,
             'breadcrumbs' => [
                 ['label' => __('shop.checkout.thankyou_title'), 'url' => null],
             ],

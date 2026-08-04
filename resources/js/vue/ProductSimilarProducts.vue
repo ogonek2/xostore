@@ -5,8 +5,9 @@ import { FreeMode, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
 import ProductCard from './ProductCard.vue';
 import { refreshCartProductBadges } from '../shop/cart-badges';
+import { selectItem, viewItemList } from '../shop/ga4-ecommerce';
 
-defineProps({
+const props = defineProps({
     products: { type: Array, default: () => [] },
     labels: { type: Object, required: true },
 });
@@ -40,8 +41,36 @@ function goNext() {
     swiperInstance.value?.slideNext();
 }
 
+function onProductSelect(product, index) {
+    selectItem({
+        product_id: product.product_id,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        price: product.price,
+        index: index + 1,
+        quantity: 1,
+    }, 'Similar Products', 'similar_products');
+}
+
 onMounted(() => {
     nextTick(() => refreshCartProductBadges());
+
+    if (props.products.length) {
+        viewItemList(
+            props.products.map((product, index) => ({
+                product_id: product.product_id,
+                name: product.name,
+                brand: product.brand,
+                category: product.category,
+                price: product.price,
+                index: index + 1,
+                quantity: 1,
+            })),
+            'Similar Products',
+            'similar_products',
+        );
+    }
 });
 </script>
 
@@ -98,11 +127,11 @@ onMounted(() => {
             @resize="syncEdges"
         >
             <SwiperSlide
-                v-for="item in products"
+                v-for="(item, index) in products"
                 :key="item.product_id"
                 class="!h-auto !w-[min(72vw,220px)] shrink-0 sm:!w-[240px] lg:!w-[260px]"
             >
-                <ProductCard :product="item" :labels="labels" />
+                <ProductCard :product="item" :labels="labels" @select="onProductSelect(item, index)" />
             </SwiperSlide>
         </Swiper>
     </section>

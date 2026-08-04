@@ -21,7 +21,12 @@
         </div>
 
         @if ($products->isNotEmpty())
-            <div class="new-arrivals-swiper swiper overflow-hidden">
+            <div
+                class="new-arrivals-swiper swiper overflow-hidden"
+                data-ga4-item-list
+                data-ga4-list-name="New Arrivals"
+                data-ga4-list-id="new_arrivals"
+            >
                 <div class="swiper-wrapper">
                     @foreach ($products as $product)
                         <div class="swiper-slide !h-auto !w-[min(68vw,200px)] shrink-0 sm:!w-[220px] lg:!w-[240px]">
@@ -32,6 +37,8 @@
                                 :show-new-badge="$product['is_new'] ?? true"
                                 :url="$product['url']"
                                 :name="$product['name']"
+                                :brand="$product['brand'] ?? null"
+                                :price="$product['price'] ?? null"
                                 :price-formatted="$product['price_formatted']"
                                 :image="$product['image']"
                                 :alt="$product['alt']"

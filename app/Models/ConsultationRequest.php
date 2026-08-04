@@ -18,6 +18,10 @@ class ConsultationRequest extends Model
         'message',
         'preferred_at',
         'admin_notes',
+        'ip',
+        'user_agent',
+        'referer',
+        'submission_source',
     ];
 
     protected function casts(): array

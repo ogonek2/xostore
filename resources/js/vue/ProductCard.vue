@@ -7,6 +7,8 @@ const props = defineProps({
     labels: { type: Object, required: true },
 });
 
+const emit = defineEmits(['select']);
+
 const adding = ref(false);
 
 async function addToCart(event) {
@@ -41,7 +43,7 @@ async function addToCart(event) {
         data-product-card
         class="group/product-card flex min-w-0 max-w-full flex-col"
     >
-        <a :href="product.url" class="flex flex-col">
+        <a :href="product.url" class="flex flex-col" @click="emit('select', product)">
             <div
                 class="relative aspect-[4/5] overflow-hidden rounded-t-2xl bg-[#eceae6] ring-inset ring-1 ring-transparent group-[.is-in-cart]/product-card:ring-primary-DEFAULT"
             >

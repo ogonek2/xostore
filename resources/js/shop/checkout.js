@@ -1,3 +1,5 @@
+import { beginCheckout } from './ga4-ecommerce';
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.querySelector('[data-checkout-form]');
 
@@ -9,6 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const shippingEl = form.querySelector('[data-checkout-shipping]');
     const totalEl = form.querySelector('[data-checkout-total]');
     const radios = form.querySelectorAll('[data-payment-method]');
+
+    try {
+        const checkoutItems = JSON.parse(form.dataset.ga4Items || '[]');
+        const checkoutValue = Number(form.dataset.ga4Value || 0);
+        beginCheckout(checkoutItems, checkoutValue);
+    } catch {
+        // ignore malformed payload
+    }
 
     const updateQuote = async () => {
         const selected = form.querySelector('[data-payment-method]:checked');

@@ -16,6 +16,9 @@ class ConsultationRequestsTable
                 TextColumn::make('name')->label('Имя')->searchable(),
                 TextColumn::make('email')->label('E-mail')->searchable(),
                 TextColumn::make('status')->label('Статус')->badge()->formatStateUsing(fn ($s) => $s instanceof ConsultationStatus ? $s->label() : $s),
+                TextColumn::make('ip')->label('IP')->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('submission_source')->label('Источник')->toggleable(),
+                TextColumn::make('user_agent')->label('User-Agent')->limit(40)->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')->label('Создана')->dateTime('d.m.Y H:i')->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
