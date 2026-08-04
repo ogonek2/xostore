@@ -21,7 +21,9 @@
         window.__SHOP_CURRENCY__ = @json(config('shop.currency', 'PLN'));
     </script>
     @stack('datalayer')
-    @php($gtmId = config('shop.analytics.gtm_container_id'))
+    @php
+        $gtmId = config('shop.analytics.gtm_container_id');
+    @endphp
     @if (filled($gtmId))
         <!-- Google Tag Manager -->
         <script>
@@ -60,9 +62,9 @@
     data-analytics-endpoint="{{ route('api.analytics.store', ['locale' => app()->getLocale()]) }}"
     data-ga4-currency="{{ config('shop.currency', 'PLN') }}"
     data-ga4-affiliation="{{ config('shop.analytics.affiliation') }}">
-    @if (filled($gtmId ?? config('shop.analytics.gtm_container_id')))
+    @if (filled($gtmId))
         <!-- Google Tag Manager (noscript) -->
-        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ config('shop.analytics.gtm_container_id') }}"
+        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtmId }}"
         height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <!-- End Google Tag Manager (noscript) -->
     @endif
