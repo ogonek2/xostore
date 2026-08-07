@@ -109,14 +109,6 @@ class CheckoutController extends Controller
             ? $this->redirectBuilder->bankInstructions($record->paymentMethod, $record)
             : null;
 
-        $purchaseContentIds = $record->items
-            ->map(fn ($item) => $item->variant?->product_id)
-            ->filter()
-            ->unique()
-            ->values()
-            ->map(fn ($id) => (string) $id)
-            ->all();
-
         $purchaseEcommerce = [
             'transaction_id' => $record->number,
             'affiliation' => config('shop.analytics.affiliation'),
@@ -138,7 +130,6 @@ class CheckoutController extends Controller
             'cartCount' => 0,
             'order' => $record,
             'bank' => $bank,
-            'purchaseContentIds' => $purchaseContentIds,
             'purchaseEcommerce' => $purchaseEcommerce,
             'breadcrumbs' => [
                 ['label' => __('shop.checkout.thankyou_title'), 'url' => null],

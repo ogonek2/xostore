@@ -1,5 +1,4 @@
 import { dispatchCartState } from './cart-badges';
-import { trackAddToCart } from './meta-pixel';
 import { addToCart as trackGa4AddToCart } from './ga4-ecommerce';
 
 export function getCartStoreUrl() {
@@ -48,12 +47,6 @@ export async function addVariantToCart(variantId, { quantity = 1, openDrawer = f
     const addedItem = (data.items ?? []).find((item) => Number(item.variant_id) === Number(variantId));
 
     if (addedItem) {
-        trackAddToCart({
-            productId: addedItem.product_id,
-            value: Number(addedItem.unit_price) * Number(quantity),
-            currency: 'PLN',
-        });
-
         trackGa4AddToCart({
             product_id: addedItem.product_id,
             name: addedItem.name,

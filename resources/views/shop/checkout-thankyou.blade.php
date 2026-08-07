@@ -105,31 +105,3 @@
         })();
     </script>
 @endpush
-
-@push('scripts')
-    <script>
-        (function () {
-            if (typeof fbq !== 'function') {
-                return;
-            }
-
-            var orderId = @json($order->number);
-            var storageKey = 'fb_purchase_' + orderId;
-
-            try {
-                if (sessionStorage.getItem(storageKey)) {
-                    return;
-                }
-                sessionStorage.setItem(storageKey, '1');
-            } catch (e) {}
-
-            fbq('track', 'Purchase', {
-                value: {{ (float) $order->total }},
-                currency: 'PLN',
-                content_ids: @json($purchaseContentIds ?? []),
-                content_type: 'product',
-                order_id: orderId
-            });
-        })();
-    </script>
-@endpush
