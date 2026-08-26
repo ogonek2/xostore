@@ -11,13 +11,18 @@ use Illuminate\Support\Facades\Storage;
 
 final class ProductFeedGenerator
 {
-    public function regenerateAll(): FeedSettings
+    public function regenerateAll(bool $force = false): FeedSettings
     {
         if (! config('shop.feeds.enabled', true)) {
             return FeedSettings::instance();
         }
 
         $settings = FeedSettings::instance();
+
+        if ($settings->manual_feeds_locked && ! $force) {
+            return $settings;
+        }
+
         $startedAt = microtime(true);
 
         try {

@@ -26,13 +26,13 @@ final class ProductFeedRegenerator
         static::registerTerminator();
     }
 
-    public static function regenerateNow(): void
+    public static function regenerateNow(bool $force = false): void
     {
         if (! config('shop.feeds.enabled', true)) {
             return;
         }
 
-        app(ProductFeedGenerator::class)->regenerateAll();
+        app(ProductFeedGenerator::class)->regenerateAll($force);
         static::$pending = false;
     }
 

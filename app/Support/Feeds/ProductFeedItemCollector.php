@@ -67,7 +67,8 @@ final class ProductFeedItemCollector
             return;
         }
 
-        $baseTitle = $this->productTitle($product, $locale);
+        $brandEnabled = $this->settings->isFieldEnabled(FeedField::BRAND);
+        $baseTitle = $this->productTitle($product, $locale, stripBrand: ! $brandEnabled);
         $description = $this->productDescription($product, $locale);
         $brand = $product->brand?->translate('name', $locale) ?? config('shop.name', 'XOStore');
         $link = $this->productUrl($product, $locale);
@@ -258,16 +259,92 @@ final class ProductFeedItemCollector
         return $variant->stock_qty > 0 ? 'in stock' : 'out of stock';
     }
 
-    private function productTitle(Product $product, string $locale): string
+    private function productTitle(Product $product, string $locale, bool $stripBrand = false): string
     {
-        $name = $product->translate('name', $locale) ?? $product->sku;
+        $name = (string) ($product->translate('name', $locale) ?? $product->sku);
         $brand = $product->brand?->translate('name', $locale);
 
-        if ($brand && $name && ! str_starts_with($name, $brand)) {
+        if ($stripBrand) {
+            return $this->truncate($this->stripBrandFromText($name, $product), 150);
+        }
+
+        if ($brand && $name !== '' && ! str_starts_with($name, $brand)) {
             return $this->truncate("{$brand} {$name}", 150);
         }
 
-        return $this->truncate((string) $name, 150);
+        return $this->truncate($name, 150);
+    }
+
+    /**
+     * Remove brand name(s) from feed title when brand field is disabled.
+     */
+    private function stripBrandFromText(string $text, Product $product): string
+    {
+        $aliases = $this->brandNameAliases($product);
+
+        if ($aliases === []) {
+            return trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+        }
+
+        // Longer aliases first so "Louis Vuitton" wins over partial matches.
+        usort($aliases, fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
+
+        foreach ($aliases as $alias) {
+            $quoted = preg_quote($alias, '/');
+
+            // Leading brand: "Louis Vuitton Neverfull" / "Chanel — Hoop Earrings"
+            $text = preg_replace(
+                '/^\s*'.$quoted.'\s*[-—–:|·•]?\s*/iu',
+                '',
+                $text,
+            ) ?? $text;
+
+            // Brand elsewhere as a whole phrase (not inside another word)
+            $text = preg_replace(
+                '/(?<![\p{L}\p{N}])'.$quoted.'(?![\p{L}\p{N}])/iu',
+                '',
+                $text,
+            ) ?? $text;
+        }
+
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+        $text = trim($text, " \t\n\r\0\x0B-—–:|·•");
+
+        return $text !== '' ? $text : (string) ($product->sku ?: $product->id);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function brandNameAliases(Product $product): array
+    {
+        $brand = $product->brand;
+
+        if (! $brand) {
+            return [];
+        }
+
+        $aliases = [];
+
+        foreach ($brand->translates as $translate) {
+            if ($translate->field !== 'name') {
+                continue;
+            }
+
+            $value = trim((string) $translate->value);
+
+            if ($value !== '') {
+                $aliases[] = $value;
+            }
+        }
+
+        $code = trim((string) ($brand->code ?? ''));
+
+        if ($code !== '' && ! is_numeric($code)) {
+            $aliases[] = $code;
+        }
+
+        return array_values(array_unique($aliases));
     }
 
     private function productDescription(Product $product, string $locale): string

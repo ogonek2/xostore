@@ -6,6 +6,8 @@ use App\Models\FeedSettings;
 use App\Models\Language;
 use App\Support\Feeds\FeedField;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\CodeEditor;
+use Filament\Forms\Components\CodeEditor\Enums\Language as CodeLanguage;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -73,7 +75,7 @@ class FeedSettingsForm
                         ->label('Поля фида')
                         ->schema([
                             Section::make('Какие поля включать в выгрузку')
-                                ->description('Управляет колонками/тегами самого фида (Google Merchant / Facebook Catalog), а не полями таблицы товаров. Обязательные поля (id, title, link, image_link, availability, price) всегда включены.')
+                                ->description('Управляет колонками/тегами самого фида (Google Merchant / Facebook Catalog), а не полями таблицы товаров. Обязательные поля (id, title, link, image_link, availability, price) всегда включены. Если выключить brand — название бренда также вырезается из title через регулярные выражения.')
                                 ->schema([
                                     Placeholder::make('required_fields_hint')
                                         ->label('Обязательные поля')
@@ -104,6 +106,27 @@ class FeedSettingsForm
                                                 $enabled,
                                             )));
                                         })
+                                        ->columnSpanFull(),
+                                ]),
+                        ]),
+                    Tab::make('editor')
+                        ->label('Редактор')
+                        ->schema([
+                            Section::make('Ручное редактирование фидов')
+                                ->description('Можно править готовые файлы Google (XML) и Facebook (CSV). Включите блокировку, чтобы автообновление и кнопка «Обновить фиды» не затирали ручные правки. При сохранении настроек с включённой блокировкой содержимое редакторов записывается в файлы.')
+                                ->schema([
+                                    Toggle::make('manual_feeds_locked')
+                                        ->label('Блокировать перезапись ручных правок')
+                                        ->helperText('Пока включено — каталог не пересобирает файлы автоматически. Снимите галочку и нажмите «Обновить фиды», чтобы снова сгенерировать из каталога.')
+                                        ->columnSpanFull(),
+                                    CodeEditor::make('google_feed_content')
+                                        ->label('Google Merchant (XML)')
+                                        ->language(CodeLanguage::Xml)
+                                        ->helperText('Публичный файл google-merchant (или ваш slug). Сохраняется при записи настроек, если включена блокировка ручных правок.')
+                                        ->columnSpanFull(),
+                                    CodeEditor::make('facebook_feed_content')
+                                        ->label('Facebook Catalog (CSV)')
+                                        ->helperText('UTF-8 CSV. BOM добавляется автоматически при сохранении.')
                                         ->columnSpanFull(),
                                 ]),
                         ]),

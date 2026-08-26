@@ -26,6 +26,7 @@ class FeedSettings extends Model
         'product_condition',
         'id_source',
         'enabled_fields',
+        'manual_feeds_locked',
         'google_last_generated_at',
         'google_item_count',
         'google_file_size',
@@ -44,6 +45,7 @@ class FeedSettings extends Model
             'auto_regenerate' => 'boolean',
             'include_out_of_stock' => 'boolean',
             'enabled_fields' => 'array',
+            'manual_feeds_locked' => 'boolean',
             'google_last_generated_at' => 'datetime',
             'facebook_last_generated_at' => 'datetime',
         ];
@@ -65,6 +67,7 @@ class FeedSettings extends Model
                 'product_condition' => (string) config('shop.feeds.product_condition', 'new'),
                 'id_source' => self::ID_SOURCE_PRODUCT,
                 'enabled_fields' => FeedField::defaultEnabled(),
+                'manual_feeds_locked' => false,
             ],
         );
     }
@@ -108,6 +111,96 @@ class FeedSettings extends Model
     public function isFieldEnabled(string $field): bool
     {
         return in_array($field, $this->resolvedEnabledFields(), true);
+    }
+
+    public function readGoogleFeedContent(): string
+    {
+        if (! $this->googleFileExists()) {
+            return '';
+        }
+
+        return (string) (Storage::disk($this->storageDisk())->get($this->googleStoragePath()) ?? '');
+    }
+
+    public function readFacebookFeedContent(): string
+    {
+        if (! $this->facebookFileExists()) {
+            return '';
+        }
+
+        $content = (string) (Storage::disk($this->storageDisk())->get($this->facebookStoragePath()) ?? '');
+
+        // Strip UTF-8 BOM for the editor; it is restored on write.
+        return str_starts_with($content, "\xEF\xBB\xBF")
+            ? substr($content, 3)
+            : $content;
+    }
+
+    public function writeGoogleFeedContent(string $content): void
+    {
+        $disk = Storage::disk($this->storageDisk());
+        $directory = $this->storageDirectory();
+
+        if (! $disk->exists($directory)) {
+            $disk->makeDirectory($directory);
+        }
+
+        $content = $this->normalizeFeedContent($content);
+        $disk->put($this->googleStoragePath(), $content);
+
+        $this->forceFill([
+            'google_last_generated_at' => now(),
+            'google_item_count' => $this->countXmlItems($content),
+            'google_file_size' => strlen($content),
+            'last_error' => null,
+        ])->save();
+    }
+
+    public function writeFacebookFeedContent(string $content): void
+    {
+        $disk = Storage::disk($this->storageDisk());
+        $directory = $this->storageDirectory();
+
+        if (! $disk->exists($directory)) {
+            $disk->makeDirectory($directory);
+        }
+
+        $content = $this->normalizeFeedContent($content);
+
+        if (! str_starts_with($content, "\xEF\xBB\xBF")) {
+            $content = "\xEF\xBB\xBF".$content;
+        }
+
+        $disk->put($this->facebookStoragePath(), $content);
+
+        $this->forceFill([
+            'facebook_last_generated_at' => now(),
+            'facebook_item_count' => $this->countCsvRows($content),
+            'facebook_file_size' => strlen($content),
+            'last_error' => null,
+        ])->save();
+    }
+
+    private function normalizeFeedContent(string $content): string
+    {
+        $content = str_replace("\r\n", "\n", $content);
+        $content = str_replace("\r", "\n", $content);
+
+        return $content;
+    }
+
+    private function countXmlItems(string $xml): int
+    {
+        return preg_match_all('/<item\b/i', $xml) ?: 0;
+    }
+
+    private function countCsvRows(string $csv): int
+    {
+        $csv = str_starts_with($csv, "\xEF\xBB\xBF") ? substr($csv, 3) : $csv;
+        $lines = preg_split('/\n/', $csv) ?: [];
+        $rows = array_values(array_filter($lines, fn (string $line): bool => trim($line) !== ''));
+
+        return max(0, count($rows) - 1);
     }
 
     public function googlePublicUrl(): string
