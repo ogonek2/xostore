@@ -26,6 +26,7 @@ class PaymentBridgeTest extends TestCase
         config([
             'services.payment_bridge.enabled' => true,
             'services.payment_bridge.shop_url' => 'https://payments.example.test',
+            'services.payment_bridge.public_url' => 'https://xostorebrand.com',
             'services.payment_bridge.inbound_secret' => 'inbound-test-secret',
             'services.payment_bridge.outbound_secret' => 'outbound-test-secret',
             'services.payment_bridge.time_window' => 300,
@@ -113,6 +114,7 @@ class PaymentBridgeTest extends TestCase
                 && $request->header('X-Bridge-Signature')[0] === $expected
                 && $request->header('Idempotency-Key')[0] === $payment->idempotency_key
                 && $request['amount_minor'] === 12345
+                && $request['return_url'] === 'https://xostorebrand.com/pl/platnosc/powrot/'.$payment->public_token
                 && $request['products'][0]['unit_price_minor'] === 6172
                 && collect($request['products'])->sum(
                     fn (array $product): int => $product['unit_price_minor'] * $product['quantity']
@@ -181,7 +183,39 @@ class PaymentBridgeTest extends TestCase
         ]))
             ->assertOk()
             ->assertSee('Status płatności')
-            ->assertSee('Ponów płatność');
+            ->assertSee('Ponów płatność')
+            ->assertSee('var shouldTrack = false', false);
+    }
+
+    public function test_thank_you_tracks_purchase_only_when_paid(): void
+    {
+        $this->seed(LanguageSeeder::class);
+        $payment = $this->makePayment();
+
+        $this->get(route('api.checkout.payment-status', [
+            'locale' => 'pl',
+            'order' => $payment->order->access_token,
+        ]))
+            ->assertOk()
+            ->assertJson(['paid' => false, 'status' => 'pending']);
+
+        $payment->update(['status' => PaymentStatus::Paid]);
+
+        $this->get(route('checkout.thankyou', [
+            'locale' => 'pl',
+            'order' => $payment->order->access_token,
+        ]))
+            ->assertOk()
+            ->assertSee('var shouldTrack = true', false)
+            ->assertSee("event: 'purchase'", false)
+            ->assertSee($payment->order->number);
+
+        $this->get(route('api.checkout.payment-status', [
+            'locale' => 'pl',
+            'order' => $payment->order->access_token,
+        ]))
+            ->assertOk()
+            ->assertJson(['paid' => true, 'status' => 'paid']);
     }
 
     private function signedEvent(array $payload)

@@ -73,6 +73,8 @@ Route::prefix('{locale}')
         Route::get('/zamowienie', [CheckoutController::class, 'show'])->name('checkout.show');
         Route::post('/zamowienie', [CheckoutController::class, 'store'])->name('checkout.store');
         Route::get('/zamowienie/dziekujemy/{order}', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
+        Route::get('/api/zamowienie/{order}/platnosc', [CheckoutController::class, 'paymentStatus'])
+            ->name('api.checkout.payment-status');
         Route::post('/zamowienie/{order}/platnosc/{payment}/ponow', [CheckoutController::class, 'retryPayment'])
             ->name('payments.retry');
         Route::get('/platnosc/powrot/{payment}', [CheckoutController::class, 'paymentReturn'])

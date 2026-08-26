@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Support\Feeds\FeedField;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class FeedSettings extends Model
 {
+    public const ID_SOURCE_PRODUCT = 'product_id';
+
+    public const ID_SOURCE_VARIANT_SKU = 'variant_sku';
+
+    public const ID_SOURCE_VARIANT_ID = 'variant_id';
+
     protected $fillable = [
         'google_enabled',
         'facebook_enabled',
@@ -17,6 +24,8 @@ class FeedSettings extends Model
         'facebook_slug',
         'google_product_category',
         'product_condition',
+        'id_source',
+        'enabled_fields',
         'google_last_generated_at',
         'google_item_count',
         'google_file_size',
@@ -34,6 +43,7 @@ class FeedSettings extends Model
             'facebook_enabled' => 'boolean',
             'auto_regenerate' => 'boolean',
             'include_out_of_stock' => 'boolean',
+            'enabled_fields' => 'array',
             'google_last_generated_at' => 'datetime',
             'facebook_last_generated_at' => 'datetime',
         ];
@@ -53,8 +63,51 @@ class FeedSettings extends Model
                 'facebook_slug' => (string) config('shop.feeds.facebook.slug', 'facebook-catalog.csv'),
                 'google_product_category' => (string) config('shop.feeds.google.default_category', ''),
                 'product_condition' => (string) config('shop.feeds.product_condition', 'new'),
+                'id_source' => self::ID_SOURCE_PRODUCT,
+                'enabled_fields' => FeedField::defaultEnabled(),
             ],
         );
+    }
+
+    public function resolveIdSource(): string
+    {
+        $source = (string) ($this->id_source ?: self::ID_SOURCE_PRODUCT);
+
+        return in_array($source, [
+            self::ID_SOURCE_PRODUCT,
+            self::ID_SOURCE_VARIANT_SKU,
+            self::ID_SOURCE_VARIANT_ID,
+        ], true) ? $source : self::ID_SOURCE_PRODUCT;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function resolvedEnabledFields(): array
+    {
+        $stored = $this->enabled_fields;
+
+        if (! is_array($stored) || $stored === []) {
+            return FeedField::defaultEnabled();
+        }
+
+        $enabled = array_values(array_unique(array_filter(
+            $stored,
+            fn ($field) => is_string($field) && $field !== '',
+        )));
+
+        foreach (FeedField::REQUIRED as $required) {
+            if (! in_array($required, $enabled, true)) {
+                $enabled[] = $required;
+            }
+        }
+
+        return $enabled;
+    }
+
+    public function isFieldEnabled(string $field): bool
+    {
+        return in_array($field, $this->resolvedEnabledFields(), true);
     }
 
     public function googlePublicUrl(): string

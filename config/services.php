@@ -45,6 +45,8 @@ return [
     'payment_bridge' => [
         'enabled' => env('PAYMENT_BRIDGE_ENABLED', false),
         'shop_url' => env('SHOP_PAYMENT_URL'),
+        // Stable public storefront origin for PayU return_url (must be https production domain).
+        'public_url' => env('PAYMENT_BRIDGE_PUBLIC_URL', env('APP_URL')),
         'outbound_secret' => env('PAYMENT_BRIDGE_OUTBOUND_SECRET'),
         'inbound_secret' => env('PAYMENT_BRIDGE_INBOUND_SECRET'),
         'time_window' => env('PAYMENT_BRIDGE_TIME_WINDOW', 300),

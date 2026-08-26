@@ -71,10 +71,42 @@ final class ProductFeedItemCollector
         $description = $this->productDescription($product, $locale);
         $brand = $product->brand?->translate('name', $locale) ?? config('shop.name', 'XOStore');
         $link = $this->productUrl($product, $locale);
-        $itemGroupId = filled($product->model_slug) ? (string) $product->model_slug : (string) $product->id;
+        $itemGroupId = (string) $product->id;
         $category = $this->settings->google_product_category ?: null;
         $condition = $this->settings->product_condition ?: 'new';
         $color = $product->color_label ?: $this->variantColorLabel($variants->first(), $locale);
+        $idSource = $this->settings->resolveIdSource();
+
+        // product_id: one row per catalog product so feed id matches GA4/Meta item_id
+        if ($idSource === FeedSettings::ID_SOURCE_PRODUCT) {
+            $variant = $this->pickPrimaryVariant($product, $variants);
+
+            if (! $variant) {
+                return;
+            }
+
+            $item = $this->mapVariant(
+                product: $product,
+                variant: $variant,
+                locale: $locale,
+                currency: $currency,
+                itemGroupId: $itemGroupId,
+                title: $baseTitle,
+                description: $description,
+                brand: $brand,
+                link: $link,
+                imageLink: $imageLink,
+                condition: $condition,
+                category: $category,
+                color: $color,
+            );
+
+            if ($item) {
+                $this->items[] = $item;
+            }
+
+            return;
+        }
 
         if ($variants->count() === 1) {
             $variant = $variants->first();
@@ -130,6 +162,20 @@ final class ProductFeedItemCollector
         }
     }
 
+    /**
+     * Prefer an in-stock variant, otherwise the first active one.
+     *
+     * @param  \Illuminate\Support\Collection<int, ProductVariant>  $variants
+     */
+    private function pickPrimaryVariant(Product $product, $variants): ?ProductVariant
+    {
+        $inStock = $variants->first(function (ProductVariant $variant) use ($product): bool {
+            return $this->availability($product, $variant) === 'in stock';
+        });
+
+        return $inStock ?? $variants->first();
+    }
+
     private function mapVariant(
         Product $product,
         ProductVariant $variant,
@@ -171,7 +217,7 @@ final class ProductFeedItemCollector
         }
 
         return new ProductFeedItem(
-            id: (string) ($variant->sku ?: $variant->id),
+            id: $this->resolveItemId($product, $variant),
             itemGroupId: $itemGroupId,
             title: $this->truncate($title, 150),
             description: $description,
@@ -188,6 +234,15 @@ final class ProductFeedItemCollector
             size: $variant->sizeGridValue?->display_value ?? $variant->sizeGridValue?->value,
             color: $color,
         );
+    }
+
+    private function resolveItemId(Product $product, ProductVariant $variant): string
+    {
+        return match ($this->settings->resolveIdSource()) {
+            FeedSettings::ID_SOURCE_VARIANT_ID => (string) $variant->id,
+            FeedSettings::ID_SOURCE_VARIANT_SKU => (string) ($variant->sku ?: $variant->id),
+            default => (string) $product->id,
+        };
     }
 
     private function availability(Product $product, ProductVariant $variant): string

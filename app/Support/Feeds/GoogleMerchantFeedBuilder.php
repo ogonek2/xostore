@@ -2,8 +2,14 @@
 
 namespace App\Support\Feeds;
 
+use App\Models\FeedSettings;
+
 final class GoogleMerchantFeedBuilder
 {
+    public function __construct(
+        private readonly ?FeedSettings $settings = null,
+    ) {}
+
     /**
      * @param  list<ProductFeedItem>  $items
      */
@@ -22,22 +28,22 @@ final class GoogleMerchantFeedBuilder
 
         foreach ($items as $item) {
             $xml->startElement('item');
-            $this->writeElement($xml, 'g:id', $item->id);
-            $this->writeElement($xml, 'g:title', $item->title);
-            $this->writeElement($xml, 'g:description', $item->description);
-            $this->writeElement($xml, 'g:link', $item->link);
-            $this->writeElement($xml, 'g:image_link', $item->imageLink);
-            $this->writeElement($xml, 'g:availability', $item->availability);
-            $this->writeElement($xml, 'g:price', $item->price);
-            $this->writeOptional($xml, 'g:sale_price', $item->salePrice);
-            $this->writeElement($xml, 'g:brand', $item->brand);
-            $this->writeElement($xml, 'g:condition', $item->condition);
-            $this->writeElement($xml, 'g:item_group_id', $item->itemGroupId);
-            $this->writeOptional($xml, 'g:google_product_category', $item->googleProductCategory);
-            $this->writeOptional($xml, 'g:gtin', $item->gtin);
-            $this->writeOptional($xml, 'g:mpn', $item->mpn);
-            $this->writeOptional($xml, 'g:size', $item->size);
-            $this->writeOptional($xml, 'g:color', $item->color);
+            $this->writeIfEnabled($xml, FeedField::ID, 'g:id', $item->id);
+            $this->writeIfEnabled($xml, FeedField::TITLE, 'g:title', $item->title);
+            $this->writeOptionalIfEnabled($xml, FeedField::DESCRIPTION, 'g:description', $item->description);
+            $this->writeIfEnabled($xml, FeedField::LINK, 'g:link', $item->link);
+            $this->writeIfEnabled($xml, FeedField::IMAGE_LINK, 'g:image_link', $item->imageLink);
+            $this->writeIfEnabled($xml, FeedField::AVAILABILITY, 'g:availability', $item->availability);
+            $this->writeIfEnabled($xml, FeedField::PRICE, 'g:price', $item->price);
+            $this->writeOptionalIfEnabled($xml, FeedField::SALE_PRICE, 'g:sale_price', $item->salePrice);
+            $this->writeOptionalIfEnabled($xml, FeedField::BRAND, 'g:brand', $item->brand);
+            $this->writeOptionalIfEnabled($xml, FeedField::CONDITION, 'g:condition', $item->condition);
+            $this->writeOptionalIfEnabled($xml, FeedField::ITEM_GROUP_ID, 'g:item_group_id', $item->itemGroupId);
+            $this->writeOptionalIfEnabled($xml, FeedField::GOOGLE_PRODUCT_CATEGORY, 'g:google_product_category', $item->googleProductCategory);
+            $this->writeOptionalIfEnabled($xml, FeedField::GTIN, 'g:gtin', $item->gtin);
+            $this->writeOptionalIfEnabled($xml, FeedField::MPN, 'g:mpn', $item->mpn);
+            $this->writeOptionalIfEnabled($xml, FeedField::SIZE, 'g:size', $item->size);
+            $this->writeOptionalIfEnabled($xml, FeedField::COLOR, 'g:color', $item->color);
             $xml->endElement();
         }
 
@@ -48,19 +54,37 @@ final class GoogleMerchantFeedBuilder
         return $xml->outputMemory();
     }
 
-    private function writeElement(\XMLWriter $xml, string $name, string $value): void
+    private function enabled(string $field): bool
     {
-        $xml->startElement($name);
-        $xml->writeCData($value);
-        $xml->endElement();
+        return $this->settings?->isFieldEnabled($field) ?? true;
     }
 
-    private function writeOptional(\XMLWriter $xml, string $name, ?string $value): void
+    private function writeIfEnabled(\XMLWriter $xml, string $field, string $name, string $value): void
     {
+        if (! $this->enabled($field)) {
+            return;
+        }
+
+        $this->writeElement($xml, $name, $value);
+    }
+
+    private function writeOptionalIfEnabled(\XMLWriter $xml, string $field, string $name, ?string $value): void
+    {
+        if (! $this->enabled($field)) {
+            return;
+        }
+
         if ($value === null || trim($value) === '') {
             return;
         }
 
         $this->writeElement($xml, $name, $value);
+    }
+
+    private function writeElement(\XMLWriter $xml, string $name, string $value): void
+    {
+        $xml->startElement($name);
+        $xml->writeCData($value);
+        $xml->endElement();
     }
 }

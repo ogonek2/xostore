@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Payment;
 use App\Support\Payments\BridgeSignature;
 use App\Support\Payments\MinorUnits;
+use App\Support\Payments\PublicBaseUrl;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -57,16 +58,22 @@ final class ShopPaymentBrokerClient
             ]);
         }
 
+        $locale = in_array($order->locale, ['pl', 'en'], true)
+            ? $order->locale
+            : (string) config('shop.default_language', 'pl');
+
+        $returnUrl = PublicBaseUrl::join(
+            (string) config('services.payment_bridge.public_url', config('app.url')),
+            '/'.$locale.'/platnosc/powrot/'.$payment->public_token,
+        );
+
         $payload = [
             'payment_id' => $payment->id,
             'order_number' => $order->number,
             'amount_minor' => $payment->amount_minor,
             'currency' => $payment->currency,
-            'locale' => $order->locale,
-            'return_url' => route('payments.return', [
-                'locale' => $order->locale,
-                'payment' => $payment->public_token,
-            ]),
+            'locale' => $locale,
+            'return_url' => $returnUrl,
             'customer_ip' => $customerIp,
             'buyer' => [
                 'email' => $order->email,

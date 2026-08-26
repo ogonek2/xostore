@@ -11,6 +11,7 @@ use App\Services\Checkout\CheckoutService;
 use App\Services\Checkout\PaymentRedirectBuilder;
 use App\Support\Seo\SeoBuilder;
 use App\Support\Shop\ShopLayoutData;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -109,20 +110,9 @@ class CheckoutController extends Controller
             ? $this->redirectBuilder->bankInstructions($record->paymentMethod, $record)
             : null;
 
-        $purchaseEcommerce = [
-            'transaction_id' => $record->number,
-            'affiliation' => config('shop.analytics.affiliation'),
-            'value' => (float) $record->total,
-            'shipping' => (float) $record->shipping,
-            'currency' => config('shop.currency', 'PLN'),
-            'items' => $record->items->map(fn ($item) => [
-                'item_id' => (string) ($item->variant?->product_id ?? $item->variant_sku),
-                'item_name' => $item->product_name,
-                'item_variant' => $item->variant_label,
-                'price' => (float) $item->unit_price,
-                'quantity' => (int) $item->quantity,
-            ])->values()->all(),
-        ];
+        $purchaseEcommerce = $this->purchaseEcommercePayload($record);
+        $shouldTrackPurchase = $this->shouldTrackPurchase($record);
+        $awaitingPaidPurchase = $this->awaitsGatewayPayment($record);
 
         return view('shop.checkout-thankyou', [
             ...ShopLayoutData::shared(),
@@ -131,10 +121,90 @@ class CheckoutController extends Controller
             'order' => $record,
             'bank' => $bank,
             'purchaseEcommerce' => $purchaseEcommerce,
+            'shouldTrackPurchase' => $shouldTrackPurchase,
+            'awaitingPaidPurchase' => $awaitingPaidPurchase,
+            'paymentStatusUrl' => $awaitingPaidPurchase
+                ? route('api.checkout.payment-status', ['locale' => $locale, 'order' => $record->access_token])
+                : null,
             'breadcrumbs' => [
                 ['label' => __('shop.checkout.thankyou_title'), 'url' => null],
             ],
         ]);
+    }
+
+    public function paymentStatus(string $locale, string $order): JsonResponse
+    {
+        $record = Order::query()
+            ->with(['paymentMethod', 'latestPayment'])
+            ->where('access_token', $order)
+            ->firstOrFail();
+
+        $payment = $record->latestPayment;
+        $status = $payment?->status?->value ?? 'unknown';
+
+        return response()->json([
+            'status' => $status,
+            'paid' => $this->shouldTrackPurchase($record),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function purchaseEcommercePayload(Order $order): array
+    {
+        $currency = $order->latestPayment?->currency
+            ?: config('shop.currency', 'PLN');
+
+        return [
+            'transaction_id' => $order->number,
+            'affiliation' => config('shop.analytics.affiliation'),
+            'value' => round((float) $order->total, 2),
+            'shipping' => round((float) $order->shipping, 2),
+            'currency' => strtoupper((string) $currency),
+            'items' => $order->items->map(fn ($item) => [
+                'item_id' => (string) ($item->variant?->product_id ?? $item->variant_sku),
+                'item_name' => $item->product_name,
+                'item_variant' => $item->variant_label,
+                'price' => round((float) $item->unit_price, 2),
+                'quantity' => (int) $item->quantity,
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * Purchase must not fire on "place order" alone for PayU — only after Paid.
+     * COD / bank transfer: order acceptance on thank-you is the conversion.
+     */
+    protected function shouldTrackPurchase(Order $order): bool
+    {
+        if ($this->isOnlinePaymentOrder($order)) {
+            return $order->latestPayment?->status === PaymentStatus::Paid;
+        }
+
+        return true;
+    }
+
+    protected function awaitsGatewayPayment(Order $order): bool
+    {
+        if (! $this->isOnlinePaymentOrder($order)) {
+            return false;
+        }
+
+        $payment = $order->latestPayment;
+
+        return $payment !== null && $payment->status !== PaymentStatus::Paid;
+    }
+
+    protected function isOnlinePaymentOrder(Order $order): bool
+    {
+        if ($order->paymentMethod?->isGateway()) {
+            return true;
+        }
+
+        $provider = strtolower((string) ($order->latestPayment?->provider ?? ''));
+
+        return in_array($provider, ['payu', 'payment_gateway', 'gateway'], true);
     }
 
     public function retryPayment(Request $request, string $locale, string $order, string $payment): RedirectResponse

@@ -92,7 +92,7 @@ final class ProductFeedGenerator
      */
     private function writeGoogleFeed(FeedSettings $settings, array $items): void
     {
-        $builder = new GoogleMerchantFeedBuilder;
+        $builder = new GoogleMerchantFeedBuilder($settings);
         $xml = $builder->build(
             items: $items,
             shopName: (string) config('shop.name', 'XOStore'),
@@ -113,7 +113,7 @@ final class ProductFeedGenerator
      */
     private function writeFacebookFeed(FeedSettings $settings, array $items): void
     {
-        $builder = new FacebookCatalogFeedBuilder;
+        $builder = new FacebookCatalogFeedBuilder($settings);
         $csv = $builder->build($items);
 
         Storage::disk($settings->storageDisk())->put($settings->facebookStoragePath(), $csv);

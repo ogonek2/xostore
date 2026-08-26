@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Feeds\Schemas;
 
 use App\Models\FeedSettings;
 use App\Models\Language;
+use App\Support\Feeds\FeedField;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -52,8 +54,58 @@ class FeedSettingsForm
                                         ->placeholder('Apparel & Accessories > Clothing')
                                         ->maxLength(255)
                                         ->columnSpanFull(),
+                                    Select::make('id_source')
+                                        ->label('Источник item_id (id в фиде)')
+                                        ->options([
+                                            FeedSettings::ID_SOURCE_PRODUCT => 'ID товара в каталоге (product_id)',
+                                            FeedSettings::ID_SOURCE_VARIANT_SKU => 'SKU варианта',
+                                            FeedSettings::ID_SOURCE_VARIANT_ID => 'ID варианта',
+                                        ])
+                                        ->default(FeedSettings::ID_SOURCE_PRODUCT)
+                                        ->required()
+                                        ->native(false)
+                                        ->helperText('Для сопоставления с GA4/Meta Pixel выбирайте ID товара в каталоге. В этом режиме — одна строка на товар.')
+                                        ->columnSpanFull(),
                                 ])
                                 ->columns(2),
+                        ]),
+                    Tab::make('fields')
+                        ->label('Поля фида')
+                        ->schema([
+                            Section::make('Какие поля включать в выгрузку')
+                                ->description('Управляет колонками/тегами самого фида (Google Merchant / Facebook Catalog), а не полями таблицы товаров. Обязательные поля (id, title, link, image_link, availability, price) всегда включены.')
+                                ->schema([
+                                    Placeholder::make('required_fields_hint')
+                                        ->label('Обязательные поля')
+                                        ->content(implode(', ', FeedField::REQUIRED))
+                                        ->columnSpanFull(),
+                                    CheckboxList::make('enabled_fields')
+                                        ->label('Опциональные поля')
+                                        ->options(FeedField::optionalLabels())
+                                        ->default(FeedField::OPTIONAL)
+                                        ->columns(2)
+                                        ->bulkToggleable()
+                                        ->helperText('Снимите галочку, чтобы исключить поле из Google XML и Facebook CSV.')
+                                        ->dehydrateStateUsing(function (?array $state): array {
+                                            $optional = array_values(array_intersect(
+                                                FeedField::OPTIONAL,
+                                                is_array($state) ? $state : [],
+                                            ));
+
+                                            return array_values(array_unique(array_merge(
+                                                FeedField::REQUIRED,
+                                                $optional,
+                                            )));
+                                        })
+                                        ->afterStateHydrated(function (CheckboxList $component, mixed $state): void {
+                                            $enabled = is_array($state) ? $state : FeedField::defaultEnabled();
+                                            $component->state(array_values(array_intersect(
+                                                FeedField::OPTIONAL,
+                                                $enabled,
+                                            )));
+                                        })
+                                        ->columnSpanFull(),
+                                ]),
                         ]),
                     Tab::make('google')
                         ->label('Google Merchant')

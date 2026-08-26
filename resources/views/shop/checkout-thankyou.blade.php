@@ -77,31 +77,90 @@
     </main>
 @endsection
 
-{{-- Purchase must be pushed to dataLayer BEFORE GTM loads. --}}
+{{-- purchase: only after successful order (COD/bank) or Paid gateway payment. Before GTM. --}}
 @push('datalayer')
     <script>
         (function () {
             window.dataLayer = window.dataLayer || [];
-            var orderId = @json($order->number);
-            var storageKey = 'ga4_purchase_' + orderId;
-
-            try {
-                if (sessionStorage.getItem(storageKey)) {
-                    return;
-                }
-                sessionStorage.setItem(storageKey, '1');
-            } catch (e) {}
 
             var ecommerce = @json($purchaseEcommerce ?? null);
-            if (!ecommerce || !ecommerce.transaction_id) {
+            var shouldTrack = @json((bool) ($shouldTrackPurchase ?? false));
+            var pollUrl = @json($paymentStatusUrl ?? null);
+            var storageKey = ecommerce && ecommerce.transaction_id
+                ? ('ga4_purchase_' + ecommerce.transaction_id)
+                : null;
+
+            function alreadyTracked() {
+                if (!storageKey) {
+                    return true;
+                }
+                try {
+                    return sessionStorage.getItem(storageKey) === '1';
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function markTracked() {
+                if (!storageKey) {
+                    return;
+                }
+                try {
+                    sessionStorage.setItem(storageKey, '1');
+                } catch (e) {}
+            }
+
+            function pushPurchase() {
+                if (!ecommerce || !ecommerce.transaction_id || alreadyTracked()) {
+                    return;
+                }
+
+                dataLayer.push({ ecommerce: null });
+                dataLayer.push({
+                    event: 'purchase',
+                    ecommerce: {
+                        transaction_id: ecommerce.transaction_id,
+                        value: Number(ecommerce.value),
+                        currency: ecommerce.currency,
+                        shipping: ecommerce.shipping != null ? Number(ecommerce.shipping) : undefined,
+                        affiliation: ecommerce.affiliation || undefined,
+                        items: ecommerce.items || []
+                    }
+                });
+                markTracked();
+            }
+
+            if (shouldTrack) {
+                pushPurchase();
                 return;
             }
 
-            dataLayer.push({ ecommerce: null });
-            dataLayer.push({
-                event: 'purchase',
-                ecommerce: ecommerce
-            });
+            if (!pollUrl || !ecommerce) {
+                return;
+            }
+
+            var attempts = 0;
+            var maxAttempts = 20;
+            var timer = setInterval(function () {
+                attempts += 1;
+                if (attempts > maxAttempts) {
+                    clearInterval(timer);
+                    return;
+                }
+
+                fetch(pollUrl, {
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                })
+                    .then(function (response) { return response.ok ? response.json() : null; })
+                    .then(function (data) {
+                        if (data && data.paid) {
+                            clearInterval(timer);
+                            pushPurchase();
+                        }
+                    })
+                    .catch(function () {});
+            }, 2000);
         })();
     </script>
 @endpush
