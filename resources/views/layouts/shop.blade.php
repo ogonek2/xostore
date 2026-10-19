@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="it-rating" content="it-rat-a26f881eeb9eb5ae2398d5109156e741" />
     @isset($seo)
         <x-shop.seo-head :seo="$seo" />
     @else
