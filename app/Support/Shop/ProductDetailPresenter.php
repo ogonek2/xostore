@@ -21,10 +21,12 @@ class ProductDetailPresenter
             'sizeChartPreset.rows',
             'sizeChartRows',
             'images',
+            'reviewImages',
             'variants.attributeValues.attribute',
             'variants.sizeGridValue',
             'translates',
             'productRelations.relatedProduct.images',
+            'productRelations.relatedProduct.reviewImages',
             'productRelations.relatedProduct.translates',
             'productRelations.relatedProduct.brand.translates',
             'productRelations.relatedProduct.variants',
@@ -62,15 +64,19 @@ class ProductDetailPresenter
             ?? $variantRows->firstWhere('color_id', $selectedColor['id'] ?? null)
             ?? $variantRows->first();
 
+        $displayName = $brandName && $name && ! str_starts_with($name, $brandName)
+            ? "{$brandName} {$name}"
+            : $name;
+
+        $productUrl = route('product.show', ['locale' => $locale, 'product' => $slug]);
+
         return [
             'id' => $product->id,
             'sku' => $product->sku,
             'slug' => $slug,
             'name' => $name,
             'brand' => $brandName,
-            'display_name' => $brandName && ! str_starts_with($name, $brandName)
-                ? "{$brandName} {$name}"
-                : $name,
+            'display_name' => $displayName,
             'short_description' => $product->translate('short_description', $locale),
             'meta_title' => $product->translate('meta_title', $locale),
             'meta_description' => $product->translate('meta_description', $locale),
@@ -104,11 +110,20 @@ class ProductDetailPresenter
             'size_chart' => ProductSizeChartPresenter::forProduct($product, $locale),
             'highlights' => static::highlights($product, $locale),
             'default_variant_id' => $defaultVariant['id'] ?? null,
-            'url' => route('product.show', ['locale' => $locale, 'product' => $slug]),
+            'url' => $productUrl,
             'consultation_url' => route('consultation.show', [
                 'locale' => $locale,
                 'product' => $slug,
             ]),
+            'whatsapp_url' => ShopCommerceInfo::whatsappUrl(
+                ShopCommerceInfo::whatsappMessageForProduct([
+                    'display_name' => $displayName,
+                    'name' => $name,
+                    'url' => $productUrl,
+                ], $locale),
+            ),
+            'review_images' => ShopCommerceInfo::mapReviewImages($product),
+            'commerce' => ShopCommerceInfo::forLocale($locale),
             'related' => static::buildRelatedGroups($product, $locale),
             'detail_items' => static::mapDetailItems($product, $locale),
             'similar_products' => static::resolveSimilarProducts($product, $locale),
@@ -185,6 +200,7 @@ class ProductDetailPresenter
             'brand.translates',
             'primaryCategory.translates',
             'images',
+            'reviewImages',
             'variants.attributeValues',
             'translates',
         ];

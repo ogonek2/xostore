@@ -32,6 +32,9 @@
         'in_cart_label' => __('shop.cart.in_cart_label', ['name' => ':name']),
         'colors' => __('shop.product.colors'),
         'new_badge' => __('shop.new_arrivals.badge'),
+        'reviews' => __('shop.product.reviews'),
+        'delivery_title' => __('shop.product.delivery_title'),
+        'payment_title' => __('shop.product.payment_title'),
     ];
 @endphp
 
@@ -114,6 +117,8 @@
                                     :image="$product['image']"
                                     :colors="$product['colors']"
                                     :show-new-badge="$product['is_new'] ?? false"
+                                    :review-images="$product['review_images'] ?? []"
+                                    :commerce="$product['commerce'] ?? null"
                                 />
                             @endforeach
                         </div>

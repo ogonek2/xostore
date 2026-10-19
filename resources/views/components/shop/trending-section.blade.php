@@ -33,6 +33,8 @@
                                 :image="$product['image']"
                                 :colors="$product['colors']"
                                 :alt="$product['alt']"
+                                :review-images="$product['review_images'] ?? []"
+                                :commerce="$product['commerce'] ?? null"
                             />
                         </div>
                     @endforeach

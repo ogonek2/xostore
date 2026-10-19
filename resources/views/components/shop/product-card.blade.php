@@ -12,6 +12,8 @@
     'showNewBadge' => false,
     'productId' => null,
     'defaultVariantId' => null,
+    'reviewImages' => [],
+    'commerce' => null,
 ])
 
 @php
@@ -126,6 +128,45 @@
             @endif
         </div>
     </a>
+
+    @if (! $isMinimal && count($reviewImages) > 0)
+        <div class="mt-3 flex gap-1.5 overflow-x-auto" role="list" aria-label="{{ __('shop.product.reviews') }}">
+            @foreach ($reviewImages as $review)
+                <span role="listitem" class="size-10 shrink-0 overflow-hidden rounded-md border border-border-DEFAULT bg-[#eceae6]">
+                    <img
+                        src="{{ $review['thumb_url'] ?? $review['url'] }}"
+                        alt="{{ $review['alt'] ?? __('shop.product.reviews_alt') }}"
+                        class="size-full object-cover"
+                        loading="lazy"
+                    >
+                </span>
+            @endforeach
+        </div>
+    @endif
+
+    @if (! $isMinimal && is_array($commerce))
+        @php
+            $delivery = $commerce['delivery'] ?? null;
+            $payment = $commerce['payment'] ?? null;
+            $shippingLine = $commerce['shipping']['line'] ?? null;
+        @endphp
+        @if ($delivery || $payment)
+            <div class="mt-3 space-y-1.5 text-xs text-text-muted">
+                @if ($delivery)
+                    <p>
+                        <span class="font-medium uppercase tracking-[0.12em]">{{ $delivery['title'] ?? __('shop.product.delivery_title') }}:</span>
+                        {{ $delivery['summary'] ?? $shippingLine }}
+                    </p>
+                @endif
+                @if ($payment)
+                    <p>
+                        <span class="font-medium uppercase tracking-[0.12em]">{{ $payment['title'] ?? __('shop.product.payment_title') }}:</span>
+                        {{ ! empty($payment['methods']) ? implode(' · ', $payment['methods']) : ($payment['summary'] ?? '') }}
+                    </p>
+                @endif
+            </div>
+        @endif
+    @endif
 
     @if (count($colors) > 0 && ! $isMinimal)
         <div class="mt-3 flex flex-wrap items-center gap-2" role="list" aria-label="{{ __('shop.product.colors') }}">

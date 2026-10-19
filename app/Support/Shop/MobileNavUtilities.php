@@ -133,11 +133,22 @@ final class MobileNavUtilities
             }
         }
 
-        if (! static::hasLabelKind($pages, self::CONTACT_LABELS)) {
-            $contactLink = [
-                'label' => __('shop.nav.contact'),
-                'url' => route('consultation.show', ['locale' => $locale]),
-            ];
+        if (! static::hasLabelKind($pages, array_merge(self::CONTACT_LABELS, ['whatsapp', 'чат у whatsapp', 'czat w whatsapp']))) {
+            $whatsappUrl = ShopCommerceInfo::whatsappUrl(
+                __('shop.whatsapp.cta', locale: $locale),
+            );
+
+            $contactLink = $whatsappUrl
+                ? [
+                    'label' => __('shop.whatsapp.nav', locale: $locale),
+                    'url' => $whatsappUrl,
+                    'open_in_new_tab' => true,
+                    'track_whatsapp' => true,
+                ]
+                : [
+                    'label' => __('shop.nav.contact', locale: $locale),
+                    'url' => route('consultation.show', ['locale' => $locale]),
+                ];
 
             if (static::registerLink($contactLink, $seenLabels, $seenUrls)) {
                 $pages[] = $contactLink;

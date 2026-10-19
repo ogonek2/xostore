@@ -7,7 +7,7 @@ import { initProductCardAddButtons } from './shop/cart-api';
 import { initShopAnalytics } from './shop/analytics';
 import { initHeaderNav } from './shop/header-nav';
 import { initNewsletterForms } from './shop/newsletter';
-import { initGa4ProductLists } from './shop/ga4-ecommerce';
+import { initGa4ProductLists, initWhatsappTracking } from './shop/ga4-ecommerce';
 
 initCartBadges();
 initProductCardAddButtons();
@@ -15,6 +15,7 @@ initShopAnalytics();
 initHeaderNav();
 initNewsletterForms();
 initGa4ProductLists();
+initWhatsappTracking();
 import { createApp } from 'vue';
 
 const vueMounts = document.querySelectorAll('[data-vue]');

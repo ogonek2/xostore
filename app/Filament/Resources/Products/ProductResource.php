@@ -9,6 +9,7 @@ use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Products\RelationManagers\ImagesRelationManager;
 use App\Filament\Resources\Products\RelationManagers\ProductDetailsRelationManager;
 use App\Filament\Resources\Products\RelationManagers\ProductRelationsRelationManager;
+use App\Filament\Resources\Products\RelationManagers\ReviewImagesRelationManager;
 use App\Filament\Resources\Products\RelationManagers\SizeChartRowsRelationManager;
 use App\Filament\Resources\Products\RelationManagers\VariantsRelationManager;
 use App\Filament\Resources\Products\Schemas\ProductForm;
@@ -60,6 +61,7 @@ class ProductResource extends Resource
     {
         return [
             ImagesRelationManager::class,
+            ReviewImagesRelationManager::class,
             VariantsRelationManager::class,
             ProductDetailsRelationManager::class,
             SizeChartRowsRelationManager::class,

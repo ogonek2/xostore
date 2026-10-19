@@ -15,6 +15,7 @@ class ProductCardPresenter
             'brand.translates',
             'primaryCategory.translates',
             'images',
+            'reviewImages',
             'color',
             'variants.attributeValues.attribute',
         ]);
@@ -55,6 +56,8 @@ class ProductCardPresenter
             'alt' => $displayName,
             'is_new' => (bool) $product->is_new,
             'default_variant_id' => $defaultVariant?->id,
+            'review_images' => $compact ? [] : ShopCommerceInfo::mapReviewImages($product, 4),
+            'commerce' => $compact ? null : ShopCommerceInfo::forLocale($locale),
         ];
     }
 

@@ -15,6 +15,21 @@ export function ensureDataLayer() {
     return window.dataLayer;
 }
 
+/**
+ * Custom GTM event for WhatsApp CTA clicks (non-ecommerce).
+ * Create a GTM trigger on event name: whatsapp_click
+ */
+export function trackWhatsappClick(payload = {}) {
+    const dataLayer = ensureDataLayer();
+
+    dataLayer.push({
+        event: 'whatsapp_click',
+        whatsapp_location: payload.location || 'unknown',
+        product_id: payload.product_id != null ? String(payload.product_id) : undefined,
+        product_name: payload.product_name || undefined,
+    });
+}
+
 export function pushEcommerce(event, ecommerce = {}) {
     const dataLayer = ensureDataLayer();
     dataLayer.push({ ecommerce: null });
@@ -157,6 +172,25 @@ export function purchase(payload) {
         shipping: payload.shipping != null ? Number(payload.shipping) : undefined,
         coupon: payload.coupon || undefined,
         items: payload.items.map((item) => toGaItem(item)),
+    });
+}
+
+/**
+ * Delegate clicks on WhatsApp CTAs marked with [data-whatsapp-cta].
+ */
+export function initWhatsappTracking() {
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('[data-whatsapp-cta], a[href*="wa.me/"]');
+
+        if (! link || link.dataset.whatsappTrackedClick === '1') {
+            return;
+        }
+
+        trackWhatsappClick({
+            product_id: link.dataset.productId || link.closest('[data-product-id]')?.dataset?.productId,
+            product_name: link.dataset.productName,
+            location: link.dataset.whatsappLocation || (link.closest('[data-product-card]') ? 'product_card' : 'site'),
+        });
     });
 }
 

@@ -12,6 +12,7 @@
         'in_cart_variant' => __('shop.product.in_cart_variant'),
         'in_cart_total' => __('shop.product.in_cart_total'),
         'consultation' => __('shop.consultation.cta'),
+        'whatsapp' => __('shop.whatsapp.cta'),
         'new_badge' => __('shop.new_arrivals.badge'),
         'cart_label' => __('shop.cart.label'),
         'colors' => __('shop.product.colors'),
@@ -26,12 +27,13 @@
         'tab_fabric' => __('shop.product.tab_fabric'),
         'no_details' => __('shop.product.no_details'),
         'close' => __('shop.product.gallery_close'),
-        'prev' => __('shop.product.gallery_prev'),
-        'next' => __('shop.product.gallery_next'),
         'zoom_in' => __('shop.product.gallery_zoom_in'),
         'zoom_out' => __('shop.product.gallery_zoom_out'),
         'thumbnail' => __('shop.product.gallery_thumbnail'),
         'size_chart_title' => __('shop.product.size_chart_title'),
+        'reviews' => __('shop.product.reviews'),
+        'delivery_title' => __('shop.product.delivery_title'),
+        'payment_title' => __('shop.product.payment_title'),
     ];
 @endphp
 

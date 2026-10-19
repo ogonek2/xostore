@@ -245,6 +245,10 @@
                                             class="block py-2.5 text-sm font-medium uppercase tracking-[0.12em] text-text-DEFAULT"
                                             data-mobile-nav-link
                                             @if ($link['open_in_new_tab'] ?? false) target="_blank" rel="noopener noreferrer" @endif
+                                            @if ($link['track_whatsapp'] ?? false)
+                                                data-whatsapp-cta
+                                                data-whatsapp-location="mobile_nav"
+                                            @endif
                                         >
                                             {{ $link['label'] }}
                                         </a>

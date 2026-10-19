@@ -42,6 +42,7 @@ class ProductListingQuery
                 'brand.translates',
                 'primaryCategory.translates',
                 'images',
+                'reviewImages',
                 'variants' => fn ($q) => $q->where('is_active', true),
                 'variants.attributeValues',
             ])

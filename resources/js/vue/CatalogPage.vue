@@ -524,6 +524,45 @@ onUnmounted(() => {
                         </div>
                     </a>
                     <div
+                        v-if="product.review_images?.length"
+                        class="mt-3 flex gap-1.5 overflow-x-auto"
+                        role="list"
+                        :aria-label="labels.reviews || 'Reviews'"
+                    >
+                        <span
+                            v-for="(review, ri) in product.review_images"
+                            :key="ri"
+                            role="listitem"
+                            class="size-10 shrink-0 overflow-hidden rounded-md border border-border-DEFAULT bg-[#eceae6]"
+                        >
+                            <img
+                                :src="review.thumb_url || review.url"
+                                :alt="review.alt || labels.reviews"
+                                class="size-full object-cover"
+                                loading="lazy"
+                            >
+                        </span>
+                    </div>
+                    <div
+                        v-if="product.commerce?.delivery || product.commerce?.payment"
+                        class="mt-3 space-y-1.5 text-xs text-text-muted"
+                    >
+                        <p v-if="product.commerce?.delivery">
+                            <span class="font-medium uppercase tracking-[0.12em]">
+                                {{ product.commerce.delivery.title || labels.delivery_title }}:
+                            </span>
+                            {{ product.commerce.delivery.summary || product.commerce.shipping?.line }}
+                        </p>
+                        <p v-if="product.commerce?.payment">
+                            <span class="font-medium uppercase tracking-[0.12em]">
+                                {{ product.commerce.payment.title || labels.payment_title }}:
+                            </span>
+                            {{ product.commerce.payment.methods?.length
+                                ? product.commerce.payment.methods.join(' · ')
+                                : product.commerce.payment.summary }}
+                        </p>
+                    </div>
+                    <div
                         v-if="product.colors?.length"
                         class="mt-3 flex flex-wrap items-center gap-2"
                         role="list"

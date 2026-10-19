@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from 'vue';
 import { addVariantToCart } from '../shop/cart-api';
+import ProductReviews from './ProductReviews.vue';
+import ProductCommerceInfo from './ProductCommerceInfo.vue';
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -116,6 +118,19 @@ async function addToCart(event) {
                 </div>
             </div>
         </a>
+
+        <ProductReviews
+            v-if="product.review_images?.length"
+            :images="product.review_images"
+            :title="labels.reviews"
+            compact
+        />
+
+        <ProductCommerceInfo
+            :commerce="product.commerce"
+            :labels="labels"
+            compact
+        />
 
         <div
             v-if="product.colors?.length"

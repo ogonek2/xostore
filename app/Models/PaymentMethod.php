@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PaymentMethodType;
+use App\Support\Shop\ShopCommerceInfo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -66,5 +67,11 @@ class PaymentMethod extends Model
     public function isGateway(): bool
     {
         return $this->type === PaymentMethodType::PaymentGateway;
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => ShopCommerceInfo::forgetCache());
+        static::deleted(fn () => ShopCommerceInfo::forgetCache());
     }
 }

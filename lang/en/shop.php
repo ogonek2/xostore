@@ -161,6 +161,11 @@ return [
         'captcha_failed' => 'Anti-bot verification failed. Please try again.',
     ],
 
+    'whatsapp' => [
+        'cta' => 'Chat on WhatsApp',
+        'nav' => 'WhatsApp',
+    ],
+
     'product' => [
         'colors' => 'Available colors',
         'color' => 'Colour',
@@ -190,6 +195,12 @@ return [
         'gallery_thumbnail' => 'Thumbnail',
         'size' => 'Size',
         'size_chart_title' => 'Size guide',
+        'reviews' => 'Customer reviews',
+        'reviews_alt' => 'Customer review',
+        'delivery_title' => 'Delivery',
+        'payment_title' => 'Payment',
+        'shipping_from' => 'Shipping from :price',
+        'free_shipping_from' => 'Free shipping from :price',
         'size_chart_size' => 'Size',
         'size_chart_chest' => 'Chest',
         'size_chart_waist' => 'Waist',

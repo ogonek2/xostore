@@ -161,6 +161,11 @@ return [
         'captcha_failed' => 'Weryfikacja antybot nie powiodła się. Spróbuj ponownie.',
     ],
 
+    'whatsapp' => [
+        'cta' => 'Czat w WhatsApp',
+        'nav' => 'WhatsApp',
+    ],
+
     'product' => [
         'colors' => 'Dostępne kolory',
         'color' => 'Kolor',
@@ -190,6 +195,12 @@ return [
         'gallery_thumbnail' => 'Miniatura',
         'size' => 'Rozmiar',
         'size_chart_title' => 'Tabela rozmiarów',
+        'reviews' => 'Opinie klientów',
+        'reviews_alt' => 'Opinia klienta',
+        'delivery_title' => 'Dostawa',
+        'payment_title' => 'Płatność',
+        'shipping_from' => 'Dostawa od :price',
+        'free_shipping_from' => 'Darmowa dostawa od :price',
         'size_chart_size' => 'Rozmiar',
         'size_chart_chest' => 'Klatka',
         'size_chart_waist' => 'Talia',

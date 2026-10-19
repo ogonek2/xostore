@@ -4,6 +4,8 @@ import ProductGallery from './ProductGallery.vue';
 import ProductCharacteristics from './ProductCharacteristics.vue';
 import ProductSimilarProducts from './ProductSimilarProducts.vue';
 import ProductSizeChart from './ProductSizeChart.vue';
+import ProductReviews from './ProductReviews.vue';
+import ProductCommerceInfo from './ProductCommerceInfo.vue';
 import { productCartLines } from '../shop/cart-badges';
 import { addVariantToCart } from '../shop/cart-api';
 import { viewItem } from '../shop/ga4-ecommerce';
@@ -62,7 +64,8 @@ const hasDetailsSection = computed(() =>
     || props.product.description
     || props.product.fit_description
     || props.product.fabric_description
-    || props.product.size_chart,
+    || props.product.size_chart
+    || (props.product.review_images?.length ?? 0) > 0,
 );
 
 function applyCartItems(items) {
@@ -315,6 +318,23 @@ async function addToCart() {
                     {{ adding ? labels.adding : (selectedVariantCartLine ? labels.add_another : labels.add_to_cart) }}
                 </button>
                 <a
+                    v-if="product.whatsapp_url"
+                    :href="product.whatsapp_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-whatsapp-cta
+                    data-whatsapp-location="product_page"
+                    :data-product-id="product.id"
+                    :data-product-name="product.display_name || product.name"
+                    class="inline-flex min-h-[3.25rem] flex-1 items-center justify-center gap-2 border border-[#25D366] bg-[#25D366] px-8 text-sm font-medium text-white transition hover:brightness-95 sm:max-w-[16rem]"
+                >
+                    <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12.04 2c-5.5 0-9.96 4.45-9.96 9.94 0 1.75.46 3.45 1.34 4.95L2 22l5.27-1.38a9.93 9.93 0 0 0 4.77 1.21h.01c5.49 0 9.95-4.45 9.95-9.94C22 6.45 17.53 2 12.04 2zm5.79 14.22c-.24.68-1.4 1.25-1.93 1.33-.52.08-1.03.12-3.33-.71-2.78-1-4.56-3.61-4.7-3.78-.13-.17-1.12-1.49-1.12-2.84 0-1.35.71-2.02.96-2.3.25-.27.54-.34.72-.34h.52c.17 0 .4-.06.62.47.24.58.81 2 .88 2.15.07.15.12.32.02.52-.1.2-.15.32-.3.5-.15.17-.31.38-.44.51-.15.15-.3.31-.13.6.17.3.76 1.25 1.63 2.02 1.12 1 2.07 1.31 2.36 1.46.3.15.47.12.64-.07.17-.2.74-.86.94-1.16.2-.3.4-.25.67-.15.27.1 1.72.81 2.01.96.3.15.5.22.57.34.08.12.08.7-.16 1.38z" />
+                    </svg>
+                    {{ labels.whatsapp }}
+                </a>
+                <a
+                    v-else
                     :href="product.consultation_url"
                     class="inline-flex min-h-[3.25rem] flex-1 items-center justify-center border border-border-DEFAULT px-8 text-sm font-medium transition hover:border-primary-DEFAULT sm:max-w-[14rem]"
                 >
@@ -322,6 +342,10 @@ async function addToCart() {
                 </a>
             </div>
 
+            <ProductCommerceInfo
+                :commerce="product.commerce"
+                :labels="labels"
+            />
         </div>
     </div>
 
@@ -329,6 +353,10 @@ async function addToCart() {
         v-if="product.similar_products?.length || hasDetailsSection"
         class="mt-12 space-y-12"
     >
+        <ProductReviews
+            :images="product.review_images ?? []"
+            :title="labels.reviews"
+        />
         <ProductCharacteristics
             v-if="product.detail_items?.length || product.description || product.fit_description || product.fabric_description"
             :product="product"

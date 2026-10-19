@@ -23,6 +23,14 @@ return [
         'phone' => env('SHOP_PHONE', '+48 22 000 00 00'),
     ],
 
+    'whatsapp' => [
+        'phone' => env('SHOP_WHATSAPP_PHONE', env('SHOP_PHONE', '')),
+        'message_template' => env(
+            'SHOP_WHATSAPP_MESSAGE',
+            'Cześć! Interesuje mnie produkt: {product_name} ({product_url})',
+        ),
+    ],
+
     'newsletter' => [
         'default_group_slug' => env('SHOP_NEWSLETTER_DEFAULT_GROUP', 'website'),
         'from_name' => env('SHOP_NEWSLETTER_FROM_NAME', env('SHOP_NAME', 'XOStore')),
